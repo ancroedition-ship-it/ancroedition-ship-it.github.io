@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | MASTER BUILD 2026</title>
+    <title>NEUROSENTIX | CLICK TO DRAG</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
@@ -11,160 +11,144 @@
             --bg-pane: #161618; 
             --accent: #f59e0b; 
             --edge-color: #27272a; 
-            --text-dim: #71717a;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0; padding: 0; background: var(--bg-main); color: #e4e4e7;
             font-family: 'Inter', sans-serif; width: 1366px; height: 650px;
-            overflow: hidden; display: flex; flex-direction: row;
+            overflow: hidden; display: flex; flex-direction: column; position: relative;
         }
 
-        /* --- SIDEBAR LIST --- */
-        #sidebar {
-            width: 160px; height: 100%; background: #09090b;
-            border-right: 1px solid var(--edge-color); display: flex;
-            flex-direction: column; padding: 20px 10px; flex-shrink: 0;
+        /* --- FLOATING LIST (OVERLAY) --- */
+        #floating-sidebar {
+            position: absolute; left: 15px; top: 90px; bottom: 20px;
+            width: 45px; background: rgba(9, 9, 11, 0.7); backdrop-filter: blur(12px);
+            border: 1px solid var(--edge-color); border-radius: 25px;
+            display: flex; flex-direction: column; align-items: center; padding: 20px 0;
+            z-index: 1000; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;
         }
-        .sidebar-title { font-size: 9px; font-weight: 900; color: #3f3f46; letter-spacing: 0.2em; margin-bottom: 20px; text-transform: uppercase; text-align: center; }
+        #floating-sidebar:hover { width: 180px; align-items: flex-start; padding: 20px; border-color: #3f3f46; }
         
-        #slot-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .list-slot {
-            height: 40px; border: 1px dashed #27272a; border-radius: 6px;
-            display: flex; align-items: center; justify-content: center;
-            color: #3f3f46; font-size: 9px; font-weight: 700; transition: 0.2s;
-            position: relative; background: rgba(255,255,255,0.01);
+        .slot-row {
+            width: 140px; height: 38px; border: 1px dashed #27272a; border-radius: 8px;
+            margin-bottom: 12px; display: flex; align-items: center; padding: 0 12px;
+            font-size: 9px; color: #3f3f46; font-weight: 800; white-space: nowrap;
+            opacity: 0; transition: 0.2s; flex-shrink: 0;
         }
-        .list-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
+        #floating-sidebar:hover .slot-row { opacity: 1; }
+        .slot-row.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
 
-        /* --- MAIN CONTENT --- */
-        #main-content { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; }
-
-        /* HEADER & LOGO */
+        /* --- THE MIDDLE (STABLE BUILD) --- */
         .ui-header { 
             height: 70px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; border-bottom: 1px solid var(--edge-color); 
-            background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px);
+            padding: 0 30px; border-bottom: 1px solid var(--edge-color); z-index: 100;
         }
-        .ns-svg { height: 28px; width: auto; overflow: visible; }
+        .ns-svg { height: 32px; width: auto; }
         .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
-        .ns-node { fill: var(--accent); animation: pulse 2s infinite; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
-        @keyframes pulse { 0%, 100% { opacity: 0.4; r: 3; } 50% { opacity: 1; r: 5; } }
 
-        /* EDITOR LAYOUT */
-        .split-container { display: flex; flex: 1; padding: 12px; gap: 0; position: relative; overflow: hidden; }
-        .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; position: relative; }
+        .split-container { display: flex; flex: 1; padding: 10px; position: relative; }
+        .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; }
         
-        #leftPane { width: 580px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         #rightPane { flex: 1; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
 
-        /* DOCKING OVERRIDES */
-        .list-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; border-radius: 5px; }
-        .list-slot .label-bar { height: 100%; border: none; background: transparent; justify-content: center; }
-        .list-slot .label-text { color: var(--accent); font-size: 8px; }
-        .list-slot #editor-scroll, .list-slot iframe, .list-slot .controls { display: none; }
+        .label-bar { height: 48px; background: #09090b; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: pointer; transition: background 0.2s; }
+        .label-bar:hover { background: #121214; }
+        .label-bar:active { cursor: grabbing; }
+        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
 
-        /* UI ELEMENTS */
-        .label-bar { height: 44px; background: #0d0d0f; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: grab; }
-        .label-text { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
-        
         #editor-scroll { flex: 1; padding: 20px 0 20px 20px; display: flex; overflow: hidden; }
-        #editor { 
-            flex: 1; background: transparent; border: none; outline: none; 
-            font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6;
-            color: #facc15; white-space: pre-wrap; overflow-y: auto; padding-right: 12px; 
-        }
+        #editor { flex: 1; background: transparent; border: none; outline: none; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #facc15; white-space: pre-wrap; overflow-y: auto; padding-right: 12px; }
         #editor::-webkit-scrollbar { width: 6px; }
         #editor::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-
-        #live-preview { flex: 1; width: 100%; border: none; background: #161618; }
         
-        .resizer { width: 6px; cursor: col-resize; background: #0a0a0a; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); z-index: 10; }
-        .resizer:hover { background: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        #live-preview { flex: 1; width: 100%; border: none; background: transparent; pointer-events: auto; }
+        
+        /* THE RESIZER */
+        .resizer { width: 7px; cursor: col-resize; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); z-index: 50; }
+        .resizer:hover { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
 
-        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
+        /* DOCKING LOGIC */
+        .slot-row .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; }
+        .slot-row .label-bar { height: 100%; border: none; background: transparent; justify-content: center; }
+        .slot-row .label-text { color: var(--accent); font-size: 8px; }
+        .slot-row #editor-scroll, .slot-row iframe, .slot-row .btn-action { display: none; }
+
+        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <aside id="sidebar">
-        <div class="sidebar-title">Inactive</div>
-        <div id="slot-container">
-            <div class="list-slot">EMPTY SLOT</div>
-            <div class="list-slot">EMPTY SLOT</div>
-            <div class="list-slot">EMPTY SLOT</div>
-            <div class="list-slot">EMPTY SLOT</div>
-        </div>
+    <aside id="floating-sidebar">
+        <div style="color: #3f3f46; font-size: 12px; margin-bottom: 25px; font-weight: 900;">DOCK</div>
+        <div class="slot-row" id="slot-1">VACANT SLOT</div>
+        <div class="slot-row" id="slot-2">VACANT SLOT</div>
+        <div class="slot-row" id="slot-3">VACANT SLOT</div>
+        <div class="slot-row" id="slot-4">VACANT SLOT</div>
     </aside>
 
-    <main id="main-content">
-        <header class="ui-header">
-            <div class="flex items-center gap-4">
-                <svg class="ns-svg" viewBox="0 0 100 40">
-                    <path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" />
-                    <circle class="ns-node" cx="10" cy="20" r="4" />
-                    <circle class="ns-node" cx="50" cy="20" r="4" style="animation-delay: 0.5s;" />
-                    <circle class="ns-node" cx="90" cy="20" r="4" style="animation-delay: 1s;" />
-                </svg>
-                <h1 style="font-size: 16px; font-weight: 900; letter-spacing: 0.4em; color: #52525b;">NEUROSENTIX</h1>
-            </div>
-            <div id="status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e;"></div>
-        </header>
-
-        <div class="split-container" id="main-layout">
-            <div class="pane" id="leftPane">
-                <div class="label-bar" id="handle-l">
-                    <span class="label-text">Source Code</span>
-                    <div class="controls"><button id="clearBtn" class="btn-action">CLEAR</button></div>
-                </div>
-                <div id="editor-scroll">
-                    <div id="editor" contenteditable="true" spellcheck="false"></div>
-                </div>
-            </div>
-
-            <div class="resizer" id="resizer"></div>
-
-            <div class="pane" id="rightPane">
-                <div class="label-bar" id="handle-r">
-                    <span class="label-text">Live Preview</span>
-                </div>
-                <iframe id="live-preview"></iframe>
-            </div>
+    <header class="ui-header">
+        <div class="flex items-center gap-4">
+            <svg class="ns-svg" viewBox="0 0 100 40"><path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" /></svg>
+            <h1 style="font-size: 18px; font-weight: 900; letter-spacing: 0.4em; color: #71717a;">NeuroSentix</h1>
         </div>
-    </main>
+    </header>
+
+    <div class="split-container" id="container">
+        <div class="pane" id="leftPane">
+            <div class="label-bar" id="handle-l">
+                <span class="label-text">Source Code</span>
+                <button id="clearBtn" class="btn-action">CLEAR</button>
+            </div>
+            <div id="editor-scroll"><div id="editor" contenteditable="true" spellcheck="false"></div></div>
+        </div>
+
+        <div class="resizer" id="dragMe"></div>
+
+        <div class="pane" id="rightPane">
+            <div class="label-bar" id="handle-r"><span class="label-text">Live Preview</span></div>
+            <iframe id="live-preview"></iframe>
+        </div>
+    </div>
 
     <script>
         const editor = document.getElementById('editor');
         const preview = document.getElementById('live-preview');
         const leftPane = document.getElementById('leftPane');
         const rightPane = document.getElementById('rightPane');
-        const resizer = document.getElementById('resizer');
-        const main = document.getElementById('main-layout');
+        const dragMe = document.getElementById('dragMe');
+        const container = document.getElementById('container');
 
         const update = () => {
             const doc = preview.contentDocument || preview.contentWindow.document;
             doc.open();
-            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:'JetBrains Mono',monospace;padding:20px;line-height:1.6;}</style>${editor.innerText || ""}`);
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;line-height:1.6;}</style>${editor.innerText || ""}`);
             doc.close();
         };
         editor.addEventListener('input', update);
 
-        // --- DRAG LOGIC ---
-        const setupDrag = (pane, handle) => {
-            handle.onmouseenter = () => pane.draggable = true;
-            handle.onmouseleave = () => pane.draggable = false;
+        // --- CLICK TO DRAG SETUP ---
+        // We set draggable to true only when the mouse is down on the handle
+        const setupClickToDrag = (pane, handle) => {
+            handle.onmousedown = () => pane.draggable = true;
+            handle.onmouseup = () => pane.draggable = false;
+            
             pane.ondragstart = (e) => {
                 e.dataTransfer.setData('text/plain', pane.id);
                 setTimeout(() => pane.style.opacity = "0.2", 0);
             };
-            pane.ondragend = () => pane.style.opacity = "1";
+            pane.ondragend = () => {
+                pane.style.opacity = "1";
+                pane.draggable = false;
+            };
         };
-        setupDrag(leftPane, document.getElementById('handle-l'));
-        setupDrag(rightPane, document.getElementById('handle-r'));
 
-        // --- DROP INTO SIDEBAR ---
-        document.querySelectorAll('.list-slot').forEach(slot => {
+        setupClickToDrag(leftPane, document.getElementById('handle-l'));
+        setupClickToDrag(rightPane, document.getElementById('handle-r'));
+
+        // SIDEBAR SLOTS
+        document.querySelectorAll('.slot-row').forEach(slot => {
             slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drag-over'); };
             slot.ondragleave = () => slot.classList.remove('drag-over');
             slot.ondrop = (e) => {
@@ -172,38 +156,35 @@
                 slot.classList.remove('drag-over');
                 const id = e.dataTransfer.getData('text/plain');
                 const el = document.getElementById(id);
-                if (el) { slot.innerHTML = ""; slot.appendChild(el); checkLayout(); }
+                if (el) { slot.innerHTML = ""; slot.appendChild(el); checkResizer(); }
             };
         });
 
-        // --- DROP BACK TO MAIN ---
-        main.ondragover = (e) => e.preventDefault();
-        main.ondrop = (e) => {
+        // WORKSPACE DROP
+        container.ondragover = (e) => e.preventDefault();
+        container.ondrop = (e) => {
             e.preventDefault();
             const id = e.dataTransfer.getData('text/plain');
             const el = document.getElementById(id);
             if (el) {
-                if (id === 'leftPane') main.insertBefore(el, resizer);
-                else main.appendChild(el);
-                checkLayout();
+                if (id === 'leftPane') container.insertBefore(el, dragMe);
+                else container.appendChild(el);
+                checkResizer();
             }
         };
 
-        function checkLayout() {
-            const panes = main.querySelectorAll('.pane').length;
-            resizer.style.display = (panes === 2) ? 'block' : 'none';
+        function checkResizer() {
+            dragMe.style.display = (container.querySelectorAll('.pane').length === 2) ? 'block' : 'none';
         }
 
-        // --- RESIZER ---
+        // STATIC RESIZER
         let isResizing = false;
-        resizer.onmousedown = () => isResizing = true;
+        dragMe.onmousedown = () => isResizing = true;
         document.onmousemove = (e) => {
             if (!isResizing) return;
-            let containerRect = main.getBoundingClientRect();
-            let x = e.clientX - containerRect.left;
-            if (x > 150 && x < containerRect.width - 150) {
-                leftPane.style.width = x + 'px';
-            }
+            let rect = container.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            if (x > 250 && x < rect.width - 250) leftPane.style.width = x + 'px';
         };
         document.onmouseup = () => isResizing = false;
 
