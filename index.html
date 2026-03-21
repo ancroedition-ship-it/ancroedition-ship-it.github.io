@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix Core Studio | Clean Slate</title>
+    <title>Neurosentix Core Studio | Clean Header</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
@@ -42,7 +42,7 @@
             border-bottom: 1px solid var(--border);
         }
 
-        .logo { font-weight: 800; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); }
+        .logo { font-weight: 800; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); letter-spacing: 1px; }
 
         .studio-viewport {
             display: flex; flex: 1; padding: 20px 0;
@@ -82,21 +82,12 @@
         .code-area {
             flex: 1; padding: 20px; font-family: 'Fira Code', monospace;
             font-size: 13px; color: #cbd5e1; overflow-y: auto;
-            white-space: pre; outline: none; line-height: 1.6;
+            white-space: pre-wrap; /* FIXED: Now wraps text within boundaries */
+            word-break: break-all;
+            outline: none; line-height: 1.6;
         }
 
         .output-frame { width: 100%; height: 100%; border: none; }
-
-        .view-toggle {
-            background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: 8px; display: flex; border: 1px solid var(--border);
-        }
-
-        .toggle-btn {
-            background: transparent; border: none; color: var(--text-dim);
-            padding: 6px 18px; border-radius: 5px; cursor: pointer; font-size: 11px;
-        }
-
-        .toggle-btn.active { background: var(--amber); color: #000; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -104,11 +95,7 @@
     <div class="studio-container">
         <header class="studio-header">
             <div class="logo">NEUROSENTIX</div>
-            <nav class="view-toggle">
-                <button class="toggle-btn active">Source</button>
-                <button class="toggle-btn">Visual</button>
-            </nav>
-            <div style="font-size: 10px; color: var(--text-dim);">CORE STUDIO v1.6</div>
+            <div style="font-size: 10px; color: var(--text-dim); letter-spacing: 1px; font-weight: 600;">CORE STUDIO v1.7</div>
         </header>
 
         <main class="studio-viewport">
@@ -137,13 +124,14 @@
 
         let isResizing = false;
 
-        // Plain text paste only to prevent boundary break
+        // Plain text paste only
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
 
+        // Resize handle
         handle.addEventListener('mousedown', () => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
