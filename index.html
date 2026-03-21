@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Master Studio</title>
+    <title>Neurosentix | 60px Ultra-Grip Studio</title>
     
     <style>
         :root {
@@ -26,7 +26,7 @@
             height: 100vh; width: 100vw;
             overflow: hidden; 
             font-family: Arial, Helvetica, sans-serif;
-            touch-action: none; /* Prevents browser pull-to-refresh */
+            touch-action: none;
         }
 
         /* HARD-LOCKED CONTAINER */
@@ -58,6 +58,7 @@
         .middle-stack {
             display: flex; flex-direction: column;
             flex: 0 0 600px; width: 600px; height: 100%;
+            z-index: 1;
         }
 
         .pane {
@@ -66,7 +67,7 @@
             overflow: hidden; height: 100%;
         }
 
-        .visual-pane { flex: 1; background: #ffffff; min-width: 150px; }
+        .visual-pane { flex: 1; background: #ffffff; min-width: 100px; z-index: 1; }
 
         .pane-label {
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
@@ -74,18 +75,30 @@
             color: var(--amber); border-bottom: 1px solid var(--border); font-weight: bold;
         }
 
-        /* --- 20px PRECISION DRAGBAR --- */
+        /* --- 60px ULTRA-WIDE DRAGBAR --- */
         .drag-bar {
-            width: 20px; cursor: col-resize; display: flex; 
-            justify-content: center; align-items: center;
-            flex-shrink: 0; z-index: 100;
-            touch-action: none; /* Disables touch scrolling on the bar */
+            width: 60px; /* Massive Hitbox */
+            margin: 0 -28px; /* Negative margin pulls panels together despite 60px width */
+            cursor: col-resize; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            flex-shrink: 0; 
+            z-index: 100; /* Stays on top */
+            touch-action: none;
+            position: relative;
         }
 
         .drag-bar::after {
             content: ''; width: 2px; height: 60px; 
             background: var(--amber); box-shadow: 0 0 8px var(--amber-glow);
-            transition: transform 0.2s;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        /* Visual Feedback */
+        .drag-bar:active::after { 
+            transform: scaleX(3); 
+            background: #fff; 
         }
 
         /* THE SHIELD: Prevents iframe from stealing focus during drag */
@@ -153,9 +166,11 @@
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
             
+            // Relativize X (subtract container left and internal 32px padding)
             let newX = clientX - containerRect.left - 32;
 
-            if (newX > 150 && newX < 1150) {
+            // Expanded Boundaries: 100px to 1200px
+            if (newX > 100 && newX < 1200) {
                 middleStack.style.flex = `0 0 ${newX}px`;
                 middleStack.style.width = `${newX}px`;
             }
@@ -169,7 +184,7 @@
             }
         }
 
-        // Event Listeners
+        // Event Binding
         handle.addEventListener('mousedown', startDrag);
         handle.addEventListener('touchstart', startDrag, { passive: false });
 
