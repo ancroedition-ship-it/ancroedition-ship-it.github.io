@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix Core Studio | Expanded Editor</title>
+    <title>Neurosentix Core Studio | Clean Slate</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
@@ -50,12 +50,9 @@
             overflow: hidden;
         }
 
-        /* Middle stack now only contains the editor */
         .middle-stack {
-            display: flex;
-            flex-direction: column;
-            flex: 0 0 600px; /* Adjusted default width */
-            height: 100%;
+            display: flex; flex-direction: column;
+            flex: 0 0 600px; height: 100%;
         }
 
         .pane {
@@ -63,7 +60,7 @@
             border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        .editor-pane { flex: 1; } /* Takes full height of middle-stack */
+        .editor-pane { flex: 1; }
         .visual-pane { flex: 1; background: #ffffff; }
 
         .pane-label {
@@ -111,7 +108,7 @@
                 <button class="toggle-btn active">Source</button>
                 <button class="toggle-btn">Visual</button>
             </nav>
-            <div style="font-size: 10px; color: var(--text-dim);">CORE STUDIO v1.5</div>
+            <div style="font-size: 10px; color: var(--text-dim);">CORE STUDIO v1.6</div>
         </header>
 
         <main class="studio-viewport">
@@ -119,18 +116,7 @@
                 <section class="pane editor-pane">
                     <div class="pane-label">Source Editor</div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input">
-<div class="studio-view">
-  <h1>Neurosentix Core</h1>
-  <p>Expanded Editor Mode Active</p>
 </div>
-
-<style>
-  body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-  .studio-view { text-align: center; font-family: 'Inter', sans-serif; }
-  h1 { color: #ffbf00; font-size: 2.5rem; margin-bottom: 0; }
-  p { color: #666; letter-spacing: 1px; }
-</style>
-                    </div>
                 </section>
             </div>
 
@@ -151,14 +137,13 @@
 
         let isResizing = false;
 
-        // Plain text paste only
+        // Plain text paste only to prevent boundary break
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
 
-        // Resize Logic
         handle.addEventListener('mousedown', () => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
@@ -176,7 +161,6 @@
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
             let newWidth = e.clientX - containerRect.left - 32;
             
-            // Fixed boundaries constraints
             if (newWidth > 300 && newWidth < 1000) {
                 middleStack.style.flex = `0 0 ${newWidth}px`;
             }
