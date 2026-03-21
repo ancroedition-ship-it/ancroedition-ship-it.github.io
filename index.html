@@ -50,7 +50,6 @@
             height: 48px; background: #09090b; display: flex; align-items: center; 
             justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); flex-shrink: 0; 
         }
-        /* Specific handle for dragging the whole box */
         #dragHandle { cursor: grab; }
         #dragHandle:active { cursor: grabbing; }
 
@@ -75,16 +74,16 @@
             background: #1c1c1e; color: #f59e0b; font-size: 9px; font-weight: 800; 
             padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; 
             cursor: pointer; transition: 0.2s; text-transform: uppercase;
+            position: relative; z-index: 10; /* Ensure buttons stay on top */
         }
         .btn-action:hover { border-color: #f59e0b; background: #27272a; }
         .btn-clear { color: #ef4444; border-color: #450a0a; margin-right: 5px; }
 
-        /* MIDDLE RESIZER - UNCHANGED */
         .resizer { width: 7px; cursor: col-resize; position: relative; z-index: 50; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); }
         .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; transition: 0.3s; }
         .resizer:hover::after, .resizer.dragging::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); height: 80px; }
 
-        /* Style when dropped into header */
+        /* Docked Styles */
         .ui-header .split-container {
             height: 250px !important;
             width: 450px !important;
@@ -139,6 +138,8 @@
         const dragMe = document.getElementById('dragMe');
         const leftPane = document.getElementById('leftPane');
         const dragOverlay = document.getElementById('drag-overlay');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
 
         const updatePreview = () => {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
@@ -149,7 +150,23 @@
 
         editor.addEventListener('input', updatePreview);
 
-        // DRAG LOGIC: Toggle draggable only when hovering the "Source Code" header
+        // --- BUTTON FUNCTIONALITY ---
+        clearBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents dragging when clicking button
+            editor.innerText = "";
+            updatePreview();
+        });
+
+        copyBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevents dragging when clicking button
+            navigator.clipboard.writeText(editor.innerText).then(() => {
+                const originalText = copyBtn.innerText;
+                copyBtn.innerText = "COPIED!";
+                setTimeout(() => copyBtn.innerText = originalText, 2000);
+            });
+        });
+
+        // --- DRAG LOGIC ---
         dragHandle.addEventListener('mouseenter', () => container.setAttribute('draggable', 'true'));
         dragHandle.addEventListener('mouseleave', () => {
             if (!isDragging) container.setAttribute('draggable', 'false');
@@ -168,7 +185,6 @@
             container.setAttribute('draggable', 'false');
         });
 
-        // HEADER DROP LOGIC
         headerZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             headerZone.classList.add('drag-over');
@@ -184,9 +200,13 @@
             dragHandle.style.cursor = 'default';
         });
 
-        // MIDDLE RESIZER LOGIC (Kept exactly as requested)
+        // --- RESIZER LOGIC ---
         let isResizing = false;
-        dragMe.addEventListener('mousedown', () => { isResizing = true; dragOverlay.style.display = "block"; dragMe.classList.add('dragging'); });
+        dragMe.addEventListener('mousedown', () => { 
+            isResizing = true; 
+            dragOverlay.style.display = "block"; 
+            dragMe.classList.add('dragging'); 
+        });
         
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
