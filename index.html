@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | RIBBON INTERFACE</title>
+    <title>NEUROSENTIX | MASTER BUILD 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
@@ -11,203 +11,204 @@
             --bg-pane: #161618; 
             --accent: #f59e0b; 
             --edge-color: #27272a; 
+            --text-dim: #71717a;
         }
         * { box-sizing: border-box; }
         body {
             margin: 0; padding: 0; background: var(--bg-main); color: #e4e4e7;
             font-family: 'Inter', sans-serif; width: 1366px; height: 650px;
-            overflow: hidden; display: flex; flex-direction: column;
+            overflow: hidden; display: flex; flex-direction: row;
         }
+
+        /* --- SIDEBAR LIST --- */
+        #sidebar {
+            width: 160px; height: 100%; background: #09090b;
+            border-right: 1px solid var(--edge-color); display: flex;
+            flex-direction: column; padding: 20px 10px; flex-shrink: 0;
+        }
+        .sidebar-title { font-size: 9px; font-weight: 900; color: #3f3f46; letter-spacing: 0.2em; margin-bottom: 20px; text-transform: uppercase; text-align: center; }
         
-        /* HEADER SECTION */
+        #slot-container { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .list-slot {
+            height: 40px; border: 1px dashed #27272a; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            color: #3f3f46; font-size: 9px; font-weight: 700; transition: 0.2s;
+            position: relative; background: rgba(255,255,255,0.01);
+        }
+        .list-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
+
+        /* --- MAIN CONTENT --- */
+        #main-content { display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; }
+
+        /* HEADER & LOGO */
         .ui-header { 
             height: 70px; display: flex; align-items: center; justify-content: space-between;
             padding: 0 30px; border-bottom: 1px solid var(--edge-color); 
-            background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(15px); z-index: 100;
+            background: rgba(10, 10, 10, 0.8); backdrop-filter: blur(10px);
         }
-        .logo-container { display: flex; align-items: center; gap: 15px; }
-        .ns-svg { height: 32px; width: auto; overflow: visible; }
-        .ns-path { 
-            stroke: var(--accent); stroke-width: 2; fill: none; 
-            stroke-dasharray: 100; stroke-dashoffset: 100; 
-            animation: draw 3s ease-in-out infinite alternate;
-        }
-        .ns-node { fill: var(--accent); animation: pulse 2s ease-in-out infinite; }
-        .header-text { font-size: 18px; font-weight: 900; letter-spacing: 0.4em; text-transform: uppercase; color: #71717a; }
-        
+        .ns-svg { height: 28px; width: auto; overflow: visible; }
+        .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
+        .ns-node { fill: var(--accent); animation: pulse 2s infinite; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; r: 3; } 50% { opacity: 1; r: 5; } }
 
-        /* --- COLLAPSIBLE RIBBON --- */
-        #ribbon {
-            height: 90px; background: #0c0c0e; border-bottom: 1px solid var(--edge-color);
-            display: flex; align-items: center; gap: 15px; padding: 0 20px;
-            overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        #ribbon.collapsed { height: 0; padding: 0 20px; border-bottom: none; opacity: 0; }
-
-        .dock-slot {
-            width: 220px; height: 60px; border: 1px dashed #3f3f46;
-            border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            color: #52525b; font-size: 9px; font-weight: 800; text-transform: uppercase;
-            background: rgba(255,255,255,0.02); position: relative;
-        }
-        .dock-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.08); }
-
-        /* RIBBON TOGGLE BUTTON */
-        .ribbon-toggle {
-            background: #1c1c1e; color: #71717a; font-size: 9px; font-weight: 800;
-            padding: 4px 12px; border-radius: 20px; border: 1px solid var(--edge-color);
-            cursor: pointer; transition: 0.2s;
-        }
-        .ribbon-toggle:hover { color: var(--accent); border-color: var(--accent); }
-
-        /* MAIN LAYOUT */
-        .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; }
-        .pane { display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--edge-color); background: var(--bg-pane); box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
+        /* EDITOR LAYOUT */
+        .split-container { display: flex; flex: 1; padding: 12px; gap: 0; position: relative; overflow: hidden; }
+        .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; position: relative; }
         
-        #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        #rightPane { flex: 1; display: flex; flex-direction: column; position: relative; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
-        
-        .label-bar { 
-            height: 48px; background: #09090b; display: flex; align-items: center; 
-            justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); flex-shrink: 0; 
-            cursor: grab;
-        }
-        .label-bar:active { cursor: grabbing; }
-        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
-        
+        #leftPane { width: 580px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        #rightPane { flex: 1; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
+
         /* DOCKING OVERRIDES */
-        .dock-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; border-radius: 7px; }
-        .dock-slot .label-bar { height: 100%; border: none; background: transparent; }
-        .dock-slot .label-text { color: var(--accent); }
-        .dock-slot #textarea-wrapper, .dock-slot iframe, .dock-slot .btn-action { display: none; }
+        .list-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; border-radius: 5px; }
+        .list-slot .label-bar { height: 100%; border: none; background: transparent; justify-content: center; }
+        .list-slot .label-text { color: var(--accent); font-size: 8px; }
+        .list-slot #editor-scroll, .list-slot iframe, .list-slot .controls { display: none; }
 
-        #textarea-wrapper { flex: 1; padding: 20px 0 20px 20px; display: flex; overflow: hidden; }
+        /* UI ELEMENTS */
+        .label-bar { height: 44px; background: #0d0d0f; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: grab; }
+        .label-text { font-size: 10px; font-weight: 800; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
+        
+        #editor-scroll { flex: 1; padding: 20px 0 20px 20px; display: flex; overflow: hidden; }
         #editor { 
             flex: 1; background: transparent; border: none; outline: none; 
-            font-family: var(--shared-font); font-size: 14px; color: #facc15 !important; 
-            white-space: pre-wrap; overflow-y: auto; padding-right: 12px; 
+            font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6;
+            color: #facc15; white-space: pre-wrap; overflow-y: auto; padding-right: 12px; 
         }
         #editor::-webkit-scrollbar { width: 6px; }
         #editor::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
+
+        #live-preview { flex: 1; width: 100%; border: none; background: #161618; }
         
-        #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
-        #drag-overlay { display: none; position: absolute; inset: 0; z-index: 40; background: transparent; }
+        .resizer { width: 6px; cursor: col-resize; background: #0a0a0a; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); z-index: 10; }
+        .resizer:hover { background: var(--accent); box-shadow: 0 0 15px var(--accent); }
 
-        .btn-action { background: #1c1c1e; color: #f59e0b; font-size: 9px; font-weight: 800; padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
-        .btn-clear { color: #ef4444; margin-right: 5px; }
-
-        .resizer { width: 7px; cursor: col-resize; position: relative; z-index: 50; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); }
-        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; }
-        .resizer:hover::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <header class="ui-header">
-        <div class="logo-container">
-            <svg class="ns-svg" viewBox="0 0 100 40">
-                <path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" />
-                <circle class="ns-node" cx="10" cy="20" r="4" />
-                <circle class="ns-node" cx="50" cy="20" r="4" style="animation-delay: 0.5s;" />
-                <circle class="ns-node" cx="90" cy="20" r="4" style="animation-delay: 1s;" />
-            </svg>
-            <h1 class="header-text">NeuroSentix</h1>
+    <aside id="sidebar">
+        <div class="sidebar-title">Inactive</div>
+        <div id="slot-container">
+            <div class="list-slot">EMPTY SLOT</div>
+            <div class="list-slot">EMPTY SLOT</div>
+            <div class="list-slot">EMPTY SLOT</div>
+            <div class="list-slot">EMPTY SLOT</div>
         </div>
-        <button class="ribbon-toggle" onclick="toggleRibbon()">TOGGLE RIBBON</button>
-    </header>
+    </aside>
 
-    <div id="ribbon">
-        <div class="dock-slot" id="slot-1">SOURCE SLOT</div>
-        <div class="dock-slot" id="slot-2">PREVIEW SLOT</div>
-    </div>
+    <main id="main-content">
+        <header class="ui-header">
+            <div class="flex items-center gap-4">
+                <svg class="ns-svg" viewBox="0 0 100 40">
+                    <path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" />
+                    <circle class="ns-node" cx="10" cy="20" r="4" />
+                    <circle class="ns-node" cx="50" cy="20" r="4" style="animation-delay: 0.5s;" />
+                    <circle class="ns-node" cx="90" cy="20" r="4" style="animation-delay: 1s;" />
+                </svg>
+                <h1 style="font-size: 16px; font-weight: 900; letter-spacing: 0.4em; color: #52525b;">NEUROSENTIX</h1>
+            </div>
+            <div id="status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e;"></div>
+        </header>
 
-    <div class="split-container" id="main-container">
-        <div class="pane" id="leftPane">
-            <div class="label-bar" id="handle-l">
-                <span class="label-text">Source Code</span>
-                <div class="flex">
-                    <button id="clearBtn" class="btn-action btn-clear">CLEAR</button>
-                    <button id="copyBtn" class="btn-action">COPY</button>
+        <div class="split-container" id="main-layout">
+            <div class="pane" id="leftPane">
+                <div class="label-bar" id="handle-l">
+                    <span class="label-text">Source Code</span>
+                    <div class="controls"><button id="clearBtn" class="btn-action">CLEAR</button></div>
+                </div>
+                <div id="editor-scroll">
+                    <div id="editor" contenteditable="true" spellcheck="false"></div>
                 </div>
             </div>
-            <div id="textarea-wrapper">
-                <div id="editor" contenteditable="true" spellcheck="false"></div>
+
+            <div class="resizer" id="resizer"></div>
+
+            <div class="pane" id="rightPane">
+                <div class="label-bar" id="handle-r">
+                    <span class="label-text">Live Preview</span>
+                </div>
+                <iframe id="live-preview"></iframe>
             </div>
         </div>
-        <div class="resizer" id="dragMe"></div>
-        <div class="pane" id="rightPane">
-            <div id="drag-overlay"></div>
-            <div class="label-bar" id="handle-r"><span class="label-text">Live Preview</span></div>
-            <iframe id="live-preview"></iframe>
-        </div>
-    </div>
+    </main>
 
     <script>
         const editor = document.getElementById('editor');
-        const previewFrame = document.getElementById('live-preview');
+        const preview = document.getElementById('live-preview');
         const leftPane = document.getElementById('leftPane');
         const rightPane = document.getElementById('rightPane');
-        const resizer = document.getElementById('dragMe');
-        const main = document.getElementById('main-container');
+        const resizer = document.getElementById('resizer');
+        const main = document.getElementById('main-layout');
 
-        const updatePreview = () => {
-            const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+        const update = () => {
+            const doc = preview.contentDocument || preview.contentWindow.document;
             doc.open();
-            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;}</style>${editor.innerText || " "}`);
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:'JetBrains Mono',monospace;padding:20px;line-height:1.6;}</style>${editor.innerText || ""}`);
             doc.close();
         };
-        editor.addEventListener('input', updatePreview);
+        editor.addEventListener('input', update);
 
-        function toggleRibbon() {
-            document.getElementById('ribbon').classList.toggle('collapsed');
-        }
-
-        // DRAG & DROP LOGIC
+        // --- DRAG LOGIC ---
         const setupDrag = (pane, handle) => {
             handle.onmouseenter = () => pane.draggable = true;
             handle.onmouseleave = () => pane.draggable = false;
             pane.ondragstart = (e) => {
-                e.dataTransfer.setData('text', pane.id);
-                setTimeout(() => pane.style.opacity = "0.3", 0);
+                e.dataTransfer.setData('text/plain', pane.id);
+                setTimeout(() => pane.style.opacity = "0.2", 0);
             };
             pane.ondragend = () => pane.style.opacity = "1";
         };
         setupDrag(leftPane, document.getElementById('handle-l'));
         setupDrag(rightPane, document.getElementById('handle-r'));
 
-        document.querySelectorAll('.dock-slot').forEach(slot => {
-            slot.ondragover = (e) => e.preventDefault();
+        // --- DROP INTO SIDEBAR ---
+        document.querySelectorAll('.list-slot').forEach(slot => {
+            slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drag-over'); };
+            slot.ondragleave = () => slot.classList.remove('drag-over');
             slot.ondrop = (e) => {
-                const id = e.dataTransfer.getData('text');
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                const id = e.dataTransfer.getData('text/plain');
                 const el = document.getElementById(id);
-                slot.innerHTML = "";
-                slot.appendChild(el);
-                if (main.querySelectorAll('.pane').length < 2) resizer.style.display = 'none';
+                if (el) { slot.innerHTML = ""; slot.appendChild(el); checkLayout(); }
             };
         });
 
-        // BUTTONS
-        document.getElementById('clearBtn').onclick = (e) => { e.stopPropagation(); editor.innerText = ""; updatePreview(); };
-        document.getElementById('copyBtn').onclick = (e) => { 
-            e.stopPropagation(); 
-            navigator.clipboard.writeText(editor.innerText);
-            copyBtn.innerText = "COPIED";
-            setTimeout(() => copyBtn.innerText = "COPY", 1500);
+        // --- DROP BACK TO MAIN ---
+        main.ondragover = (e) => e.preventDefault();
+        main.ondrop = (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === 'leftPane') main.insertBefore(el, resizer);
+                else main.appendChild(el);
+                checkLayout();
+            }
         };
 
-        // RESIZER
-        let dragging = false;
-        resizer.onmousedown = () => dragging = true;
+        function checkLayout() {
+            const panes = main.querySelectorAll('.pane').length;
+            resizer.style.display = (panes === 2) ? 'block' : 'none';
+        }
+
+        // --- RESIZER ---
+        let isResizing = false;
+        resizer.onmousedown = () => isResizing = true;
         document.onmousemove = (e) => {
-            if (!dragging) return;
-            let x = e.clientX - main.getBoundingClientRect().left;
-            if (x > 300 && x < 1000) leftPane.style.width = x + 'px';
+            if (!isResizing) return;
+            let containerRect = main.getBoundingClientRect();
+            let x = e.clientX - containerRect.left;
+            if (x > 150 && x < containerRect.width - 150) {
+                leftPane.style.width = x + 'px';
+            }
         };
-        document.onmouseup = () => dragging = false;
+        document.onmouseup = () => isResizing = false;
 
-        updatePreview();
+        document.getElementById('clearBtn').onclick = (e) => { e.stopPropagation(); editor.innerText = ""; update(); };
+        update();
     </script>
 </body>
 </html>
