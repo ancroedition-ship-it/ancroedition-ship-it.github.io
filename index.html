@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix | Permanent PC Row</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neurosentix | Kiosk Studio</title>
     
     <style>
         :root {
@@ -23,74 +23,56 @@
             margin: 0; padding: 0;
             background-color: #000;
             display: flex; justify-content: center; align-items: center;
-            height: 100vh; overflow: hidden; 
+            height: 100vh; width: 100vw;
+            overflow: hidden; 
             font-family: Arial, Helvetica, sans-serif;
+            touch-action: none; /* Block pinch-zoom */
         }
 
-        /* 1366x657 PC ANCHOR */
+        /* Fixed Studio Frame */
         .studio-container {
-            width: var(--fixed-width); 
-            height: var(--fixed-height);
+            width: var(--fixed-width); height: var(--fixed-height);
             background-color: var(--bg-dark);
-            display: flex; 
-            flex-direction: column;
-            padding: 0 32px; 
-            border: 1px solid var(--border);
-            box-shadow: 0 20px 60px rgba(0,0,0,1);
+            display: flex; flex-direction: column;
+            padding: 0 32px; border: 1px solid var(--border);
+            box-shadow: 0 0 100px rgba(0,0,0,1);
+            position: relative;
         }
 
         .studio-header {
             height: var(--header-h);
-            display: flex; align-items: center;
+            display: flex; align-items: center; justify-content: space-between;
             border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
         }
 
         .logo { font-weight: 900; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); letter-spacing: 2px; }
 
-        /* THE ROW FIX: Forced horizontal alignment */
+        .exit-btn {
+            font-size: 10px; color: var(--border); cursor: pointer;
+            padding: 5px 10px; border: 1px solid var(--border);
+            border-radius: 4px; transition: 0.3s;
+        }
+        .exit-btn:hover { color: #ff4444; border-color: #ff4444; }
+
         .studio-viewport {
-            display: flex; 
-            flex-direction: row !important; /* Forces Side-by-Side */
-            flex: 1; 
-            padding: 20px 0;
-            height: calc(var(--fixed-height) - var(--header-h)); 
-            overflow: hidden;
-            align-items: stretch;
+            display: flex; flex-direction: row !important;
+            flex: 1; padding: 20px 0; overflow: hidden;
         }
 
-        .middle-stack {
-            display: flex; 
-            flex-direction: column;
-            flex: 0 0 600px; /* Locked starting width */
-            height: 100%;
-            min-width: 200px;
-        }
+        .middle-stack { display: flex; flex-direction: column; flex: 0 0 600px; height: 100%; }
 
         .pane {
-            background: var(--panel-bg); 
-            border: 1px solid var(--border);
-            border-radius: 10px; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
-            height: 100%;
+            background: var(--panel-bg); border: 1px solid var(--border);
+            border-radius: 10px; display: flex; flex-direction: column; 
+            overflow: hidden; height: 100%;
         }
 
-        .editor-pane { flex: 1; }
-        
-        /* THE PREVIEW FIX: flex: 1 ensures it fills the remaining 1366px space */
-        .visual-pane { 
-            flex: 1; 
-            background: #ffffff; 
-            min-width: 200px;
-        }
+        .visual-pane { flex: 1; background: #ffffff; margin-left: 0; }
 
         .pane-label {
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
             padding: 10px 16px; background: rgba(255, 255, 255, 0.02);
-            color: var(--amber); border-bottom: 1px solid var(--border);
-            font-weight: bold;
+            color: var(--amber); border-bottom: 1px solid var(--border); font-weight: bold;
         }
 
         /* Stealth Scrollbar */
@@ -100,44 +82,40 @@
         .code-area:hover::-webkit-scrollbar-thumb { background: var(--amber); }
 
         .code-area {
-            flex: 1; 
-            padding: 20px 10px 20px 20px; 
-            font-family: Arial, sans-serif;
-            font-size: 14px; 
-            color: #cbd5e1; 
-            overflow-y: auto;
-            white-space: pre-wrap; 
-            word-break: break-all;
-            outline: none; 
-            line-height: 1.5;
-            content-visibility: auto;
+            flex: 1; padding: 20px; font-family: Arial, sans-serif;
+            font-size: 14px; color: #cbd5e1; overflow-y: auto;
+            white-space: pre-wrap; word-break: break-all; outline: none; line-height: 1.5;
         }
 
-        .drag-bar {
-            width: 20px; 
-            cursor: col-resize; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            flex-shrink: 0;
-        }
-
-        .drag-bar::after {
-            content: ''; width: 2px; height: 35px; background: var(--border); transition: 0.3s;
-        }
-
+        .drag-bar { width: 20px; cursor: col-resize; display: flex; justify-content: center; align-items: center; }
+        .drag-bar::after { content: ''; width: 2px; height: 35px; background: var(--border); transition: 0.3s; }
         .drag-bar:hover::after { background: var(--amber); height: 50px; box-shadow: 0 0 12px var(--amber); }
 
-        .output-frame { width: 100%; height: 100%; border: none; display: block; }
+        .output-frame { width: 100%; height: 100%; border: none; }
 
-        /* REMOVED ALL MOBILE MEDIA QUERIES TO PREVENT STACKING */
+        /* Fullscreen Overlay */
+        #launcher {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: flex; 
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+        .launch-box {
+            color: var(--amber); font-weight: 900; letter-spacing: 5px;
+            border: 1px solid var(--amber); padding: 20px 40px;
+            text-shadow: 0 0 10px var(--amber-glow);
+        }
     </style>
 </head>
 <body>
 
+    <div id="launcher" onclick="launchStudio()">
+        <div class="launch-box">INITIALIZE NEUROSENTIX</div>
+    </div>
+
     <div class="studio-container">
         <header class="studio-header">
             <div class="logo">NEUROSENTIX</div>
+            <div class="exit-btn" onclick="exitStudio()">ESC / EXIT</div>
         </header>
 
         <main class="studio-viewport">
@@ -162,42 +140,48 @@
         const middleStack = document.getElementById('middleStack');
         const codeInput = document.getElementById('code-input');
         const preview = document.getElementById('preview-frame');
-
         let isResizing = false;
         let debounceTimer;
 
-        // Strip Rich Text on Paste
-        codeInput.addEventListener('paste', (e) => {
-            e.preventDefault();
-            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
-            document.execCommand('insertText', false, text);
+        // --- Fullscreen Logic ---
+        function launchStudio() {
+            const element = document.documentElement;
+            if (element.requestFullscreen) { element.requestFullscreen(); }
+            else if (element.webkitRequestFullscreen) { element.webkitRequestFullscreen(); }
+            document.getElementById('launcher').style.display = 'none';
+        }
+
+        function exitStudio() {
+            if (document.exitFullscreen) { document.exitFullscreen(); }
+            else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
+            document.getElementById('launcher').style.display = 'flex';
+        }
+
+        // --- Block Zoom ---
+        window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
+        window.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && (['=', '-', '0', '+'].includes(e.key))) e.preventDefault();
         });
 
-        // PC Horizontal Resize Only
+        // --- Dragging ---
         handle.addEventListener('mousedown', () => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
             preview.style.pointerEvents = 'none';
         });
-
         document.addEventListener('mouseup', () => {
             isResizing = false;
             document.body.style.cursor = 'default';
             preview.style.pointerEvents = 'all';
         });
-
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
             let newWidth = e.clientX - containerRect.left - 32;
-            
-            // Stay within reasonable PC boundaries
-            if (newWidth > 200 && newWidth < 1100) {
-                middleStack.style.flex = `0 0 ${newWidth}px`;
-            }
+            if (newWidth > 200 && newWidth < 1100) { middleStack.style.flex = `0 0 ${newWidth}px`; }
         });
 
-        // Fixed Sync Scroll
+        // --- Sync Scroll ---
         codeInput.addEventListener('scroll', () => {
             const editorScrollTop = codeInput.scrollTop;
             const editorScrollHeight = codeInput.scrollHeight - codeInput.clientHeight;
@@ -207,26 +191,25 @@
             preview.contentWindow.scrollTo(0, scrollPercentage * previewScrollHeight);
         });
 
-        // Anti-Crush Engine
+        // --- Preview Engine ---
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const content = codeInput.innerText;
                 const doc = preview.contentDocument || preview.contentWindow.document;
-                const shield = `
-                    <style>
-                        html, body { 
-                            margin: 0; padding: 20px; width: 100%; min-height: 100vh; 
-                            word-wrap: break-word; overflow-wrap: break-word; 
-                            font-family: Arial, sans-serif; background: #fff;
-                        }
-                        * { box-sizing: border-box; }
-                    </style>`;
+                const shield = `<style>html,body{margin:0;padding:20px;width:100%;min-height:100vh;word-wrap:break-word;overflow-wrap:break-word;font-family:Arial,sans-serif;background:#fff;}*{box-sizing:border-box;}</style>`;
                 doc.open();
                 doc.write(shield + content);
                 doc.close();
             }, 400);
         }
+
+        // Paste Clean
+        codeInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+        });
 
         codeInput.addEventListener('input', updatePreview);
         window.onload = updatePreview;
