@@ -3,165 +3,132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix Core Studio</title>
+    <title>Neurosentix Core Studio | 1366x657 Optimized</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
-        /* --- 1. THEME & VARIABLES --- */
         :root {
             --bg-dark: #0a0a0b;
             --panel-bg: #141416;
             --amber: #ffbf00;
             --amber-glow: rgba(255, 191, 0, 0.2);
             --border: rgba(255, 255, 255, 0.08);
-            --text-main: #e2e8f0;
             --text-dim: #64748b;
-            --spacing-side: 32px; /* Mirrored side padding */
+            --spacing-side: 32px;
+            --header-h: 60px; /* Slimmer header for 657px height */
         }
 
         * { box-sizing: border-box; }
         
         body, html {
             margin: 0; padding: 0;
-            height: 100vh;
-            width: 100vw;
+            width: 1366px;   /* Forced Browser Width */
+            height: 657px;  /* Forced Browser Height */
             background-color: var(--bg-dark);
-            color: var(--text-main);
+            color: #e2e8f0;
             font-family: 'Inter', sans-serif;
-            overflow: hidden; /* Fixes the "Header going up" issue */
+            overflow: hidden; 
         }
 
-        /* --- 2. LAYOUT ENGINE --- */
         .studio-container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100%;
+            width: 100%;
             padding: 0 var(--spacing-side);
         }
 
         .studio-header {
-            height: 70px;
-            min-height: 70px;
+            height: var(--header-h);
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
-            z-index: 100;
         }
 
-        .logo {
-            font-weight: 800;
-            letter-spacing: 1.5px;
-            color: var(--amber);
-            text-shadow: 0 0 12px var(--amber-glow);
-        }
+        .logo { font-weight: 800; letter-spacing: 1.5px; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); }
 
-        /* Viewport fixes height to stop vertical expansion */
+        /* Viewport calculation adjusted for 657px total height */
         .studio-viewport {
             display: flex;
             flex: 1;
-            padding: 24px 0;
+            padding: 16px 0; /* Reduced vertical padding */
             gap: 0;
-            height: calc(100vh - 70px); 
+            height: calc(657px - var(--header-h)); 
             overflow: hidden;
         }
 
-        /* --- 3. PANE ARCHITECTURE --- */
         .pane {
             background: var(--panel-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
             height: 100%;
+            overflow: hidden;
         }
 
         .pane-label {
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 2px;
-            padding: 12px 16px;
+            padding: 8px 16px;
             background: rgba(0, 0, 0, 0.2);
             color: var(--amber);
             border-bottom: 1px solid var(--border);
         }
 
-        /* Responsive Flex Logic */
-        .editor-pane { flex: 1; min-width: 300px; }
-        .visual-pane { flex: 1; background: #ffffff; min-width: 300px; }
-        .structure-pane { flex: 0 0 240px; margin-left: 12px; }
+        .editor-pane { flex: 0 0 500px; } /* Initial static width for source */
+        .visual-pane { flex: 1; background: #ffffff; }
+        .structure-pane { flex: 0 0 200px; margin-left: 12px; }
 
-        /* --- 4. INTERACTIVE ELEMENTS --- */
         .drag-bar {
-            width: 16px;
+            width: 14px;
             cursor: col-resize;
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 50;
         }
 
         .drag-bar::after {
             content: '';
             width: 2px;
-            height: 40px;
+            height: 30px;
             background: var(--border);
-            border-radius: 2px;
-            transition: 0.3s ease;
+            transition: 0.3s;
         }
 
-        .drag-bar:hover::after, .drag-bar.active::after {
-            background: var(--amber);
-            height: 80px;
-            box-shadow: 0 0 15px var(--amber);
-        }
+        .drag-bar:hover::after { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
 
-        /* Source Editor Area */
         .code-area {
             flex: 1;
-            padding: 24px;
+            padding: 15px;
             font-family: 'Fira Code', monospace;
-            font-size: 14px;
+            font-size: 13px;
             color: #d1d5db;
-            overflow-y: auto; /* Scroll stays inside the pane */
+            overflow-y: auto;
             white-space: pre;
             outline: none;
-            line-height: 1.6;
+            line-height: 1.5;
         }
 
-        .output-frame {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: white;
-        }
+        .output-frame { width: 100%; height: 100%; border: none; }
 
-        /* Header View Toggle */
+        /* View Toggle */
         .view-toggle {
             background: rgba(255, 255, 255, 0.03);
-            padding: 4px;
-            border-radius: 10px;
+            padding: 3px;
+            border-radius: 8px;
             display: flex;
             border: 1px solid var(--border);
         }
 
         .toggle-btn {
-            background: transparent;
-            border: none;
-            color: var(--text-dim);
-            padding: 8px 20px;
-            border-radius: 7px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: 0.3s;
+            background: transparent; border: none; color: var(--text-dim);
+            padding: 5px 15px; border-radius: 6px; cursor: pointer; font-size: 12px;
         }
 
-        .toggle-btn.active {
-            background: var(--amber);
-            color: #000;
-            box-shadow: 0 0 15px var(--amber-glow);
-        }
+        .toggle-btn.active { background: var(--amber); color: #000; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -169,137 +136,67 @@
     <div class="studio-container">
         <header class="studio-header">
             <div class="logo">NEUROSENTIX</div>
-            
             <nav class="view-toggle">
-                <button class="toggle-btn active" onclick="updateView('source')">Source</button>
-                <button class="toggle-btn" onclick="updateView('visual')">Visual</button>
+                <button class="toggle-btn active">Source</button>
+                <button class="toggle-btn">Visual</button>
             </nav>
-
-            <div style="font-size: 11px; color: var(--text-dim); letter-spacing: 1px;">CORE STUDIO V1.0</div>
+            <div style="font-size: 10px; color: var(--text-dim);">1366x657 OPTIMIZED</div>
         </header>
 
         <main class="studio-viewport">
-            
             <section class="pane editor-pane" id="editorSection">
-                <div class="pane-label">Source Editor</div>
+                <div class="pane-label">Source</div>
                 <div class="code-area" contenteditable="true" spellcheck="false" id="code-input">
-<div class="welcome">
-  <h1>Neurosentix Core</h1>
-  <p>Premium Interface Active</p>
-</div>
-
-<style>
-  body { 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    height: 100vh; 
-    margin: 0;
-    font-family: sans-serif;
-  }
-  .welcome { text-align: center; }
-  h1 { color: #ffbf00; font-size: 3rem; }
-</style>
+<h1 style="color: #ffbf00; font-family: sans-serif;">Core Studio</h1>
                 </div>
             </section>
 
             <div class="drag-bar" id="drag-handle"></div>
 
             <section class="pane visual-pane" id="visualSection">
-                <div class="pane-label" style="background: #f1f1f1; color: #888;">Live Preview</div>
+                <div class="pane-label" style="background: #eee; color: #777;">Preview</div>
                 <iframe class="output-frame" id="preview-frame"></iframe>
             </section>
 
             <aside class="pane structure-pane">
                 <div class="pane-label">Structure</div>
-                <div style="padding: 20px; font-size: 13px;">
-                    <div style="color: var(--amber); margin-bottom: 12px; font-weight: 600;">DOM TREE</div>
-                    <div style="color: var(--text-dim); line-height: 2;">
-                        &lt;html&gt;<br>
-                        &nbsp;&nbsp;&lt;head&gt;...&lt;/head&gt;<br>
-                        &nbsp;&nbsp;&lt;body&gt;<br>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&lt;main&gt;...&lt;/main&gt;<br>
-                        &nbsp;&nbsp;&lt;/body&gt;
-                    </div>
+                <div style="padding: 15px; font-size: 12px; color: var(--text-dim);">
+                    Project Root<br>
+                    └─ index.html
                 </div>
             </aside>
-
         </main>
     </div>
 
     <script>
         const handle = document.getElementById('drag-handle');
         const editor = document.getElementById('editorSection');
-        const visual = document.getElementById('visualSection');
         const codeInput = document.getElementById('code-input');
         const preview = document.getElementById('preview-frame');
 
         let isResizing = false;
 
-        // --- Resizing Functionality ---
-        handle.addEventListener('mousedown', (e) => {
-            isResizing = true;
-            handle.classList.add('active');
-            document.body.style.cursor = 'col-resize';
-            // Disable pointer events on iframe so it doesn't "steal" the mousemove
-            preview.style.pointerEvents = 'none';
-        });
+        handle.addEventListener('mousedown', () => isResizing = true);
+        document.addEventListener('mouseup', () => isResizing = false);
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
-
-            const container = document.querySelector('.studio-viewport');
-            const containerRect = container.getBoundingClientRect();
-            
-            // Calculate width relative to the workspace start
-            let newWidth = e.clientX - containerRect.left;
-
-            // Constrain limits (min 200px, max viewport minus 400px for other panels)
-            if (newWidth > 200 && newWidth < (containerRect.width - 400)) {
+            const containerLeft = document.querySelector('.studio-viewport').getBoundingClientRect().left;
+            let newWidth = e.clientX - containerLeft;
+            if (newWidth > 200 && newWidth < 900) {
                 editor.style.flex = `0 0 ${newWidth}px`;
             }
         });
 
-        document.addEventListener('mouseup', () => {
-            isResizing = false;
-            handle.classList.remove('active');
-            document.body.style.cursor = 'default';
-            preview.style.pointerEvents = 'all';
-        });
-
-        // --- Live Preview Engine ---
         function updatePreview() {
-            const content = codeInput.innerText;
             const doc = preview.contentDocument || preview.contentWindow.document;
             doc.open();
-            doc.write(content);
+            doc.write(codeInput.innerText);
             doc.close();
         }
 
-        // Run on every keystroke/paste
         codeInput.addEventListener('input', updatePreview);
-        
-        // Initial run
         window.onload = updatePreview;
-
-        // --- UI View Toggle Logic ---
-        function updateView(view) {
-            const buttons = document.querySelectorAll('.toggle-btn');
-            buttons.forEach(btn => btn.classList.remove('active'));
-            
-            // Find the clicked button and activate it
-            if(view === 'source') buttons[0].classList.add('active');
-            else buttons[1].classList.add('active');
-
-            // Visual feedback: Highlight the active pane
-            if(view === 'visual') {
-                visual.style.borderColor = 'var(--amber)';
-                editor.style.borderColor = 'var(--border)';
-            } else {
-                editor.style.borderColor = 'var(--amber)';
-                visual.style.borderColor = 'var(--border)';
-            }
-        }
     </script>
 </body>
 </html>
