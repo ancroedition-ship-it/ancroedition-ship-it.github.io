@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | FINAL MASTER</title>
+    <title>NEUROSENTIX | MASTER FINAL</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
@@ -13,17 +13,19 @@
             --edge-color: #27272a; 
         }
         * { box-sizing: border-box; }
+        
         body {
             margin: 0; padding: 0; background: var(--bg-main); color: #e4e4e7;
-            font-family: 'Inter', sans-serif; width: 1366px; height: 650px;
+            font-family: 'Inter', sans-serif; width: 100vw; height: 100vh;
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* --- HEADER & MULTI-SCROLL DOCK --- */
+        /* --- FIXED HEADER (Z-LOCKED) --- */
         .ui-header { 
             height: 75px; display: flex; align-items: center; 
-            padding: 0 30px; border-bottom: 1px solid var(--edge-color); background: #09090b;
-            z-index: 100; gap: 20px; flex-shrink: 0;
+            padding: 0 30px; border-bottom: 1px solid var(--edge-color); 
+            background: #09090b; z-index: 9999; flex-shrink: 0; gap: 20px;
+            position: relative;
         }
 
         .dock-wrapper {
@@ -37,14 +39,9 @@
             overflow-x: scroll; height: 55px; padding: 0 15px;
             scroll-behavior: smooth;
         }
-
-        /* SCROLLBAR FIX */
-        #header-dock-track::-webkit-scrollbar { height: 4px; }
-        #header-dock-track::-webkit-scrollbar-track { background: transparent; }
-        #header-dock-track::-webkit-scrollbar-thumb { 
-            background: #1c1c1e; border-radius: 10px; 
-        }
-        #header-dock-track:hover::-webkit-scrollbar-thumb { background: #3f3f46; }
+        #header-dock-track::-webkit-scrollbar { height: 3px; }
+        #header-dock-track::-webkit-scrollbar-thumb { background: #1c1c1e; border-radius: 10px; }
+        #header-dock-track:hover::-webkit-scrollbar-thumb { background: var(--accent); }
 
         .header-slot {
             min-width: 110px; height: 38px; border: 1px dashed #27272a; border-radius: 8px;
@@ -56,32 +53,58 @@
         .header-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
 
         /* --- WORKSPACE --- */
-        .split-container { display: flex; flex: 1; padding: 10px; position: relative; background: var(--bg-main); }
-        .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; }
-        #leftPane { width: 668px; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1); }
+        .split-container { 
+            display: flex; flex: 1; padding: 10px; position: relative; 
+            background: var(--bg-main); height: calc(100vh - 75px); overflow: hidden;
+        }
+        
+        .pane { 
+            display: flex; flex-direction: column; background: var(--bg-pane); 
+            border: 1px solid var(--edge-color); border-radius: 12px; 
+            overflow: hidden; position: relative;
+        }
+        
+        #leftPane { width: 50%; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1); }
         #rightPane { flex: 1; border-left: none; }
 
-        .label-bar { height: 48px; background: #0d0d0f; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: grab; }
+        .label-bar { 
+            height: 48px; background: #0d0d0f; display: flex; 
+            align-items: center; justify-content: space-between; 
+            padding: 0 15px; border-bottom: 1px solid var(--edge-color); 
+            cursor: grab; flex-shrink: 0;
+        }
         .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
 
-        #editor-scroll { flex: 1; padding: 20px; display: flex; overflow: hidden; }
-        #editor { flex: 1; background: transparent; border: none; outline: none; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #facc15; white-space: pre-wrap; overflow-y: auto; }
-        #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
+        #editor-scroll { flex: 1; padding: 0; display: flex; overflow: hidden; position: relative; }
+        #editor { 
+            flex: 1; background: transparent; border: none; outline: none; 
+            font-family: 'JetBrains Mono', monospace; font-size: 14px; 
+            color: #facc15; white-space: pre-wrap; overflow-y: auto; 
+            padding: 20px; position: relative; z-index: 1;
+        }
+        #live-preview { flex: 1; width: 100%; border: none; background: #161618; }
         
-        /* CLICK-SNAP DIVIDER (DRAG DISABLED) */
-        .snap-divider { width: 16px; cursor: pointer; display: flex; justify-content: center; z-index: 50; margin: 0 -8px; }
-        .divider-line { width: 2px; background: #1a1a1c; transition: 0.2s; }
-        .snap-divider:hover .divider-line { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+        /* --- REPAIRED DIVIDER --- */
+        .snap-divider { 
+            width: 20px; cursor: col-resize; display: flex; 
+            justify-content: center; z-index: 100; margin: 0 -10px; 
+            background: transparent;
+        }
+        .divider-line { 
+            width: 2px; background: #1a1a1c; transition: 0.2s; 
+            height: 100%; pointer-events: none;
+        }
+        .snap-divider:hover .divider-line { 
+            background: var(--accent); box-shadow: 0 0 15px var(--accent); 
+        }
 
-        /* DOCKING STATE STYLES */
+        /* DOCKING STATES */
         .header-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; }
         .header-slot .label-bar { height: 100%; border: none; background: transparent; justify-content: center; }
-        .header-slot .label-text { color: var(--accent); font-size: 8px; letter-spacing: 0.05em; }
+        .header-slot .label-text { color: var(--accent); font-size: 8px; }
         .header-slot #editor-scroll, .header-slot iframe, .header-slot .controls-wrap { display: none; }
 
-        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; transition: 0.2s; }
-        .btn-action:hover { border-color: var(--accent); }
-        
+        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
         .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
     </style>
@@ -131,40 +154,68 @@
         const editor = document.getElementById('editor');
         const preview = document.getElementById('live-preview');
         const leftPane = document.getElementById('leftPane');
-        const rightPane = document.getElementById('rightPane');
         const workspace = document.getElementById('workspace');
         const snapBar = document.getElementById('snap-bar');
         const dockTrack = document.getElementById('header-dock-track');
 
+        let isResizing = false;
+
         const update = () => {
             const doc = preview.contentDocument || preview.contentWindow.document;
             doc.open();
-            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;line-height:1.6;}</style>${editor.innerText || ""}`);
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;line-height:1.6;} * {word-break: break-all;}</style>${editor.innerText || ""}`);
             doc.close();
         };
         editor.addEventListener('input', update);
 
-        // --- HORIZONTAL WHEEL SCROLL ---
+        // --- DOCK SCROLL ---
         dockTrack.addEventListener('wheel', (e) => {
             if (e.deltaY !== 0) { e.preventDefault(); dockTrack.scrollLeft += e.deltaY; }
         });
 
-        // --- CLICK TO SNAP (MIDDLE) ---
-        workspace.onmousedown = (e) => {
-            if (e.target === workspace || e.target === snapBar || e.target.classList.contains('divider-line')) {
-                let rect = workspace.getBoundingClientRect();
-                let x = e.clientX - rect.left;
-                if (x > 180 && x < rect.width - 180) leftPane.style.width = x + 'px';
+        // --- MIDDLE DRAG LOGIC (FLUID) ---
+        snapBar.onmousedown = (e) => {
+            isResizing = true;
+            leftPane.style.transition = "none";
+            document.body.style.cursor = "col-resize";
+            e.preventDefault();
+        };
+
+        window.onmousemove = (e) => {
+            if (!isResizing) return;
+            let rect = workspace.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            if (x > 180 && x < rect.width - 180) {
+                leftPane.style.width = x + 'px';
             }
         };
 
-        // --- DRAG MECHANICS ---
+        window.onmouseup = () => {
+            if (isResizing) {
+                isResizing = false;
+                leftPane.style.transition = "width 0.3s cubic-bezier(0.19, 1, 0.22, 1)";
+                document.body.style.cursor = "default";
+            }
+        };
+
+        // --- CLICK-TO-SNAP ---
+        workspace.onmousedown = (e) => {
+            if (e.target === workspace) {
+                let rect = workspace.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                if (x > 180 && x < rect.width - 180) {
+                    leftPane.style.width = x + 'px';
+                }
+            }
+        };
+
+        // --- PANE DRAG & DOCK ---
         const setupDrag = (pane, handle) => {
             handle.onmousedown = () => pane.setAttribute('draggable', 'true');
             handle.onmouseup = () => pane.setAttribute('draggable', 'false');
             pane.ondragstart = (e) => {
                 e.dataTransfer.setData('text/plain', pane.id);
-                setTimeout(() => pane.style.opacity = "0.2", 0);
+                setTimeout(() => pane.style.opacity = "0.1", 0);
             };
             pane.ondragend = () => {
                 pane.style.opacity = "1";
@@ -174,20 +225,16 @@
         setupDrag(leftPane, document.getElementById('handle-l'));
         setupDrag(rightPane, document.getElementById('handle-r'));
 
-        // --- DROP INTO SLOTS ---
         document.querySelectorAll('.header-slot').forEach(slot => {
-            slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drag-over'); };
-            slot.ondragleave = () => slot.classList.remove('drag-over');
+            slot.ondragover = (e) => e.preventDefault();
             slot.ondrop = (e) => {
                 e.preventDefault();
-                slot.classList.remove('drag-over');
                 const id = e.dataTransfer.getData('text/plain');
                 const el = document.getElementById(id);
                 if (el) { slot.innerHTML = ""; slot.appendChild(el); checkMiddle(); }
             };
         });
 
-        // --- DROP INTO WORKSPACE ---
         workspace.ondragover = (e) => e.preventDefault();
         workspace.ondrop = (e) => {
             e.preventDefault();
