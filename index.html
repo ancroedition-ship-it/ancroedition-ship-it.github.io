@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Precision Resize Studio</title>
+    <title>Neurosentix | 20px Hitbox Studio</title>
     
     <style>
         :root {
@@ -72,11 +72,16 @@
             color: var(--amber); border-bottom: 1px solid var(--border); font-weight: bold;
         }
 
-        /* 10px PRECISION DRAGBAR */
+        /* --- 20px WIDE HITBOX --- */
         .drag-bar {
-            width: 10px; cursor: col-resize; display: flex; 
-            justify-content: center; align-items: center;
-            flex-shrink: 0; z-index: 100;
+            width: 20px; /* Doubled Hitbox */
+            cursor: col-resize; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            flex-shrink: 0; 
+            z-index: 100;
+            /* background: rgba(255, 191, 0, 0.05); */ /* Uncomment this to see the 20px zone while testing */
         }
 
         .drag-bar::after {
@@ -85,10 +90,9 @@
             transition: transform 0.2s;
         }
 
-        /* --- THE SHIELD (Critical for iFrames) --- */
         #drag-shield {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 99; display: none; cursor: col-resize;
+            z-index: 999; display: none; cursor: col-resize;
         }
 
         .code-area {
@@ -137,24 +141,20 @@
         let isDragging = false;
         let debounceTimer;
 
-        // 1. REINFORCED DRAG LOGIC
         handle.addEventListener('mousedown', (e) => {
             isDragging = true;
-            shield.style.display = 'block'; // Show shield to "catch" mouse over iframe
+            shield.style.display = 'block';
             document.body.style.userSelect = 'none';
             e.preventDefault();
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
-            
-            // Calculate relative X position
+            // Calculate relative X minus the 32px side padding
             let newX = e.clientX - containerRect.left - 32;
 
-            // Hard Boundaries (200px to 1100px)
-            if (newX > 200 && newX < 1100) {
+            if (newX > 150 && newX < 1150) {
                 middleStack.style.flex = `0 0 ${newX}px`;
                 middleStack.style.width = `${newX}px`;
             }
@@ -163,12 +163,11 @@
         document.addEventListener('mouseup', () => {
             if (isDragging) {
                 isDragging = false;
-                shield.style.display = 'none'; // Hide shield
+                shield.style.display = 'none';
                 document.body.style.userSelect = 'auto';
             }
         });
 
-        // 2. PREVIEW ENGINE
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -184,7 +183,6 @@
         codeInput.addEventListener('input', updatePreview);
         window.onload = () => { updatePreview(); codeInput.focus(); };
 
-        // Plain text paste
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
