@@ -26,6 +26,7 @@
             padding: 0 30px; border-bottom: 1px solid var(--edge-color); 
             background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(15px); z-index: 100;
         }
+        .ui-header.drag-over { background: rgba(245, 158, 11, 0.15); border-bottom: 2px dashed var(--accent); }
         
         .logo-container { display: flex; align-items: center; gap: 15px; }
         .ns-svg { height: 32px; width: auto; overflow: visible; }
@@ -40,55 +41,32 @@
         @keyframes draw { to { stroke-dashoffset: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; r: 3; } 50% { opacity: 1; r: 5; } }
 
-        .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; }
+        .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; transition: opacity 0.2s; }
         .pane { display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--edge-color); background: var(--bg-pane); box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
         #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         #rightPane { flex: 1; display: flex; flex-direction: column; position: relative; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
         
+        /* DRAG HANDLE STYLE */
         .label-bar { 
             height: 48px; background: #09090b; display: flex; align-items: center; 
             justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); flex-shrink: 0; 
         }
-        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; }
+        #dragHandle { cursor: grab; }
+        #dragHandle:active { cursor: grabbing; }
+
+        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
         
-        /* UPDATED WRAPPER: Removed right padding to push scrollbar to the edge */
-        #textarea-wrapper { 
-            flex: 1; 
-            padding: 20px 0 20px 20px; 
-            display: flex; 
-            overflow: hidden; 
-        }
-        
+        #textarea-wrapper { flex: 1; padding: 20px 0 20px 20px; display: flex; overflow: hidden; }
         #editor { 
-            flex: 1; 
-            background: transparent; 
-            border: none; 
-            outline: none; 
-            font-family: var(--shared-font); 
-            font-size: var(--shared-font-size); 
-            line-height: var(--shared-line-height); 
-            color: #facc15 !important; 
-            font-weight: 500; 
-            white-space: pre-wrap; 
-            overflow-y: auto; 
-            word-break: break-all;
-            padding-right: 12px; /* Slight gap for text clarity */
+            flex: 1; background: transparent; border: none; outline: none; 
+            font-family: var(--shared-font); font-size: var(--shared-font-size); 
+            line-height: var(--shared-line-height); color: #facc15 !important; 
+            font-weight: 500; white-space: pre-wrap; overflow-y: auto; 
+            word-break: break-all; padding-right: 12px;
         }
 
-        /* CUSTOM SCROLLBAR: Sleek and aligned with resizer */
-        #editor::-webkit-scrollbar {
-            width: 6px;
-        }
-        #editor::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        #editor::-webkit-scrollbar-thumb {
-            background: #27272a;
-            border-radius: 10px;
-        }
-        #editor::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
+        #editor::-webkit-scrollbar { width: 6px; }
+        #editor::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
         
         #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
         #drag-overlay { display: none; position: absolute; inset: 0; z-index: 40; background: transparent; }
@@ -100,16 +78,22 @@
         }
         .btn-action:hover { border-color: #f59e0b; background: #27272a; }
         .btn-clear { color: #ef4444; border-color: #450a0a; margin-right: 5px; }
-        .btn-clear:hover { background: #450a0a; border-color: #ef4444; }
 
         .resizer { width: 7px; cursor: col-resize; position: relative; z-index: 50; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); }
-        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; transition: 0.3s; }
-        .resizer:hover::after, .resizer.dragging::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); height: 80px; }
+        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; }
+
+        /* Final Docked State */
+        .ui-header .split-container {
+            height: 300px !important;
+            width: 500px !important;
+            margin-left: 20px;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
 
-    <header class="ui-header">
+    <header class="ui-header" id="headerDropZone">
         <div class="logo-container">
             <svg class="ns-svg" viewBox="0 0 100 40">
                 <path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" />
@@ -123,7 +107,7 @@
 
     <div class="split-container" id="container">
         <div class="pane" id="leftPane">
-            <div class="label-bar">
+            <div class="label-bar" id="dragHandle">
                 <span class="label-text">Source Code</span>
                 <div class="flex">
                     <button id="clearBtn" class="btn-action btn-clear">CLEAR</button>
@@ -145,12 +129,12 @@
     <script>
         const editor = document.getElementById('editor');
         const previewFrame = document.getElementById('live-preview');
-        const copyBtn = document.getElementById('copyBtn');
-        const clearBtn = document.getElementById('clearBtn');
+        const container = document.getElementById('container');
+        const dragHandle = document.getElementById('dragHandle');
+        const headerZone = document.getElementById('headerDropZone');
         const dragMe = document.getElementById('dragMe');
         const leftPane = document.getElementById('leftPane');
-        const dragOverlay = document.getElementById('drag-overlay');
-        
+
         const updatePreview = () => {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
             doc.open();
@@ -160,28 +144,55 @@
 
         editor.addEventListener('input', updatePreview);
 
-        clearBtn.addEventListener('click', () => { 
-            editor.innerText = ""; 
-            updatePreview(); 
+        // DRAG HANDLE LOGIC
+        // Only make the container draggable when hovering the header
+        dragHandle.addEventListener('mouseenter', () => container.setAttribute('draggable', 'true'));
+        dragHandle.addEventListener('mouseleave', () => {
+            // Prevent leaving draggable true if we are currently dragging
+            if (!isDraggingContainer) container.setAttribute('draggable', 'false');
         });
 
-        copyBtn.addEventListener('click', () => {
-            navigator.clipboard.writeText(editor.innerText);
-            const originalText = "COPY CODE";
-            copyBtn.innerText = "COPIED!";
-            setTimeout(() => copyBtn.innerText = originalText, 2000);
+        let isDraggingContainer = false;
+        container.addEventListener('dragstart', (e) => {
+            isDraggingContainer = true;
+            e.dataTransfer.setData('text/plain', 'editor-box');
+            container.style.opacity = "0.4";
         });
 
-        let isDragging = false;
-        dragMe.addEventListener('mousedown', () => { isDragging = true; dragOverlay.style.display = "block"; dragMe.classList.add('dragging'); document.body.style.cursor = 'col-resize'; });
+        container.addEventListener('dragend', () => {
+            isDraggingContainer = false;
+            container.setAttribute('draggable', 'false');
+            container.style.opacity = "1";
+        });
+
+        // DROP ZONE LOGIC
+        headerZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            headerZone.classList.add('drag-over');
+        });
+
+        headerZone.addEventListener('dragleave', () => headerZone.classList.remove('drag-over'));
+
+        headerZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            headerZone.classList.remove('drag-over');
+            headerZone.appendChild(container);
+            // Once in header, disable further dragging for this demo
+            container.setAttribute('draggable', 'false');
+            dragHandle.style.cursor = 'default';
+        });
+
+        // RESIZER LOGIC
+        let isResizing = false;
+        dragMe.addEventListener('mousedown', () => { isResizing = true; document.getElementById('drag-overlay').style.display = "block"; });
         document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const containerBox = document.getElementById('container').getBoundingClientRect();
-            let newWidth = e.clientX - containerBox.left - 3.5; 
-            if (newWidth > 300 && newWidth < 1000) leftPane.style.width = newWidth + 'px';
+            if (!isResizing) return;
+            const containerBox = container.getBoundingClientRect();
+            let newWidth = e.clientX - containerBox.left; 
+            if (newWidth > 200 && newWidth < 1100) leftPane.style.width = newWidth + 'px';
         });
-        document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; dragOverlay.style.display = "none"; dragMe.classList.remove('dragging'); document.body.style.cursor = 'default'; } });
-        
+        document.addEventListener('mouseup', () => { isResizing = false; document.getElementById('drag-overlay').style.display = "none"; });
+
         updatePreview();
     </script>
 </body>
