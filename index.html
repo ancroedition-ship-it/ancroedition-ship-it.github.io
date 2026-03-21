@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | MASTER BUILD</title>
+    <title>NEUROSENTIX | HEADER DOCK</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
@@ -16,43 +16,168 @@
         body {
             margin: 0; padding: 0; background: var(--bg-main); color: #e4e4e7;
             font-family: 'Inter', sans-serif; width: 1366px; height: 650px;
-            overflow: hidden; display: flex; flex-direction: column; position: relative;
+            overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* --- FLOATING DOCK (OVERLAY) --- */
-        #floating-sidebar {
-            position: absolute; left: 15px; top: 90px; bottom: 20px;
-            width: 45px; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(15px);
-            border: 1px solid var(--edge-color); border-radius: 25px;
-            display: flex; flex-direction: column; align-items: center; padding: 20px 0;
-            z-index: 1000; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;
-        }
-        #floating-sidebar:hover { width: 180px; align-items: flex-start; padding: 20px; border-color: #3f3f46; }
-        #floating-sidebar.active-drag { border-color: var(--accent); box-shadow: 0 0 20px rgba(245, 158, 11, 0.1); }
-        
-        .sidebar-tag { color: #3f3f46; font-size: 10px; margin-bottom: 25px; font-weight: 900; letter-spacing: 0.1em; transition: 0.2s; }
-        #floating-sidebar:hover .sidebar-tag { color: var(--accent); }
-
-        .slot-row {
-            width: 140px; height: 40px; border: 1px dashed #27272a; border-radius: 8px;
-            margin-bottom: 12px; display: flex; align-items: center; padding: 0 12px;
-            font-size: 9px; color: #3f3f46; font-weight: 800; opacity: 0; transition: 0.2s; flex-shrink: 0;
-        }
-        #floating-sidebar:hover .slot-row { opacity: 1; }
-        .slot-row.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); color: var(--accent); }
-
-        /* --- HEADER --- */
+        /* --- HEADER WITH INTEGRATED DOCK --- */
         .ui-header { 
             height: 70px; display: flex; align-items: center; justify-content: space-between;
-            padding: 0 30px; border-bottom: 1px solid var(--edge-color); z-index: 100;
+            padding: 0 30px; border-bottom: 1px solid var(--edge-color); background: #09090b;
+            z-index: 100;
         }
-        .ns-svg { height: 32px; width: auto; }
-        .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
-        @keyframes draw { to { stroke-dashoffset: 0; } }
 
-        /* --- STABLE MIDDLE WORKSPACE --- */
-        .split-container { display: flex; flex: 1; padding: 10px; position: relative; }
+        #header-dock {
+            display: flex; gap: 10px; align-items: center; margin-left: 40px; flex: 1;
+        }
+        .header-slot {
+            width: 120px; height: 34px; border: 1px dashed #27272a; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 8px; color: #3f3f46; font-weight: 900; letter-spacing: 0.1em;
+            transition: 0.2s; position: relative;
+        }
+        .header-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
+
+        /* --- MIDDLE WORKSPACE (STABLE) --- */
+        .split-container { display: flex; flex: 1; padding: 10px; position: relative; background: var(--bg-main); }
         .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; }
         
-        #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        #rightPane { flex: 1; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none
+        #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; transition: width 0.2s cubic-bezier(0.19, 1, 0.22, 1); }
+        #rightPane { flex: 1; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
+
+        .label-bar { height: 48px; background: #0d0d0f; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: grab; }
+        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
+
+        #editor-scroll { flex: 1; padding: 20px; display: flex; overflow: hidden; }
+        #editor { flex: 1; background: transparent; border: none; outline: none; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #facc15; white-space: pre-wrap; overflow-y: auto; }
+        #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
+        
+        /* CLICK-SNAP DIVIDER */
+        .snap-divider { 
+            width: 14px; cursor: pointer; display: flex; justify-content: center; z-index: 50; margin: 0 -7px;
+        }
+        .divider-line { width: 2px; background: #1a1a1c; transition: 0.2s; }
+        .snap-divider:hover .divider-line { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+        /* DOCKING STYLE OVERRIDES */
+        .header-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; border-radius: 5px; }
+        .header-slot .label-bar { height: 100%; border: none; background: transparent; justify-content: center; padding: 0; }
+        .header-slot .label-text { color: var(--accent); font-size: 8px; letter-spacing: 0; }
+        .header-slot #editor-scroll, .header-slot iframe, .header-slot .controls-wrap { display: none; }
+
+        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
+        .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+    </style>
+</head>
+<body>
+
+    <header class="ui-header">
+        <div class="flex items-center">
+            <svg style="height:28px" viewBox="0 0 100 40"><path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" /></svg>
+            <h1 style="font-size: 14px; font-weight: 900; letter-spacing: 0.3em; color: #52525b; margin-left: 15px;">NEUROSENTIX</h1>
+        </div>
+
+        <div id="header-dock">
+            <div class="header-slot">SLOT_A</div>
+            <div class="header-slot">SLOT_B</div>
+            <div class="header-slot">SLOT_C</div>
+        </div>
+
+        <div id="status" style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%; box-shadow: 0 0 8px #22c55e;"></div>
+    </header>
+
+    <div class="split-container" id="workspace">
+        <div class="pane" id="leftPane">
+            <div class="label-bar" id="handle-l">
+                <span class="label-text">Source</span>
+                <div class="controls-wrap flex gap-2">
+                    <button id="clearBtn" class="btn-action">CLEAR</button>
+                    <button id="copyBtn" class="btn-action">COPY</button>
+                </div>
+            </div>
+            <div id="editor-scroll"><div id="editor" contenteditable="true" spellcheck="false"></div></div>
+        </div>
+
+        <div class="snap-divider" id="snap-bar"><div class="divider-line"></div></div>
+
+        <div class="pane" id="rightPane">
+            <div class="label-bar" id="handle-r"><span class="label-text">Preview</span></div>
+            <iframe id="live-preview"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const preview = document.getElementById('live-preview');
+        const leftPane = document.getElementById('leftPane');
+        const rightPane = document.getElementById('rightPane');
+        const workspace = document.getElementById('workspace');
+        const snapBar = document.getElementById('snap-bar');
+
+        const update = () => {
+            const doc = preview.contentDocument || preview.contentWindow.document;
+            doc.open();
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;}</style>${editor.innerText || ""}`);
+            doc.close();
+        };
+        editor.addEventListener('input', update);
+
+        // --- CLICK TO SNAP (MIDDLE) ---
+        workspace.onmousedown = (e) => {
+            if (e.target === workspace || e.target === snapBar || e.target.classList.contains('divider-line')) {
+                let rect = workspace.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                if (x > 150 && x < rect.width - 150) leftPane.style.width = x + 'px';
+            }
+        };
+
+        // --- DRAG TO HEADER DOCK ---
+        const setupDrag = (pane, handle) => {
+            handle.onmousedown = () => pane.setAttribute('draggable', 'true');
+            handle.onmouseup = () => pane.setAttribute('draggable', 'false');
+            pane.ondragstart = (e) => {
+                e.dataTransfer.setData('text/plain', pane.id);
+                setTimeout(() => pane.style.opacity = "0.2", 0);
+            };
+            pane.ondragend = () => {
+                pane.style.opacity = "1";
+                pane.setAttribute('draggable', 'false');
+            };
+        };
+        setupDrag(leftPane, document.getElementById('handle-l'));
+        setupDrag(rightPane, document.getElementById('handle-r'));
+
+        document.querySelectorAll('.header-slot').forEach(slot => {
+            slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drag-over'); };
+            slot.ondragleave = () => slot.classList.remove('drag-over');
+            slot.ondrop = (e) => {
+                e.preventDefault();
+                slot.classList.remove('drag-over');
+                const id = e.dataTransfer.getData('text/plain');
+                const el = document.getElementById(id);
+                if (el) { slot.innerHTML = ""; slot.appendChild(el); checkMiddle(); }
+            };
+        });
+
+        workspace.ondragover = (e) => e.preventDefault();
+        workspace.ondrop = (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData('text/plain');
+            const el = document.getElementById(id);
+            if (el) {
+                if (id === 'leftPane') workspace.insertBefore(el, snapBar);
+                else workspace.appendChild(el);
+                checkMiddle();
+            }
+        };
+
+        function checkMiddle() {
+            snapBar.style.display = (workspace.querySelectorAll('.pane').length === 2) ? 'flex' : 'none';
+        }
+
+        document.getElementById('copyBtn').onclick = () => navigator.clipboard.writeText(editor.innerText);
+        document.getElementById('clearBtn').onclick = () => { editor.innerText = ""; update(); };
+        update();
+    </script>
+</body>
+</html>
