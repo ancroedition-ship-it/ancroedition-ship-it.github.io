@@ -16,12 +16,6 @@
             --edge-color: #27272a; 
         }
         * { box-sizing: border-box; }
-        
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: #0c0c0e; }
-        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 0; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
         body {
             margin: 0; padding: 0; background: var(--bg-main); color: #e4e4e7;
             font-family: 'Inter', sans-serif; width: 1366px; height: 650px;
@@ -46,11 +40,10 @@
         @keyframes draw { to { stroke-dashoffset: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; r: 3; } 50% { opacity: 1; r: 5; } }
 
-        .split-container { display: flex; flex: 1; overflow: hidden; padding: 0; gap: 0; position: relative; }
-        .pane { display: flex; flex-direction: column; border-bottom: 1px solid var(--edge-color); background: var(--bg-pane); overflow: hidden; }
-        
-        #leftPane { width: 683px; min-width: 400px; flex-shrink: 0; border-right: none; }
-        #rightPane { flex: 1; min-width: 320px; display: flex; flex-direction: column; position: relative; border-left: none; }
+        .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; }
+        .pane { display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--edge-color); background: var(--bg-pane); box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
+        #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
+        #rightPane { flex: 1; display: flex; flex-direction: column; position: relative; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
         
         .label-bar { 
             height: 48px; background: #09090b; display: flex; align-items: center; 
@@ -58,38 +51,39 @@
         }
         .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; }
         
-        #textarea-wrapper { flex: 1; padding: 0; display: flex; overflow: hidden; background: #0c0c0e; }
+        #textarea-wrapper { flex: 1; padding: 20px; display: flex; overflow: hidden; }
         
+        /* UPDATED EDITOR STYLE FOR CONTENTEDITABLE DIV */
         #editor { 
-            flex: 1; width: 100%; outline: none; border: none;
-            font-family: var(--shared-font); font-size: var(--shared-font-size); 
-            line-height: var(--shared-line-height); color: #facc15 !important; 
-            font-weight: 500; cursor: text;
-            padding: 20px 0px 20px 60px; 
-            white-space: pre-wrap; word-break: break-all; overflow-wrap: break-word; 
-            overflow-y: auto;
+            flex: 1; 
+            background: transparent; 
+            border: none; 
+            outline: none; 
+            font-family: var(--shared-font); 
+            font-size: var(--shared-font-size); 
+            line-height: var(--shared-line-height); 
+            color: #facc15 !important; 
+            font-weight: 500; 
+            white-space: pre-wrap; 
+            overflow-y: auto; 
+            word-break: break-all;
         }
-
+        
         #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
-        #drag-overlay { display: none; position: absolute; inset: 0; z-index: 500; background: transparent; }
-
-        .resizer { 
-            width: 8px; cursor: col-resize; position: relative; z-index: 1000; 
-            background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color);
-        }
-        .resizer::after { 
-            content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); 
-            width: 2px; height: 30px; background: #333; border-radius: 2px;
-        }
+        #drag-overlay { display: none; position: absolute; inset: 0; z-index: 40; background: transparent; }
 
         .btn-action { 
             background: #1c1c1e; color: #f59e0b; font-size: 9px; font-weight: 800; 
             padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; 
             cursor: pointer; transition: 0.2s; text-transform: uppercase;
-            margin-left: 5px;
         }
         .btn-action:hover { border-color: #f59e0b; background: #27272a; }
         .btn-clear { color: #ef4444; border-color: #450a0a; margin-right: 5px; }
+        .btn-clear:hover { background: #450a0a; border-color: #ef4444; }
+
+        .resizer { width: 7px; cursor: col-resize; position: relative; z-index: 50; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); }
+        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; transition: 0.3s; }
+        .resizer:hover::after, .resizer.dragging::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); height: 80px; }
     </style>
 </head>
 <body>
@@ -119,14 +113,10 @@
                 <div id="editor" contenteditable="true" spellcheck="false"></div>
             </div>
         </div>
-        
         <div class="resizer" id="dragMe"></div>
-        
         <div class="pane" id="rightPane">
             <div id="drag-overlay"></div>
-            <div class="label-bar">
-                <span class="label-text">Live Preview</span>
-            </div>
+            <div class="label-bar"><span class="label-text">Live Preview</span></div>
             <iframe id="live-preview"></iframe>
         </div>
     </div>
@@ -139,81 +129,42 @@
         const dragMe = document.getElementById('dragMe');
         const leftPane = document.getElementById('leftPane');
         const dragOverlay = document.getElementById('drag-overlay');
-        const container = document.getElementById('container');
         
         const updatePreview = () => {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
-            if (!doc) return;
             doc.open();
-            doc.write(`
-                <style>
-                    ::-webkit-scrollbar { width: 4px; }
-                    ::-webkit-scrollbar-track { background: #161618; }
-                    ::-webkit-scrollbar-thumb { background: #3f3f46; }
-                    body {
-                        background: #161618;
-                        color: #f59e0b;
-                        font-family: 'JetBrains Mono', monospace;
-                        font-size: 14px;
-                        line-height: 1.6;
-                        margin: 0;
-                        padding: 20px 40px;
-                        word-break: break-all;
-                        overflow-wrap: break-word;
-                        overflow-x: hidden;
-                    }
-                </style>
-                ${editor.innerText || " "}
-            `);
+            // UPDATED TO USE innerText
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;margin:0;padding:20px;overflow-x:hidden;word-break:break-all;overflow-wrap:break-word;}</style>${editor.innerText || " "}`);
             doc.close();
         };
 
+        // Event listener works the same for contenteditable
         editor.addEventListener('input', updatePreview);
-        clearBtn.addEventListener('click', () => { editor.innerText = ""; updatePreview(); });
+
+        // UPDATED TO USE innerText
+        clearBtn.addEventListener('click', () => { 
+            editor.innerText = ""; 
+            updatePreview(); 
+        });
+
+        // UPDATED TO USE innerText
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(editor.innerText);
+            const originalText = "COPY CODE";
             copyBtn.innerText = "COPIED!";
-            setTimeout(() => copyBtn.innerText = "COPY CODE", 2000);
+            setTimeout(() => copyBtn.innerText = originalText, 2000);
         });
 
-        // Optimized Smooth Resize Logic
         let isDragging = false;
-        let animationFrameId = null;
-
-        dragMe.addEventListener('mousedown', (e) => { 
-            isDragging = true; 
-            dragOverlay.style.display = "block"; 
-            previewFrame.style.pointerEvents = "none";
-            document.body.style.cursor = 'col-resize';
-            e.preventDefault(); 
-        });
-
+        dragMe.addEventListener('mousedown', () => { isDragging = true; dragOverlay.style.display = "block"; dragMe.classList.add('dragging'); document.body.style.cursor = 'col-resize'; });
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            if (animationFrameId) cancelAnimationFrame(animationFrameId);
-
-            animationFrameId = requestAnimationFrame(() => {
-                const containerBox = container.getBoundingClientRect();
-                const minWidth = 400; 
-                let newWidth = e.clientX - containerBox.left; 
-                
-                if (newWidth < minWidth) newWidth = minWidth;
-                if (newWidth > containerBox.width - 320) newWidth = containerBox.width - 320;
-                
-                leftPane.style.width = newWidth + 'px';
-            });
+            const containerBox = document.getElementById('container').getBoundingClientRect();
+            let newWidth = e.clientX - containerBox.left - 3.5; 
+            if (newWidth > 300 && newWidth < 1000) leftPane.style.width = newWidth + 'px';
         });
-
-        document.addEventListener('mouseup', () => { 
-            if (isDragging) { 
-                isDragging = false; 
-                if (animationFrameId) cancelAnimationFrame(animationFrameId);
-                dragOverlay.style.display = "none"; 
-                previewFrame.style.pointerEvents = "auto";
-                document.body.style.cursor = 'default'; 
-            } 
-        });
-
+        document.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; dragOverlay.style.display = "none"; dragMe.classList.remove('dragging'); document.body.style.cursor = 'default'; } });
+        
         updatePreview();
     </script>
 </body>
