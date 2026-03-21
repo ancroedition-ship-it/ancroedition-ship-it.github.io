@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix Core Studio | Live Engine</title>
+    <title>Neurosentix | Synced Alignment</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
@@ -84,6 +84,7 @@
             font-size: 13px; color: #cbd5e1; overflow-y: auto;
             white-space: pre-wrap; word-break: break-all;
             outline: none; line-height: 1.6;
+            scrollbar-width: thin; scrollbar-color: var(--border) transparent;
         }
 
         .output-frame { width: 100%; height: 100%; border: none; }
@@ -94,7 +95,7 @@
     <div class="studio-container">
         <header class="studio-header">
             <div class="logo">NEUROSENTIX</div>
-            <div style="font-size: 10px; color: var(--text-dim); letter-spacing: 1px; font-weight: 600;">CORE STUDIO v1.8</div>
+            <div style="font-size: 10px; color: var(--text-dim); letter-spacing: 1px; font-weight: 600;">CORE SYNC v1.9</div>
         </header>
 
         <main class="studio-viewport">
@@ -123,14 +124,14 @@
 
         let isResizing = false;
 
-        // Plain text paste only
+        // 1. Paste Interceptor
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
 
-        // Resize logic
+        // 2. Resize Logic
         handle.addEventListener('mousedown', () => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
@@ -152,35 +153,34 @@
             }
         });
 
-        // --- THE PREVIEW ENGINE ---
+        // 3. Sync Scroll Logic
+        codeInput.addEventListener('scroll', () => {
+            const editorScrollTop = codeInput.scrollTop;
+            const editorScrollHeight = codeInput.scrollHeight - codeInput.clientHeight;
+            const scrollPercentage = editorScrollTop / editorScrollHeight;
+
+            const previewDoc = preview.contentDocument || preview.contentWindow.document;
+            const previewScrollHeight = previewDoc.documentElement.scrollHeight - preview.clientHeight;
+
+            preview.contentWindow.scrollTo(0, scrollPercentage * previewScrollHeight);
+        });
+
+        // 4. Preview Engine
         function updatePreview() {
             const content = codeInput.innerText;
             const doc = preview.contentDocument || preview.contentWindow.document;
-
-            // Injected styles to ensure the preview stays within the pane
-            const internalStyles = `
+            const shield = `
                 <style>
-                    body { 
-                        margin: 0; padding: 20px; 
-                        font-family: 'Inter', sans-serif; 
-                        word-wrap: break-word; 
-                        overflow-wrap: break-word; 
-                        max-width: 100vw;
-                        overflow-x: hidden;
-                    }
+                    html, body { margin: 0; padding: 20px; width: 100%; min-height: 100vh; 
+                    word-wrap: break-word; overflow-wrap: break-word; font-family: sans-serif; }
                     * { box-sizing: border-box; }
-                </style>
-            `;
-
+                </style>`;
             doc.open();
-            doc.write(internalStyles + content);
+            doc.write(shield + content);
             doc.close();
         }
 
-        // Run preview on every keystroke
         codeInput.addEventListener('input', updatePreview);
-        
-        // Initial setup
         window.onload = updatePreview;
     </script>
 </body>
