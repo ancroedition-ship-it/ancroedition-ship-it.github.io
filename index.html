@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix Core Studio | Clean Build</title>
+    <title>Neurosentix Core Studio | Expanded Editor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
@@ -50,9 +50,12 @@
             overflow: hidden;
         }
 
+        /* Middle stack now only contains the editor */
         .middle-stack {
-            display: flex; flex-direction: column;
-            flex: 0 0 550px; gap: 12px; height: 100%;
+            display: flex;
+            flex-direction: column;
+            flex: 0 0 600px; /* Adjusted default width */
+            height: 100%;
         }
 
         .pane {
@@ -60,8 +63,7 @@
             border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        .editor-pane { flex: 2.2; }
-        .text-pane-lower { flex: 1; background: #000; }
+        .editor-pane { flex: 1; } /* Takes full height of middle-stack */
         .visual-pane { flex: 1; background: #ffffff; }
 
         .pane-label {
@@ -84,10 +86,6 @@
             flex: 1; padding: 20px; font-family: 'Fira Code', monospace;
             font-size: 13px; color: #cbd5e1; overflow-y: auto;
             white-space: pre; outline: none; line-height: 1.6;
-        }
-
-        .static-content {
-            flex: 1; padding: 15px; font-size: 12px; color: var(--text-dim); line-height: 1.8;
         }
 
         .output-frame { width: 100%; height: 100%; border: none; }
@@ -113,7 +111,7 @@
                 <button class="toggle-btn active">Source</button>
                 <button class="toggle-btn">Visual</button>
             </nav>
-            <div style="font-size: 10px; color: var(--text-dim);">CORE STUDIO v1.4</div>
+            <div style="font-size: 10px; color: var(--text-dim);">CORE STUDIO v1.5</div>
         </header>
 
         <main class="studio-viewport">
@@ -121,27 +119,19 @@
                 <section class="pane editor-pane">
                     <div class="pane-label">Source Editor</div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input">
-<div class="hero">
-  <h1>Neurosentix</h1>
-  <p>Clean Studio Mode Active</p>
+<div class="studio-view">
+  <h1>Neurosentix Core</h1>
+  <p>Expanded Editor Mode Active</p>
 </div>
 
 <style>
-  .hero { text-align: center; padding: 40px; }
-  h1 { color: #ffbf00; font-family: 'Inter'; }
+  body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+  .studio-view { text-align: center; font-family: 'Inter', sans-serif; }
+  h1 { color: #ffbf00; font-size: 2.5rem; margin-bottom: 0; }
+  p { color: #666; letter-spacing: 1px; }
 </style>
                     </div>
                 </section>
-
-                <aside class="pane text-pane-lower">
-                    <div class="pane-label">Global Core</div>
-                    <div class="static-content">
-                        <span style="color: var(--amber)">▸ System Environment</span><br>
-                        &nbsp;&nbsp;Status: Core Online<br>
-                        &nbsp;&nbsp;Width: 1366px | Height: 657px<br>
-                        &nbsp;&nbsp;Engine: Neuro_V4_Stable
-                    </div>
-                </aside>
             </div>
 
             <div class="drag-bar" id="drag-handle"></div>
@@ -161,14 +151,14 @@
 
         let isResizing = false;
 
-        // --- PASTE INTERCEPTOR ---
+        // Plain text paste only
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
 
-        // --- RESIZING LOGIC ---
+        // Resize Logic
         handle.addEventListener('mousedown', () => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
@@ -185,12 +175,13 @@
             if (!isResizing) return;
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
             let newWidth = e.clientX - containerRect.left - 32;
+            
+            // Fixed boundaries constraints
             if (newWidth > 300 && newWidth < 1000) {
                 middleStack.style.flex = `0 0 ${newWidth}px`;
             }
         });
 
-        // --- LIVE PREVIEW ENGINE ---
         function updatePreview() {
             const content = codeInput.innerText;
             const doc = preview.contentDocument || preview.contentWindow.document;
