@@ -51,9 +51,14 @@
         }
         .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; }
         
-        #textarea-wrapper { flex: 1; padding: 20px; display: flex; overflow: hidden; }
+        /* UPDATED WRAPPER: Removed right padding to push scrollbar to the edge */
+        #textarea-wrapper { 
+            flex: 1; 
+            padding: 20px 0 20px 20px; 
+            display: flex; 
+            overflow: hidden; 
+        }
         
-        /* UPDATED EDITOR STYLE FOR CONTENTEDITABLE DIV */
         #editor { 
             flex: 1; 
             background: transparent; 
@@ -67,6 +72,22 @@
             white-space: pre-wrap; 
             overflow-y: auto; 
             word-break: break-all;
+            padding-right: 12px; /* Slight gap for text clarity */
+        }
+
+        /* CUSTOM SCROLLBAR: Sleek and aligned with resizer */
+        #editor::-webkit-scrollbar {
+            width: 6px;
+        }
+        #editor::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #editor::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 10px;
+        }
+        #editor::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
         }
         
         #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
@@ -133,21 +154,17 @@
         const updatePreview = () => {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
             doc.open();
-            // UPDATED TO USE innerText
             doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;margin:0;padding:20px;overflow-x:hidden;word-break:break-all;overflow-wrap:break-word;}</style>${editor.innerText || " "}`);
             doc.close();
         };
 
-        // Event listener works the same for contenteditable
         editor.addEventListener('input', updatePreview);
 
-        // UPDATED TO USE innerText
         clearBtn.addEventListener('click', () => { 
             editor.innerText = ""; 
             updatePreview(); 
         });
 
-        // UPDATED TO USE innerText
         copyBtn.addEventListener('click', () => {
             navigator.clipboard.writeText(editor.innerText);
             const originalText = "COPY CODE";
