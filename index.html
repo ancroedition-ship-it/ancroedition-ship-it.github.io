@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix | Minimal Studio</title>
+    <title>Neurosentix | Universal Core Studio</title>
     
     <style>
         :root {
@@ -28,18 +28,21 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
+        /* Desktop Container */
         .studio-container {
             width: var(--fixed-width); height: var(--fixed-height);
             background-color: var(--bg-dark);
             display: flex; flex-direction: column;
             padding: 0 32px; border: 1px solid var(--border);
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: all 0.3s ease;
         }
 
         .studio-header {
             height: var(--header-h);
             display: flex; align-items: center;
             border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
         }
 
         .logo { font-weight: 900; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); letter-spacing: 2px; }
@@ -60,7 +63,7 @@
             border-radius: 10px; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        .editor-pane { flex: 1; }
+        .editor-pane { flex: 1; position: relative; }
         .visual-pane { flex: 1; background: #ffffff; }
 
         .pane-label {
@@ -70,7 +73,7 @@
             font-weight: bold;
         }
 
-        /* --- Custom Stealth Scrollbar --- */
+        /* --- Stealth Scrollbar (Aligned to Dragbar) --- */
         .code-area::-webkit-scrollbar { width: 4px; }
         .code-area::-webkit-scrollbar-track { background: transparent; }
         .code-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
@@ -87,6 +90,7 @@
 
         .drag-bar {
             width: 20px; cursor: col-resize; display: flex; justify-content: center; align-items: center;
+            flex-shrink: 0;
         }
 
         .drag-bar::after {
@@ -96,6 +100,28 @@
         .drag-bar:hover::after { background: var(--amber); height: 50px; box-shadow: 0 0 12px var(--amber); }
 
         .output-frame { width: 100%; height: 100%; border: none; }
+
+        /* --- Infinix Hot 30 & Mobile Stack (1080x2460 Portrait) --- */
+        @media only screen and (max-width: 1080px) {
+            .studio-container {
+                width: 100vw; height: 100vh; padding: 0 15px; border: none;
+            }
+            .studio-viewport {
+                flex-direction: column; padding: 10px 0;
+            }
+            .middle-stack {
+                flex: 0 0 45% !important; width: 100%;
+            }
+            .drag-bar {
+                width: 100%; height: 30px; cursor: row-resize;
+            }
+            .drag-bar::after {
+                width: 60px; height: 2px;
+            }
+            .visual-pane {
+                flex: 1 !important; width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -131,17 +157,17 @@
         let isResizing = false;
         let debounceTimer;
 
-        // Plain text paste only
+        // 1. Paste Interceptor (Plain Text Only)
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
 
-        // Resize handle
+        // 2. Resize Logic (Desktop Width vs Mobile Height)
         handle.addEventListener('mousedown', () => {
             isResizing = true;
-            document.body.style.cursor = 'col-resize';
+            document.body.style.cursor = window.innerWidth > 1080 ? 'col-resize' : 'row-resize';
             preview.style.pointerEvents = 'none';
         });
 
@@ -154,13 +180,21 @@
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
-            let newWidth = e.clientX - containerRect.left - 32;
-            if (newWidth > 300 && newWidth < 1000) {
-                middleStack.style.flex = `0 0 ${newWidth}px`;
+            
+            if (window.innerWidth > 1080) {
+                let newWidth = e.clientX - containerRect.left - 32;
+                if (newWidth > 200 && newWidth < 1100) {
+                    middleStack.style.flex = `0 0 ${newWidth}px`;
+                }
+            } else {
+                let newHeight = e.clientY - containerRect.top - 64;
+                if (newHeight > 100 && newHeight < (window.innerHeight - 150)) {
+                    middleStack.style.flex = `0 0 ${newHeight}px`;
+                }
             }
         });
 
-        // Sync Scroll
+        // 3. Sync Scroll Alignment
         codeInput.addEventListener('scroll', () => {
             const editorScrollTop = codeInput.scrollTop;
             const editorScrollHeight = codeInput.scrollHeight - codeInput.clientHeight;
@@ -170,17 +204,28 @@
             preview.contentWindow.scrollTo(0, scrollPercentage * previewScrollHeight);
         });
 
-        // Preview Engine
+        // 4. Performance Preview Engine (Debounced)
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const content = codeInput.innerText;
                 const doc = preview.contentDocument || preview.contentWindow.document;
-                const shield = `<style>html,body{margin:0;padding:20px;width:100%;min-height:100vh;word-wrap:break-word;overflow-wrap:break-word;font-family:Arial,sans-serif;}*{box-sizing:border-box;}</style>`;
+                
+                // Injecting full-body shield to prevent "passing through"
+                const shield = `
+                    <style>
+                        html, body { 
+                            margin: 0; padding: 20px; width: 100%; min-height: 100vh; 
+                            word-wrap: break-word; overflow-wrap: break-word; 
+                            font-family: Arial, sans-serif; 
+                        }
+                        * { box-sizing: border-box; }
+                    </style>`;
+
                 doc.open();
                 doc.write(shield + content);
                 doc.close();
-            }, 400);
+            }, 450); // Optimized for super long codes
         }
 
         codeInput.addEventListener('input', updatePreview);
