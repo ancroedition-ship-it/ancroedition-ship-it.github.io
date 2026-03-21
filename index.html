@@ -3,62 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix Core Studio | Unified Middle</title>
+    <title>Neurosentix Core Studio | Fixed Shell</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --bg-dark: #0a0a0b;
-            --panel-bg: #141416;
+            --bg-dark: #070708;
+            --panel-bg: #111113;
             --amber: #ffbf00;
-            --amber-glow: rgba(255, 191, 0, 0.2);
+            --amber-glow: rgba(255, 191, 0, 0.25);
             --border: rgba(255, 255, 255, 0.08);
             --text-dim: #64748b;
-            --spacing-side: 32px;
-            --header-h: 60px;
+            --header-h: 64px;
+            --fixed-width: 1366px;
+            --fixed-height: 657px;
         }
 
         * { box-sizing: border-box; }
         
         body, html {
             margin: 0; padding: 0;
-            width: 1366px; height: 657px;
-            background-color: var(--bg-dark);
-            color: #e2e8f0;
-            font-family: 'Inter', sans-serif;
+            background-color: #000; /* True black outer background */
+            display: flex;
+            justify-content: center; /* Centers the app if window > 1366px */
+            align-items: center;
+            height: 100vh;
             overflow: hidden; 
         }
 
+        /* --- THE FIXED BOUNDARY CONTAINER --- */
         .studio-container {
+            width: var(--fixed-width);
+            height: var(--fixed-height);
+            background-color: var(--bg-dark);
             display: flex;
             flex-direction: column;
-            height: 100%;
-            padding: 0 var(--spacing-side);
+            padding: 0 32px; /* Mirrored inner padding */
+            border: 1px solid var(--border); /* Subtle outer frame */
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            position: relative;
         }
 
         .studio-header {
             height: var(--header-h);
+            min-height: var(--header-h);
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
         }
 
-        .logo { font-weight: 800; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); }
+        .logo { font-weight: 800; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); letter-spacing: 1px; }
 
         .studio-viewport {
             display: flex;
             flex: 1;
-            padding: 16px 0;
-            height: calc(657px - var(--header-h)); 
+            padding: 20px 0;
+            height: calc(var(--fixed-height) - var(--header-h)); 
+            gap: 0;
             overflow: hidden;
         }
 
-        /* --- THE UNIFIED MIDDLE COLUMN --- */
+        /* --- UNIFIED MIDDLE COLUMN (Source + Structure) --- */
         .middle-stack {
             display: flex;
             flex-direction: column;
-            flex: 0 0 500px; /* Initial width of the combined center */
+            flex: 0 0 550px; /* Locked initial width */
             gap: 12px;
             height: 100%;
         }
@@ -66,32 +76,35 @@
         .pane {
             background: var(--panel-bg);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
 
-        /* Editor gets more space in the stack */
-        .editor-pane { flex: 3; }
-        /* Structure pane sits below it */
+        .editor-pane { flex: 2.5; }
         .structure-pane { flex: 1; }
 
-        .visual-pane { flex: 1; background: #ffffff; margin-left: 0; }
+        .visual-pane { 
+            flex: 1; 
+            background: #ffffff; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
 
         .pane-label {
             font-size: 9px;
             text-transform: uppercase;
             letter-spacing: 2px;
-            padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.02);
             color: var(--amber);
             border-bottom: 1px solid var(--border);
+            font-weight: 600;
         }
 
-        /* --- DRAGBAR --- */
+        /* --- THE DRAGBAR --- */
         .drag-bar {
-            width: 16px;
+            width: 20px;
             cursor: col-resize;
             display: flex;
             justify-content: center;
@@ -100,33 +113,41 @@
 
         .drag-bar::after {
             content: '';
-            width: 2px; height: 40px;
+            width: 2px; height: 35px;
             background: var(--border);
+            border-radius: 2px;
             transition: 0.3s;
         }
 
-        .drag-bar:hover::after { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+        .drag-bar:hover::after, .drag-bar.active::after { 
+            background: var(--amber); 
+            height: 50px;
+            box-shadow: 0 0 12px var(--amber); 
+        }
 
         .code-area {
-            flex: 1; padding: 15px;
+            flex: 1; padding: 20px;
             font-family: 'Fira Code', monospace;
-            font-size: 13px; color: #d1d5db;
+            font-size: 13px; color: #cbd5e1;
             overflow-y: auto; white-space: pre; outline: none;
+            line-height: 1.6;
         }
 
         .output-frame { width: 100%; height: 100%; border: none; }
 
+        /* Navigation Toggles */
         .view-toggle {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 3px; border-radius: 8px; display: flex; border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.04);
+            padding: 4px; border-radius: 8px; display: flex; border: 1px solid var(--border);
         }
 
         .toggle-btn {
             background: transparent; border: none; color: var(--text-dim);
-            padding: 5px 15px; border-radius: 6px; cursor: pointer; font-size: 11px;
+            padding: 6px 18px; border-radius: 5px; cursor: pointer; font-size: 11px;
+            font-weight: 600; transition: 0.2s;
         }
 
-        .toggle-btn.active { background: var(--amber); color: #000; font-weight: 600; }
+        .toggle-btn.active { background: var(--amber); color: #000; }
     </style>
 </head>
 <body>
@@ -138,43 +159,42 @@
                 <button class="toggle-btn active">Source</button>
                 <button class="toggle-btn">Visual</button>
             </nav>
-            <div style="font-size: 10px; color: var(--text-dim);">CORE STUDIO V1.2</div>
+            <div style="font-size: 10px; color: var(--text-dim); letter-spacing: 1px;">CORE v1.2 | FIXED BOUNDARY</div>
         </header>
 
         <main class="studio-viewport">
             
             <div class="middle-stack" id="middleStack">
-                
                 <section class="pane editor-pane">
-                    <div class="pane-label">Source Editor</div>
+                    <div class="pane-label">Source Engine</div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input">
-<div class="card">
-  <h1>Neurosentix</h1>
-  <p>Unified Middle Layout</p>
+<div class="container">
+  <h1>Core Studio</h1>
+  <p>Fixed Width: 1366px</p>
 </div>
 
 <style>
-  .card { padding: 20px; border: 2px solid #ffbf00; border-radius: 10px; }
-  h1 { color: #ffbf00; margin: 0; }
+  .container { padding: 40px; text-align: center; }
+  h1 { color: #ffbf00; font-family: 'Inter'; }
 </style>
                     </div>
                 </section>
 
                 <aside class="pane structure-pane">
-                    <div class="pane-label">Structure / Explorer</div>
-                    <div style="padding: 15px; font-size: 12px; color: var(--text-dim);">
-                        <span style="color: var(--amber)">▸ Project</span><br>
-                        &nbsp;&nbsp;└─ index.html<br>
-                        &nbsp;&nbsp;└─ core.css
+                    <div class="pane-label">Structure Explorer</div>
+                    <div style="padding: 15px; font-size: 12px; line-height: 1.8; color: var(--text-dim);">
+                        <span style="color: var(--amber)">▼ Workspace</span><br>
+                        &nbsp;&nbsp;📄 index.html<br>
+                        &nbsp;&nbsp;📄 neuro-core.js<br>
+                        &nbsp;&nbsp;📁 assets/
                     </div>
                 </aside>
-
             </div>
 
             <div class="drag-bar" id="drag-handle"></div>
 
             <section class="pane visual-pane">
-                <div class="pane-label" style="background: #f1f1f1; color: #777;">Live Preview</div>
+                <div class="pane-label" style="background: #f8f9fa; color: #999;">Visual Preview</div>
                 <iframe class="output-frame" id="preview-frame"></iframe>
             </section>
 
@@ -191,23 +211,27 @@
 
         handle.addEventListener('mousedown', () => {
             isResizing = true;
+            handle.classList.add('active');
             document.body.style.cursor = 'col-resize';
-            preview.style.pointerEvents = 'none'; // Prevent iframe from eating mouse events
+            preview.style.pointerEvents = 'none';
         });
 
         document.addEventListener('mouseup', () => {
             isResizing = false;
+            handle.classList.remove('active');
             document.body.style.cursor = 'default';
             preview.style.pointerEvents = 'all';
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
-            const containerLeft = document.querySelector('.studio-viewport').getBoundingClientRect().left;
-            let newWidth = e.clientX - containerLeft;
             
-            // Bounds for the unified middle column
-            if (newWidth > 300 && newWidth < 1000) {
+            // Calculate relative to the fixed container's left edge
+            const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
+            let newWidth = e.clientX - containerRect.left - 32; // Subtract inner padding
+            
+            // Constrain within the 1366px boundary
+            if (newWidth > 350 && newWidth < 950) {
                 middleStack.style.flex = `0 0 ${newWidth}px`;
             }
         });
