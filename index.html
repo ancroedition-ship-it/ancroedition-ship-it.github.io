@@ -29,6 +29,7 @@
             touch-action: none;
         }
 
+        /* CONTAINER: Locked at 1366x657 */
         .studio-container {
             width: var(--fixed-width); 
             height: var(--fixed-height);
@@ -60,7 +61,7 @@
             font-size: 10px; font-weight: bold; letter-spacing: 1px;
             border-radius: 4px; transition: 0.2s;
         }
-        .fs-btn:hover { background: var(--amber-glow); border-color: var(--amber); }
+        .fs-btn:hover { background: var(--amber-glow); border-color: var(--amber); box-shadow: 0 0 10px var(--amber-glow); }
 
         .studio-viewport {
             display: flex; flex-direction: row !important; flex: 1; 
@@ -68,9 +69,19 @@
             overflow: hidden; position: relative;
         }
 
+        /* LEFT PANE: Explicitly sized by JS */
         .middle-stack {
             display: flex; flex-direction: column;
             flex: 0 0 600px; width: 600px; height: 100%;
+            z-index: 1;
+        }
+
+        /* RIGHT PANE: Flexible but capped */
+        .visual-pane { 
+            flex: 1 1 0; 
+            background: #ffffff; 
+            min-width: 250px; 
+            z-index: 1; 
         }
 
         .pane {
@@ -79,22 +90,15 @@
             overflow: hidden; height: 100%;
         }
 
-        .visual-pane { 
-            flex: 1; 
-            background: #ffffff; 
-            min-width: 300px; /* CSS Safety Wall */
-            z-index: 1; 
-        }
-
         .pane-label {
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
             padding: 10px 16px; background: rgba(255, 255, 255, 0.02);
             color: var(--amber); border-bottom: 1px solid var(--border); font-weight: bold;
         }
 
-        /* 60px DRAGBAR */
+        /* 60px HITBOX: Zero-gap via negative margin */
         .drag-bar {
-            width: 60px; margin: 0 -28px; cursor: col-resize; 
+            width: 60px; margin: 0 -30px; cursor: col-resize; 
             display: flex; justify-content: center; align-items: center;
             flex-shrink: 0; z-index: 100; touch-action: none;
         }
@@ -105,7 +109,6 @@
             transition: background 0.1s, transform 0.1s;
         }
 
-        /* Boundary Hit Visual */
         .drag-bar.at-limit::after { background: #fff; transform: scaleX(4); box-shadow: 0 0 15px #fff; }
 
         #drag-shield {
@@ -169,27 +172,28 @@
             }
         }
 
-        // --- DRAG ENGINE WITH RIGHT BOUNDARY ---
+        // --- ANTI-EXPANSION DRAG ENGINE ---
         function onMove(e) {
             if (!isDragging) return;
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const rect = studio.getBoundingClientRect();
             
-            // Mouse relative to studio minus padding
+            // X relative to container minus 32px side padding
             let newX = clientX - rect.left - 32;
 
-            const minLeft = 200;
-            const minRight = 300; 
-            const maxLeft = rect.width - 64 - minRight; // The Right Wall
+            const minLeft = 200; 
+            const minRight = 250; 
+            // The Wall = Total Workspace minus Min Right Pane
+            const maxLeft = (rect.width - 64) - minRight; 
 
-            // Snap & Visual Feedback
+            // Hard Snap
             if (newX <= minLeft || newX >= maxLeft) {
                 handle.classList.add('at-limit');
             } else {
                 handle.classList.remove('at-limit');
             }
 
-            // Clamp the value
+            // Clamp: Prevents expansion past 1366px
             if (newX < minLeft) newX = minLeft;
             if (newX > maxLeft) newX = maxLeft;
 
@@ -197,10 +201,7 @@
             middleStack.style.width = `${newX}px`;
         }
 
-        handle.addEventListener('mousedown', () => { 
-            isDragging = true; 
-            shield.style.display = 'block'; 
-        });
+        handle.addEventListener('mousedown', () => { isDragging = true; shield.style.display = 'block'; });
         handle.addEventListener('touchstart', (e) => { 
             isDragging = true; 
             shield.style.display = 'block';
@@ -221,7 +222,7 @@
             handle.classList.remove('at-limit');
         });
 
-        // --- PREVIEW ---
+        // --- PREVIEW RENDER ---
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
@@ -232,15 +233,16 @@
             }, 400);
         }
 
-        codeInput.addEventListener('input', updatePreview);
-        window.onload = () => { updatePreview(); codeInput.focus(); };
-
-        // Clean Paste
+        // Clean Paste & Sync
+        window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
+
+        codeInput.addEventListener('input', updatePreview);
+        window.onload = () => { updatePreview(); codeInput.focus(); };
     </script>
 </body>
 </html>
