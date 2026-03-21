@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Universal PC Studio</title>
+    <title>Neurosentix | 10px Precision Studio</title>
     
     <style>
         :root {
@@ -17,7 +17,6 @@
             --fixed-height: 657px;
         }
 
-        /* Block Zoom & Scrolling on Body */
         * { box-sizing: border-box; }
         
         body, html {
@@ -28,20 +27,15 @@
             overflow: hidden; 
             font-family: Arial, Helvetica, sans-serif;
             touch-action: none;
-            -webkit-text-size-adjust: 100%;
         }
 
-        /* THE HARD-LOCKED CONTAINER */
         .studio-container {
             width: var(--fixed-width); 
             height: var(--fixed-height);
             background-color: var(--bg-dark);
-            display: flex; 
-            flex-direction: column;
-            padding: 0 32px; 
-            border: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            padding: 0 32px; border: 1px solid var(--border);
             box-shadow: 0 0 80px rgba(0,0,0,1);
-            position: relative;
         }
 
         .studio-header {
@@ -53,7 +47,6 @@
 
         .logo { font-weight: 900; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); letter-spacing: 2px; }
 
-        /* VIEWPORT: Side-by-Side Forced */
         .studio-viewport {
             display: flex; 
             flex-direction: row !important; 
@@ -61,15 +54,14 @@
             padding: 20px 0;
             height: calc(var(--fixed-height) - var(--header-h)); 
             overflow: hidden;
-            align-items: stretch;
         }
 
         .middle-stack {
             display: flex; 
             flex-direction: column;
-            flex: 0 0 600px; 
+            flex: 0 0 600px; /* Starting Width */
+            width: 600px;
             height: 100%;
-            min-width: 250px;
         }
 
         .pane {
@@ -78,66 +70,44 @@
             border-radius: 10px; 
             display: flex; 
             flex-direction: column; 
-            overflow: hidden; /* Hard clip for horizontal */
+            overflow: hidden;
             height: 100%;
         }
 
-        .visual-pane { 
-            flex: 1; 
-            background: #ffffff; 
-            min-width: 250px;
-        }
+        .visual-pane { flex: 1; background: #ffffff; min-width: 100px; }
 
         .pane-label {
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
             padding: 10px 16px; background: rgba(255, 255, 255, 0.02);
             color: var(--amber); border-bottom: 1px solid var(--border);
             font-weight: bold;
-            user-select: none;
         }
 
-        /* EDITOR: No Horizontal Scroll, Stealth Vertical Scroll */
-        .code-area::-webkit-scrollbar { width: 4px; }
-        .code-area::-webkit-scrollbar-track { background: transparent; }
-        .code-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        .code-area:hover::-webkit-scrollbar-thumb { background: var(--amber); }
-
-        .code-area {
-            flex: 1; 
-            padding: 20px; 
-            font-family: Arial, sans-serif;
-            font-size: 14px; 
-            color: #cbd5e1; 
-            overflow-y: auto;       /* Vertical Scroll Only */
-            overflow-x: hidden;     /* Kill Horizontal Scroll */
-            white-space: pre-wrap;   /* Wrap at spaces */
-            word-break: break-all;   /* Force wrap long strings */
-            outline: none; 
-            line-height: 1.5;
-            caret-color: var(--amber);
-        }
-
-        /* REINFORCED DRAG-BAR */
+        /* --- 10px HITBOX DRAG BAR --- */
         .drag-bar {
-            width: 20px; 
+            width: 10px; /* Precise 10px Hitbox */
             cursor: col-resize; 
             display: flex; 
             justify-content: center; 
             align-items: center;
             flex-shrink: 0;
-            user-select: none;
+            z-index: 10;
         }
 
         .drag-bar::after {
-            content: ''; width: 2px; height: 60px; 
+            content: ''; width: 2px; height: 50px; 
             background: var(--amber); 
             box-shadow: 0 0 8px var(--amber-glow);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s;
         }
 
-        .drag-bar:active::after {
-            transform: scaleX(2.5);
-            box-shadow: 0 0 15px var(--amber);
+        .drag-bar:active::after { transform: scaleX(2.5); }
+
+        .code-area {
+            flex: 1; padding: 20px; font-family: Arial, sans-serif;
+            font-size: 14px; color: #cbd5e1; overflow-y: auto;
+            overflow-x: hidden; white-space: pre-wrap; word-break: break-all;
+            outline: none; line-height: 1.5;
         }
 
         .output-frame { width: 100%; height: 100%; border: none; background: white; }
@@ -170,93 +140,66 @@
     <script>
         const handle = document.getElementById('drag-handle');
         const middleStack = document.getElementById('middleStack');
-        const codeInput = document.getElementById('code-input');
         const preview = document.getElementById('preview-frame');
+        const codeInput = document.getElementById('code-input');
         
         let isDragging = false;
         let debounceTimer;
 
-        // 1. ZOOM LOCK (Ctrl + Wheel & Keys)
-        window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
-        window.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && (['=', '-', '0', '+'].includes(e.key))) e.preventDefault();
-        });
-
-        // 2. REINFORCED CLICK-TO-DRAG ENGINE
+        // --- THE "HIGH-GRIP" ENGINE ---
         handle.addEventListener('mousedown', (e) => {
             isDragging = true;
+            preview.style.pointerEvents = 'none'; // Lock iframe
             document.body.style.cursor = 'col-resize';
-            preview.style.pointerEvents = 'none'; // Prevents iframe focus theft
+            document.body.style.userSelect = 'none';
             e.preventDefault();
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                document.body.style.cursor = 'default';
-                preview.style.pointerEvents = 'all';
-            }
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
-            let newWidth = e.clientX - containerRect.left - 32;
+            
+            // X-Pos relative to container start (minus 32px padding)
+            let newX = e.clientX - containerRect.left - 32;
 
-            // Bounds Lock: 250px min, 1000px max
-            if (newWidth > 250 && newWidth < 1000) {
-                middleStack.style.flex = `0 0 ${newWidth}px`;
+            // Boundaries: Min 150px / Max 1150px
+            if (newX > 150 && newX < 1150) {
+                middleStack.style.flex = `0 0 ${newX}px`;
+                middleStack.style.width = `${newX}px`;
             }
         });
 
-        // 3. PREVIEW RENDERER (Anti-Crush)
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                preview.style.pointerEvents = 'all';
+                document.body.style.cursor = 'default';
+                document.body.style.userSelect = 'auto';
+            }
+        });
+
+        // --- PREVIEW & SYNC ---
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const content = codeInput.innerText;
                 const doc = preview.contentDocument || preview.contentWindow.document;
-                
-                // Shield prevents horizontal scroll in preview
-                const shield = `
-                    <style>
-                        html, body { 
-                            margin: 0; padding: 20px; 
-                            width: 100%; min-height: 100vh; 
-                            word-wrap: break-word; overflow-x: hidden; 
-                            font-family: Arial, sans-serif; background: #fff; color: #000;
-                        }
-                        * { box-sizing: border-box; }
-                    </style>`;
-                
+                const shield = `<style>html,body{margin:0;padding:20px;width:100%;min-height:100vh;word-wrap:break-word;overflow-x:hidden;font-family:Arial,sans-serif;background:#fff;color:#000;}*{box-sizing:border-box;}</style>`;
                 doc.open();
                 doc.write(shield + content);
                 doc.close();
             }, 400);
         }
 
-        // 4. CLEAN PASTE (No formatting)
+        codeInput.addEventListener('input', updatePreview);
+        window.onload = () => { updatePreview(); codeInput.focus(); };
+
+        // Clean Paste
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
-
-        // 5. SYNC SCROLL
-        codeInput.addEventListener('scroll', () => {
-            const editorScrollTop = codeInput.scrollTop;
-            const editorScrollHeight = codeInput.scrollHeight - codeInput.clientHeight;
-            const scrollPercentage = editorScrollTop / (editorScrollHeight || 1);
-            const previewDoc = preview.contentDocument || preview.contentWindow.document;
-            const previewScrollHeight = previewDoc.documentElement.scrollHeight - preview.clientHeight;
-            preview.contentWindow.scrollTo(0, scrollPercentage * previewScrollHeight);
-        });
-
-        // INITIALIZE
-        codeInput.addEventListener('input', updatePreview);
-        window.onload = () => {
-            updatePreview();
-            codeInput.focus(); // Instant Start
-        };
     </script>
 </body>
 </html>
