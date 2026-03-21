@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Standard Studio</title>
+    <title>Neurosentix | Direct Studio</title>
     
     <style>
         :root {
@@ -29,7 +29,6 @@
             touch-action: none; 
         }
 
-        /* HARD-LOCKED FIXED CONTAINER */
         .studio-container {
             width: var(--fixed-width); 
             height: var(--fixed-height);
@@ -37,7 +36,6 @@
             display: flex; flex-direction: column;
             padding: 0 32px; border: 1px solid var(--border);
             box-shadow: 0 0 80px rgba(0,0,0,1);
-            position: relative;
         }
 
         .studio-header {
@@ -70,7 +68,7 @@
             color: var(--amber); border-bottom: 1px solid var(--border); font-weight: bold;
         }
 
-        /* Stealth Scrollbar - Aligned to Dragbar */
+        /* Stealth Scrollbar */
         .code-area::-webkit-scrollbar { width: 4px; }
         .code-area::-webkit-scrollbar-track { background: transparent; }
         .code-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
@@ -87,25 +85,9 @@
         .drag-bar:hover::after { background: var(--amber); height: 50px; box-shadow: 0 0 12px var(--amber); }
 
         .output-frame { width: 100%; height: 100%; border: none; background: white; }
-
-        /* Initial Overlay */
-        #launcher {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999; display: flex; 
-            align-items: center; justify-content: center; cursor: pointer;
-        }
-        .launch-box {
-            color: var(--amber); font-weight: 900; letter-spacing: 5px;
-            border: 1px solid var(--amber); padding: 20px 40px;
-            text-shadow: 0 0 10px var(--amber-glow);
-        }
     </style>
 </head>
 <body>
-
-    <div id="launcher" onclick="initializeStudio()">
-        <div class="launch-box">INITIALIZE NEUROSENTIX</div>
-    </div>
 
     <div class="studio-container">
         <header class="studio-header">
@@ -137,19 +119,13 @@
         let isResizing = false;
         let debounceTimer;
 
-        // --- Entry Logic (No Fullscreen) ---
-        function initializeStudio() {
-            document.getElementById('launcher').style.display = 'none';
-            codeInput.focus();
-        }
-
-        // --- Block Zoom ---
+        // Block Zoom
         window.addEventListener('wheel', (e) => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
         window.addEventListener('keydown', (e) => {
             if (e.ctrlKey && (['=', '-', '0', '+'].includes(e.key))) e.preventDefault();
         });
 
-        // --- Dragging Logic ---
+        // Resize Logic
         handle.addEventListener('mousedown', () => {
             isResizing = true;
             document.body.style.cursor = 'col-resize';
@@ -167,7 +143,7 @@
             if (newWidth > 200 && newWidth < 1100) { middleStack.style.flex = `0 0 ${newWidth}px`; }
         });
 
-        // --- Sync Scroll Alignment ---
+        // Sync Scroll
         codeInput.addEventListener('scroll', () => {
             const editorScrollTop = codeInput.scrollTop;
             const editorScrollHeight = codeInput.scrollHeight - codeInput.clientHeight;
@@ -177,20 +153,20 @@
             preview.contentWindow.scrollTo(0, scrollPercentage * previewScrollHeight);
         });
 
-        // --- Anti-Crush Preview Engine ---
+        // Preview Engine
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const content = codeInput.innerText;
                 const doc = preview.contentDocument || preview.contentWindow.document;
-                const shield = `<style>html,body{margin:0;padding:20px;width:100%;min-height:100vh;word-wrap:break-word;overflow-wrap:break-word;font-family:Arial,sans-serif;background:#fff;}*{box-sizing:border-box;}</style>`;
+                const shield = `<style>html,body{margin:0;padding:20px;width:100%;min-height:100vh;word-wrap:break-word;font-family:Arial,sans-serif;background:#fff;color:#000;}*{box-sizing:border-box;}</style>`;
                 doc.open();
                 doc.write(shield + content);
                 doc.close();
             }, 400);
         }
 
-        // --- Plain Text Paste ---
+        // Paste Clean
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
@@ -198,7 +174,12 @@
         });
 
         codeInput.addEventListener('input', updatePreview);
-        window.onload = updatePreview;
+        
+        // Auto-focus the editor on load
+        window.onload = () => {
+            updatePreview();
+            codeInput.focus();
+        };
     </script>
 </body>
 </html>
