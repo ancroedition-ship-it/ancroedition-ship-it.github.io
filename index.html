@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | CLICK TO DRAG</title>
+    <title>NEUROSENTIX | MASTER BUILD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
@@ -19,26 +19,29 @@
             overflow: hidden; display: flex; flex-direction: column; position: relative;
         }
 
-        /* --- FLOATING LIST (OVERLAY) --- */
+        /* --- FLOATING DOCK (OVERLAY) --- */
         #floating-sidebar {
             position: absolute; left: 15px; top: 90px; bottom: 20px;
-            width: 45px; background: rgba(9, 9, 11, 0.7); backdrop-filter: blur(12px);
+            width: 45px; background: rgba(9, 9, 11, 0.85); backdrop-filter: blur(15px);
             border: 1px solid var(--edge-color); border-radius: 25px;
             display: flex; flex-direction: column; align-items: center; padding: 20px 0;
             z-index: 1000; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden;
         }
         #floating-sidebar:hover { width: 180px; align-items: flex-start; padding: 20px; border-color: #3f3f46; }
+        #floating-sidebar.active-drag { border-color: var(--accent); box-shadow: 0 0 20px rgba(245, 158, 11, 0.1); }
         
+        .sidebar-tag { color: #3f3f46; font-size: 10px; margin-bottom: 25px; font-weight: 900; letter-spacing: 0.1em; transition: 0.2s; }
+        #floating-sidebar:hover .sidebar-tag { color: var(--accent); }
+
         .slot-row {
-            width: 140px; height: 38px; border: 1px dashed #27272a; border-radius: 8px;
+            width: 140px; height: 40px; border: 1px dashed #27272a; border-radius: 8px;
             margin-bottom: 12px; display: flex; align-items: center; padding: 0 12px;
-            font-size: 9px; color: #3f3f46; font-weight: 800; white-space: nowrap;
-            opacity: 0; transition: 0.2s; flex-shrink: 0;
+            font-size: 9px; color: #3f3f46; font-weight: 800; opacity: 0; transition: 0.2s; flex-shrink: 0;
         }
         #floating-sidebar:hover .slot-row { opacity: 1; }
-        .slot-row.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
+        .slot-row.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); color: var(--accent); }
 
-        /* --- THE MIDDLE (STABLE BUILD) --- */
+        /* --- HEADER --- */
         .ui-header { 
             height: 70px; display: flex; align-items: center; justify-content: space-between;
             padding: 0 30px; border-bottom: 1px solid var(--edge-color); z-index: 100;
@@ -47,149 +50,9 @@
         .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
 
+        /* --- STABLE MIDDLE WORKSPACE --- */
         .split-container { display: flex; flex: 1; padding: 10px; position: relative; }
         .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; }
         
         #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
-        #rightPane { flex: 1; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
-
-        .label-bar { height: 48px; background: #09090b; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: pointer; transition: background 0.2s; }
-        .label-bar:hover { background: #121214; }
-        .label-bar:active { cursor: grabbing; }
-        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
-
-        #editor-scroll { flex: 1; padding: 20px 0 20px 20px; display: flex; overflow: hidden; }
-        #editor { flex: 1; background: transparent; border: none; outline: none; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #facc15; white-space: pre-wrap; overflow-y: auto; padding-right: 12px; }
-        #editor::-webkit-scrollbar { width: 6px; }
-        #editor::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        
-        #live-preview { flex: 1; width: 100%; border: none; background: transparent; pointer-events: auto; }
-        
-        /* THE RESIZER */
-        .resizer { width: 7px; cursor: col-resize; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); z-index: 50; }
-        .resizer:hover { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
-
-        /* DOCKING LOGIC */
-        .slot-row .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; }
-        .slot-row .label-bar { height: 100%; border: none; background: transparent; justify-content: center; }
-        .slot-row .label-text { color: var(--accent); font-size: 8px; }
-        .slot-row #editor-scroll, .slot-row iframe, .slot-row .btn-action { display: none; }
-
-        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
-    </style>
-</head>
-<body>
-
-    <aside id="floating-sidebar">
-        <div style="color: #3f3f46; font-size: 12px; margin-bottom: 25px; font-weight: 900;">DOCK</div>
-        <div class="slot-row" id="slot-1">VACANT SLOT</div>
-        <div class="slot-row" id="slot-2">VACANT SLOT</div>
-        <div class="slot-row" id="slot-3">VACANT SLOT</div>
-        <div class="slot-row" id="slot-4">VACANT SLOT</div>
-    </aside>
-
-    <header class="ui-header">
-        <div class="flex items-center gap-4">
-            <svg class="ns-svg" viewBox="0 0 100 40"><path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" /></svg>
-            <h1 style="font-size: 18px; font-weight: 900; letter-spacing: 0.4em; color: #71717a;">NeuroSentix</h1>
-        </div>
-    </header>
-
-    <div class="split-container" id="container">
-        <div class="pane" id="leftPane">
-            <div class="label-bar" id="handle-l">
-                <span class="label-text">Source Code</span>
-                <button id="clearBtn" class="btn-action">CLEAR</button>
-            </div>
-            <div id="editor-scroll"><div id="editor" contenteditable="true" spellcheck="false"></div></div>
-        </div>
-
-        <div class="resizer" id="dragMe"></div>
-
-        <div class="pane" id="rightPane">
-            <div class="label-bar" id="handle-r"><span class="label-text">Live Preview</span></div>
-            <iframe id="live-preview"></iframe>
-        </div>
-    </div>
-
-    <script>
-        const editor = document.getElementById('editor');
-        const preview = document.getElementById('live-preview');
-        const leftPane = document.getElementById('leftPane');
-        const rightPane = document.getElementById('rightPane');
-        const dragMe = document.getElementById('dragMe');
-        const container = document.getElementById('container');
-
-        const update = () => {
-            const doc = preview.contentDocument || preview.contentWindow.document;
-            doc.open();
-            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;line-height:1.6;}</style>${editor.innerText || ""}`);
-            doc.close();
-        };
-        editor.addEventListener('input', update);
-
-        // --- CLICK TO DRAG SETUP ---
-        // We set draggable to true only when the mouse is down on the handle
-        const setupClickToDrag = (pane, handle) => {
-            handle.onmousedown = () => pane.draggable = true;
-            handle.onmouseup = () => pane.draggable = false;
-            
-            pane.ondragstart = (e) => {
-                e.dataTransfer.setData('text/plain', pane.id);
-                setTimeout(() => pane.style.opacity = "0.2", 0);
-            };
-            pane.ondragend = () => {
-                pane.style.opacity = "1";
-                pane.draggable = false;
-            };
-        };
-
-        setupClickToDrag(leftPane, document.getElementById('handle-l'));
-        setupClickToDrag(rightPane, document.getElementById('handle-r'));
-
-        // SIDEBAR SLOTS
-        document.querySelectorAll('.slot-row').forEach(slot => {
-            slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drag-over'); };
-            slot.ondragleave = () => slot.classList.remove('drag-over');
-            slot.ondrop = (e) => {
-                e.preventDefault();
-                slot.classList.remove('drag-over');
-                const id = e.dataTransfer.getData('text/plain');
-                const el = document.getElementById(id);
-                if (el) { slot.innerHTML = ""; slot.appendChild(el); checkResizer(); }
-            };
-        });
-
-        // WORKSPACE DROP
-        container.ondragover = (e) => e.preventDefault();
-        container.ondrop = (e) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData('text/plain');
-            const el = document.getElementById(id);
-            if (el) {
-                if (id === 'leftPane') container.insertBefore(el, dragMe);
-                else container.appendChild(el);
-                checkResizer();
-            }
-        };
-
-        function checkResizer() {
-            dragMe.style.display = (container.querySelectorAll('.pane').length === 2) ? 'block' : 'none';
-        }
-
-        // STATIC RESIZER
-        let isResizing = false;
-        dragMe.onmousedown = () => isResizing = true;
-        document.onmousemove = (e) => {
-            if (!isResizing) return;
-            let rect = container.getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            if (x > 250 && x < rect.width - 250) leftPane.style.width = x + 'px';
-        };
-        document.onmouseup = () => isResizing = false;
-
-        document.getElementById('clearBtn').onclick = (e) => { e.stopPropagation(); editor.innerText = ""; update(); };
-        update();
-    </script>
-</body>
-</html>
+        #rightPane { flex: 1; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none
