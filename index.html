@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix | Locked Layout Edition</title>
+    <title>Neurosentix | Fixed PC Studio</title>
     
     <style>
         :root {
@@ -27,7 +27,7 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
-        /* HARD LOCKED CONTAINER */
+        /* HARD-LOCKED PC DIMENSIONS */
         .studio-container {
             width: var(--fixed-width); 
             height: var(--fixed-height);
@@ -36,8 +36,8 @@
             flex-direction: column;
             padding: 0 32px; 
             border: 1px solid var(--border);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            overflow: hidden; /* Prevents outer leakage */
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            overflow: hidden;
         }
 
         .studio-header {
@@ -49,22 +49,19 @@
 
         .logo { font-weight: 900; color: var(--amber); text-shadow: 0 0 10px var(--amber-glow); letter-spacing: 2px; }
 
-        /* REINFORCED VIEWPORT */
         .studio-viewport {
             display: flex; 
             flex: 1; 
             padding: 20px 0;
             height: calc(var(--fixed-height) - var(--header-h)); 
             overflow: hidden;
-            align-items: stretch;
         }
 
         .middle-stack {
             display: flex; 
             flex-direction: column;
-            flex: 0 0 600px; /* Initial Fixed Width */
+            flex: 0 0 600px; 
             height: 100%;
-            min-height: 100%; /* Force Lock */
         }
 
         .pane {
@@ -74,26 +71,24 @@
             display: flex; 
             flex-direction: column; 
             overflow: hidden;
-            height: 100%; /* Absolute Lock */
-            min-height: 0;
+            height: 100%;
         }
 
         .editor-pane { flex: 1; }
-        .visual-pane { flex: 1; background: #ffffff; height: 100% !important; }
+        .visual-pane { flex: 1; background: #ffffff; }
 
         .pane-label {
             font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
             padding: 10px 16px; background: rgba(255, 255, 255, 0.02);
             color: var(--amber); border-bottom: 1px solid var(--border);
             font-weight: bold;
-            flex-shrink: 0;
         }
 
-        /* --- Custom Stealth Scrollbar --- */
+        /* --- Custom Stealth Scrollbar (Arial PC Optimized) --- */
         .code-area::-webkit-scrollbar { width: 4px; }
         .code-area::-webkit-scrollbar-track { background: transparent; }
         .code-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        .code-area:hover::-webkit-scrollbar-thumb { background: var(--amber); }
+        .code-area:hover::-webkit-scrollbar-thumb { background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); }
 
         .code-area {
             flex: 1; 
@@ -106,7 +101,7 @@
             word-break: break-all;
             outline: none; 
             line-height: 1.5;
-            content-visibility: auto; /* High Performance */
+            content-visibility: auto;
         }
 
         .drag-bar {
@@ -115,7 +110,6 @@
             display: flex; 
             justify-content: center; 
             align-items: center;
-            flex-shrink: 0;
         }
 
         .drag-bar::after {
@@ -125,16 +119,6 @@
         .drag-bar:hover::after { background: var(--amber); height: 50px; box-shadow: 0 0 12px var(--amber); }
 
         .output-frame { width: 100%; height: 100%; border: none; display: block; }
-
-        /* --- Infinix Hot 30 & Mobile (Locked Portrait) --- */
-        @media only screen and (max-width: 1080px) {
-            .studio-container { width: 100vw; height: 100vh; padding: 0 15px; border: none; }
-            .studio-viewport { flex-direction: column; padding: 10px 0; }
-            .middle-stack { flex: 0 0 45% !important; width: 100%; min-height: 45%; }
-            .drag-bar { width: 100%; height: 30px; cursor: row-resize; }
-            .drag-bar::after { width: 60px; height: 2px; }
-            .visual-pane { flex: 1 !important; width: 100%; height: 50% !important; }
-        }
     </style>
 </head>
 <body>
@@ -170,17 +154,17 @@
         let isResizing = false;
         let debounceTimer;
 
-        // Paste Interceptor
+        // Clean Paste
         codeInput.addEventListener('paste', (e) => {
             e.preventDefault();
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             document.execCommand('insertText', false, text);
         });
 
-        // Locked Resize Engine
+        // PC Horizontal Resize
         handle.addEventListener('mousedown', () => {
             isResizing = true;
-            document.body.style.cursor = window.innerWidth > 1080 ? 'col-resize' : 'row-resize';
+            document.body.style.cursor = 'col-resize';
             preview.style.pointerEvents = 'none';
         });
 
@@ -193,51 +177,34 @@
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             const containerRect = document.querySelector('.studio-container').getBoundingClientRect();
-            
-            if (window.innerWidth > 1080) {
-                let newWidth = e.clientX - containerRect.left - 32;
-                if (newWidth > 200 && newWidth < 1100) {
-                    middleStack.style.flex = `0 0 ${newWidth}px`;
-                }
-            } else {
-                let newHeight = e.clientY - containerRect.top - 64;
-                if (newHeight > 100 && newHeight < (window.innerHeight - 150)) {
-                    middleStack.style.flex = `0 0 ${newHeight}px`;
-                }
+            let newWidth = e.clientX - containerRect.left - 32;
+            // Lock boundaries between 200px and 1100px
+            if (newWidth > 200 && newWidth < 1100) {
+                middleStack.style.flex = `0 0 ${newWidth}px`;
             }
         });
 
-        // Sync Scroll Alignment
+        // Real-time Sync Scroll
         codeInput.addEventListener('scroll', () => {
             const editorScrollTop = codeInput.scrollTop;
             const editorScrollHeight = codeInput.scrollHeight - codeInput.clientHeight;
-            const scrollPercentage = editorScrollTop / editorScrollHeight;
+            const scrollPercentage = editorScrollTop / (editorScrollHeight || 1);
             const previewDoc = preview.contentDocument || preview.contentWindow.document;
             const previewScrollHeight = previewDoc.documentElement.scrollHeight - preview.clientHeight;
             preview.contentWindow.scrollTo(0, scrollPercentage * previewScrollHeight);
         });
 
-        // Anti-Crush Preview Engine
+        // Anti-Crush Engine
         function updatePreview() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
                 const content = codeInput.innerText;
                 const doc = preview.contentDocument || preview.contentWindow.document;
-                
-                const shield = `
-                    <style>
-                        html, body { 
-                            margin: 0; padding: 20px; width: 100%; min-height: 100vh; 
-                            word-wrap: break-word; overflow-wrap: break-word; 
-                            font-family: Arial, sans-serif; background: #fff;
-                        }
-                        * { box-sizing: border-box; }
-                    </style>`;
-
+                const shield = `<style>html,body{margin:0;padding:20px;width:100%;min-height:100vh;word-wrap:break-word;overflow-wrap:break-word;font-family:Arial,sans-serif;background:#fff;}*{box-sizing:border-box;}</style>`;
                 doc.open();
                 doc.write(shield + content);
                 doc.close();
-            }, 450);
+            }, 400);
         }
 
         codeInput.addEventListener('input', updatePreview);
