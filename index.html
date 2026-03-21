@@ -3,15 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | HTML EDITOR</title>
+    <title>NEUROSENTIX | RIBBON INTERFACE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
             --bg-main: #0a0a0a;
             --bg-pane: #161618; 
-            --shared-font-size: 14px; 
-            --shared-line-height: 1.6;
-            --shared-font: 'JetBrains Mono', monospace;
             --accent: #f59e0b; 
             --edge-color: #27272a; 
         }
@@ -41,6 +38,30 @@
         @keyframes draw { to { stroke-dashoffset: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; r: 3; } 50% { opacity: 1; r: 5; } }
 
+        /* --- COLLAPSIBLE RIBBON --- */
+        #ribbon {
+            height: 90px; background: #0c0c0e; border-bottom: 1px solid var(--edge-color);
+            display: flex; align-items: center; gap: 15px; padding: 0 20px;
+            overflow: hidden; transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #ribbon.collapsed { height: 0; padding: 0 20px; border-bottom: none; opacity: 0; }
+
+        .dock-slot {
+            width: 220px; height: 60px; border: 1px dashed #3f3f46;
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            color: #52525b; font-size: 9px; font-weight: 800; text-transform: uppercase;
+            background: rgba(255,255,255,0.02); position: relative;
+        }
+        .dock-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.08); }
+
+        /* RIBBON TOGGLE BUTTON */
+        .ribbon-toggle {
+            background: #1c1c1e; color: #71717a; font-size: 9px; font-weight: 800;
+            padding: 4px 12px; border-radius: 20px; border: 1px solid var(--edge-color);
+            cursor: pointer; transition: 0.2s;
+        }
+        .ribbon-toggle:hover { color: var(--accent); border-color: var(--accent); }
+
         /* MAIN LAYOUT */
         .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; }
         .pane { display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--edge-color); background: var(--bg-pane); box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
@@ -51,38 +72,35 @@
         .label-bar { 
             height: 48px; background: #09090b; display: flex; align-items: center; 
             justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); flex-shrink: 0; 
+            cursor: grab;
         }
-        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; }
+        .label-bar:active { cursor: grabbing; }
+        .label-text { font-size: 10px; font-weight: 800; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; pointer-events: none; }
         
-        /* EDITOR WRAPPER & SCROLLBAR */
+        /* DOCKING OVERRIDES */
+        .dock-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; border-radius: 7px; }
+        .dock-slot .label-bar { height: 100%; border: none; background: transparent; }
+        .dock-slot .label-text { color: var(--accent); }
+        .dock-slot #textarea-wrapper, .dock-slot iframe, .dock-slot .btn-action { display: none; }
+
         #textarea-wrapper { flex: 1; padding: 20px 0 20px 20px; display: flex; overflow: hidden; }
         #editor { 
             flex: 1; background: transparent; border: none; outline: none; 
-            font-family: var(--shared-font); font-size: var(--shared-font-size); 
-            line-height: var(--shared-line-height); color: #facc15 !important; 
-            font-weight: 500; white-space: pre-wrap; overflow-y: auto; 
-            word-break: break-all; padding-right: 12px; 
+            font-family: var(--shared-font); font-size: 14px; color: #facc15 !important; 
+            white-space: pre-wrap; overflow-y: auto; padding-right: 12px; 
         }
         #editor::-webkit-scrollbar { width: 6px; }
         #editor::-webkit-scrollbar-thumb { background: #27272a; border-radius: 10px; }
-        #editor::-webkit-scrollbar-thumb:hover { background: var(--accent); }
         
         #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
         #drag-overlay { display: none; position: absolute; inset: 0; z-index: 40; background: transparent; }
 
-        /* BUTTONS */
-        .btn-action { 
-            background: #1c1c1e; color: #f59e0b; font-size: 9px; font-weight: 800; 
-            padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; 
-            cursor: pointer; transition: 0.2s; text-transform: uppercase;
-        }
-        .btn-action:hover { border-color: #f59e0b; background: #27272a; }
-        .btn-clear { color: #ef4444; border-color: #450a0a; margin-right: 5px; }
+        .btn-action { background: #1c1c1e; color: #f59e0b; font-size: 9px; font-weight: 800; padding: 5px 12px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
+        .btn-clear { color: #ef4444; margin-right: 5px; }
 
-        /* RESIZER */
         .resizer { width: 7px; cursor: col-resize; position: relative; z-index: 50; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); }
-        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; transition: 0.3s; }
-        .resizer:hover::after, .resizer.dragging::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); height: 80px; }
+        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; }
+        .resizer:hover::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
     </style>
 </head>
 <body>
@@ -97,15 +115,21 @@
             </svg>
             <h1 class="header-text">NeuroSentix</h1>
         </div>
+        <button class="ribbon-toggle" onclick="toggleRibbon()">TOGGLE RIBBON</button>
     </header>
 
-    <div class="split-container" id="container">
+    <div id="ribbon">
+        <div class="dock-slot" id="slot-1">SOURCE SLOT</div>
+        <div class="dock-slot" id="slot-2">PREVIEW SLOT</div>
+    </div>
+
+    <div class="split-container" id="main-container">
         <div class="pane" id="leftPane">
-            <div class="label-bar">
+            <div class="label-bar" id="handle-l">
                 <span class="label-text">Source Code</span>
                 <div class="flex">
                     <button id="clearBtn" class="btn-action btn-clear">CLEAR</button>
-                    <button id="copyBtn" class="btn-action">COPY CODE</button>
+                    <button id="copyBtn" class="btn-action">COPY</button>
                 </div>
             </div>
             <div id="textarea-wrapper">
@@ -115,7 +139,7 @@
         <div class="resizer" id="dragMe"></div>
         <div class="pane" id="rightPane">
             <div id="drag-overlay"></div>
-            <div class="label-bar"><span class="label-text">Live Preview</span></div>
+            <div class="label-bar" id="handle-r"><span class="label-text">Live Preview</span></div>
             <iframe id="live-preview"></iframe>
         </div>
     </div>
@@ -123,72 +147,66 @@
     <script>
         const editor = document.getElementById('editor');
         const previewFrame = document.getElementById('live-preview');
-        const dragMe = document.getElementById('dragMe');
         const leftPane = document.getElementById('leftPane');
-        const dragOverlay = document.getElementById('drag-overlay');
-        
+        const rightPane = document.getElementById('rightPane');
+        const resizer = document.getElementById('dragMe');
+        const main = document.getElementById('main-container');
+
         const updatePreview = () => {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
             doc.open();
-            doc.write(`
-                <style>
-                    body { 
-                        background: #161618; 
-                        color: #f59e0b; 
-                        font-family: 'JetBrains Mono', monospace; 
-                        font-size: 14px; 
-                        line-height: 1.6; 
-                        margin: 0; 
-                        padding: 20px; 
-                        overflow-x: hidden; 
-                        word-break: break-all; 
-                        overflow-wrap: break-word; 
-                    }
-                </style>
-                ${editor.innerText || " "}
-            `);
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;}</style>${editor.innerText || " "}`);
             doc.close();
         };
-
         editor.addEventListener('input', updatePreview);
 
-        document.getElementById('clearBtn').addEventListener('click', () => { 
-            editor.innerText = ""; 
-            updatePreview(); 
+        function toggleRibbon() {
+            document.getElementById('ribbon').classList.toggle('collapsed');
+        }
+
+        // DRAG & DROP LOGIC
+        const setupDrag = (pane, handle) => {
+            handle.onmouseenter = () => pane.draggable = true;
+            handle.onmouseleave = () => pane.draggable = false;
+            pane.ondragstart = (e) => {
+                e.dataTransfer.setData('text', pane.id);
+                setTimeout(() => pane.style.opacity = "0.3", 0);
+            };
+            pane.ondragend = () => pane.style.opacity = "1";
+        };
+        setupDrag(leftPane, document.getElementById('handle-l'));
+        setupDrag(rightPane, document.getElementById('handle-r'));
+
+        document.querySelectorAll('.dock-slot').forEach(slot => {
+            slot.ondragover = (e) => e.preventDefault();
+            slot.ondrop = (e) => {
+                const id = e.dataTransfer.getData('text');
+                const el = document.getElementById(id);
+                slot.innerHTML = "";
+                slot.appendChild(el);
+                if (main.querySelectorAll('.pane').length < 2) resizer.style.display = 'none';
+            };
         });
 
-        document.getElementById('copyBtn').addEventListener('click', () => {
+        // BUTTONS
+        document.getElementById('clearBtn').onclick = (e) => { e.stopPropagation(); editor.innerText = ""; updatePreview(); };
+        document.getElementById('copyBtn').onclick = (e) => { 
+            e.stopPropagation(); 
             navigator.clipboard.writeText(editor.innerText);
-            const btn = document.getElementById('copyBtn');
-            btn.innerText = "COPIED!";
-            setTimeout(() => btn.innerText = "COPY CODE", 2000);
-        });
+            copyBtn.innerText = "COPIED";
+            setTimeout(() => copyBtn.innerText = "COPY", 1500);
+        };
 
-        // RESIZER LOGIC
-        let isDragging = false;
-        dragMe.addEventListener('mousedown', () => { 
-            isDragging = true; 
-            dragOverlay.style.display = "block"; 
-            dragMe.classList.add('dragging'); 
-        });
-        
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            const containerBox = document.getElementById('container').getBoundingClientRect();
-            let newWidth = e.clientX - containerBox.left; 
-            if (newWidth > 300 && newWidth < 1000) {
-                leftPane.style.width = newWidth + 'px';
-            }
-        });
+        // RESIZER
+        let dragging = false;
+        resizer.onmousedown = () => dragging = true;
+        document.onmousemove = (e) => {
+            if (!dragging) return;
+            let x = e.clientX - main.getBoundingClientRect().left;
+            if (x > 300 && x < 1000) leftPane.style.width = x + 'px';
+        };
+        document.onmouseup = () => dragging = false;
 
-        document.addEventListener('mouseup', () => { 
-            if (isDragging) {
-                isDragging = false; 
-                dragOverlay.style.display = "none"; 
-                dragMe.classList.remove('dragging'); 
-            }
-        });
-        
         updatePreview();
     </script>
 </body>
