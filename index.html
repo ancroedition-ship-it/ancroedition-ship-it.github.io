@@ -41,16 +41,16 @@
         @keyframes draw { to { stroke-dashoffset: 0; } }
         @keyframes pulse { 0%, 100% { opacity: 0.4; r: 3; } 50% { opacity: 1; r: 5; } }
 
-        .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; transition: opacity 0.2s; }
+        .split-container { display: flex; flex: 1; overflow: hidden; padding: 10px; gap: 0; position: relative; }
         .pane { display: flex; flex-direction: column; border-radius: 12px; border: 1px solid var(--edge-color); background: var(--bg-pane); box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; }
         #leftPane { width: 668px; flex-shrink: 0; border-top-right-radius: 0; border-bottom-right-radius: 0; }
         #rightPane { flex: 1; display: flex; flex-direction: column; position: relative; border-top-left-radius: 0; border-bottom-left-radius: 0; border-left: none; }
         
-        /* DRAG HANDLE STYLE */
         .label-bar { 
             height: 48px; background: #09090b; display: flex; align-items: center; 
             justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); flex-shrink: 0; 
         }
+        /* Specific handle for dragging the whole box */
         #dragHandle { cursor: grab; }
         #dragHandle:active { cursor: grabbing; }
 
@@ -79,15 +79,19 @@
         .btn-action:hover { border-color: #f59e0b; background: #27272a; }
         .btn-clear { color: #ef4444; border-color: #450a0a; margin-right: 5px; }
 
+        /* MIDDLE RESIZER - UNCHANGED */
         .resizer { width: 7px; cursor: col-resize; position: relative; z-index: 50; background: #111; border-left: 1px solid var(--edge-color); border-right: 1px solid var(--edge-color); }
-        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; }
+        .resizer::after { content: ''; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 3px; height: 40px; background: #222; border-radius: 2px; transition: 0.3s; }
+        .resizer:hover::after, .resizer.dragging::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); height: 80px; }
 
-        /* Final Docked State */
+        /* Style when dropped into header */
         .ui-header .split-container {
-            height: 300px !important;
-            width: 500px !important;
+            height: 250px !important;
+            width: 450px !important;
             margin-left: 20px;
             padding: 0;
+            border: 1px solid var(--edge-color);
+            border-radius: 8px;
         }
     </style>
 </head>
@@ -134,6 +138,7 @@
         const headerZone = document.getElementById('headerDropZone');
         const dragMe = document.getElementById('dragMe');
         const leftPane = document.getElementById('leftPane');
+        const dragOverlay = document.getElementById('drag-overlay');
 
         const updatePreview = () => {
             const doc = previewFrame.contentDocument || previewFrame.contentWindow.document;
@@ -144,28 +149,26 @@
 
         editor.addEventListener('input', updatePreview);
 
-        // DRAG HANDLE LOGIC
-        // Only make the container draggable when hovering the header
+        // DRAG LOGIC: Toggle draggable only when hovering the "Source Code" header
         dragHandle.addEventListener('mouseenter', () => container.setAttribute('draggable', 'true'));
         dragHandle.addEventListener('mouseleave', () => {
-            // Prevent leaving draggable true if we are currently dragging
-            if (!isDraggingContainer) container.setAttribute('draggable', 'false');
+            if (!isDragging) container.setAttribute('draggable', 'false');
         });
 
-        let isDraggingContainer = false;
+        let isDragging = false;
         container.addEventListener('dragstart', (e) => {
-            isDraggingContainer = true;
-            e.dataTransfer.setData('text/plain', 'editor-box');
-            container.style.opacity = "0.4";
+            isDragging = true;
+            e.dataTransfer.setData('text/plain', 'container-box');
+            container.style.opacity = "0.5";
         });
 
         container.addEventListener('dragend', () => {
-            isDraggingContainer = false;
-            container.setAttribute('draggable', 'false');
+            isDragging = false;
             container.style.opacity = "1";
+            container.setAttribute('draggable', 'false');
         });
 
-        // DROP ZONE LOGIC
+        // HEADER DROP LOGIC
         headerZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             headerZone.classList.add('drag-over');
@@ -177,21 +180,26 @@
             e.preventDefault();
             headerZone.classList.remove('drag-over');
             headerZone.appendChild(container);
-            // Once in header, disable further dragging for this demo
             container.setAttribute('draggable', 'false');
             dragHandle.style.cursor = 'default';
         });
 
-        // RESIZER LOGIC
+        // MIDDLE RESIZER LOGIC (Kept exactly as requested)
         let isResizing = false;
-        dragMe.addEventListener('mousedown', () => { isResizing = true; document.getElementById('drag-overlay').style.display = "block"; });
+        dragMe.addEventListener('mousedown', () => { isResizing = true; dragOverlay.style.display = "block"; dragMe.classList.add('dragging'); });
+        
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             const containerBox = container.getBoundingClientRect();
             let newWidth = e.clientX - containerBox.left; 
-            if (newWidth > 200 && newWidth < 1100) leftPane.style.width = newWidth + 'px';
+            if (newWidth > 300 && newWidth < 1000) leftPane.style.width = newWidth + 'px';
         });
-        document.addEventListener('mouseup', () => { isResizing = false; document.getElementById('drag-overlay').style.display = "none"; });
+
+        document.addEventListener('mouseup', () => { 
+            isResizing = false; 
+            dragOverlay.style.display = "none"; 
+            dragMe.classList.remove('dragging'); 
+        });
 
         updatePreview();
     </script>
