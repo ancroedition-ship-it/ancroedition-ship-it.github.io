@@ -1,28 +1,271 @@
-<div class="studio-container">
-  <header class="studio-header">
-    <div class="logo">NEUROSENTIX</div>
-    <nav class="view-toggle">
-      <button class="toggle-btn active">Source</button>
-      <button class="toggle-btn">Visual</button>
-    </nav>
-    <div class="user-profile">Core Studio v1.0</div>
-  </header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurosentix Core Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 1. CSS VARIABLES & RESET --- */
+        :root {
+            --bg-dark: #0a0a0b;
+            --panel-bg: #141416;
+            --amber: #ffbf00;
+            --amber-glow: rgba(255, 191, 0, 0.2);
+            --border: rgba(255, 255, 255, 0.08);
+            --text-main: #e2e8f0;
+            --text-dim: #64748b;
+            --spacing-side: 32px; /* Mirrored side padding */
+        }
 
-  <main class="studio-viewport">
-    <aside class="pane text-pane">
-      <div class="pane-label">EXPLORER</div>
-      </aside>
+        * { box-sizing: border-box; outline: none; }
+        body, html {
+            margin: 0; padding: 0;
+            height: 100%;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
 
-    <section class="pane editor-pane">
-      <div class="pane-label">SOURCE</div>
-      <pre class="code-area"><code>// Start coding...</code></pre>
-    </section>
+        /* --- 2. LAYOUT STRUCTURE --- */
+        .studio-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 0 var(--spacing-side); /* Mirrored Margin */
+        }
 
-    <div class="drag-bar" id="drag-handle"></div>
+        /* Header Navigation */
+        .studio-header {
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
 
-    <section class="pane visual-pane">
-      <div class="pane-label">PREVIEW</div>
-      <iframe class="output-frame" srcdoc="<html><body><h1>Visual Output</h1></body></html>"></iframe>
-    </section>
-  </main>
-</div>
+        .logo {
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: var(--amber);
+            text-shadow: 0 0 12px var(--amber-glow);
+        }
+
+        .view-toggle {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px;
+            border-radius: 10px;
+            display: flex;
+            border: 1px solid var(--border);
+        }
+
+        .toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 8px 20px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: var(--amber);
+            color: #000;
+            box-shadow: 0 0 15px var(--amber-glow);
+        }
+
+        /* Main Viewport */
+        .studio-viewport {
+            display: flex;
+            flex: 1;
+            padding: 24px 0; /* Vertical spacing */
+            gap: 0; 
+        }
+
+        /* --- 3. PANE STYLING --- */
+        .pane {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+
+        .pane-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--amber);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .text-pane { flex: 0 0 240px; margin-right: 12px; }
+        .editor-pane { flex: 1; min-width: 200px; }
+        .visual-pane { flex: 1; margin-left: 0; background: white; }
+
+        .code-area {
+            flex: 1;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: #d1d5db;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+
+        .output-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* --- 4. THE DRAGBAR --- */
+        .drag-bar {
+            width: 12px;
+            cursor: col-resize;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .drag-bar::after {
+            content: '';
+            width: 2px;
+            height: 40px;
+            background: var(--border);
+            border-radius: 2px;
+            transition: 0.3s;
+        }
+
+        .drag-bar:hover::after, .drag-bar.active::after {
+            background: var(--amber);
+            height: 60px;
+            box-shadow: 0 0 10px var(--amber);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="studio-container">
+        <header class="studio-header">
+            <div class="logo">NEUROSENTIX</div>
+            
+            <nav class="view-toggle">
+                <button class="toggle-btn active" onclick="switchView('source')">Source</button>
+                <button class="toggle-btn" onclick="switchView('visual')">Visual</button>
+            </nav>
+
+            <div style="font-size: 12px; color: var(--text-dim);">CORE STUDIO V1</div>
+        </header>
+
+        <main class="studio-viewport">
+            
+            <aside class="pane text-pane">
+                <div class="pane-label">Structure</div>
+                <div style="padding: 20px; color: var(--text-dim); font-size: 13px;">
+                    Project Files<br>
+                    - index.html<br>
+                    - styles.css<br>
+                    - main.js
+                </div>
+            </aside>
+
+            <section class="pane editor-pane" id="editorSection">
+                <div class="pane-label">Source Editor</div>
+                <div class="code-area" contenteditable="true" spellcheck="false">
+&lt;div class="hero"&gt;
+  &lt;h1&gt;Neurosentix&lt;/h1&gt;
+  &lt;p&gt;Premium Amber UI&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;style&gt;
+  .hero { text-align: center; padding: 50px; }
+  h1 { color: #ffbf00; }
+&lt;/style&gt;
+                </div>
+            </section>
+
+            <div class="drag-bar" id="drag-handle"></div>
+
+            <section class="pane visual-pane" id="visualSection">
+                <div class="pane-label" style="background: #f1f1f1; color: #666;">Visual Output</div>
+                <iframe class="output-frame" id="preview-frame"></iframe>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        const handle = document.getElementById('drag-handle');
+        const editor = document.getElementById('editorSection');
+        const visual = document.getElementById('visualSection');
+        const preview = document.getElementById('preview-frame');
+        const codeInput = document.querySelector('.code-area');
+
+        let isResizing = false;
+
+        // --- Dragging Logic ---
+        handle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            handle.classList.add('active');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+
+            // Calculate percentage width to maintain responsiveness
+            const containerWidth = document.querySelector('.studio-viewport').offsetWidth;
+            const offsetLeft = editor.getBoundingClientRect().left;
+            const newWidth = e.clientX - offsetLeft;
+
+            if (newWidth > 150 && newWidth < containerWidth - 150) {
+                editor.style.flex = `0 0 ${newWidth}px`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            handle.classList.remove('active');
+            document.body.style.cursor = 'default';
+        });
+
+        // --- Live Preview Logic ---
+        function updatePreview() {
+            const content = codeInput.innerText;
+            const doc = preview.contentDocument || preview.contentWindow.document;
+            doc.open();
+            doc.write(content);
+            doc.close();
+        }
+
+        codeInput.addEventListener('input', updatePreview);
+        window.onload = updatePreview;
+
+        // --- Header Toggle Mockup ---
+        function switchView(view) {
+            const btns = document.querySelectorAll('.toggle-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Simple focus logic: emphasize the selected pane
+            if(view === 'visual') {
+                visual.style.borderColor = 'var(--amber)';
+                editor.style.borderColor = 'var(--border)';
+            } else {
+                editor.style.borderColor = 'var(--amber)';
+                visual.style.borderColor = 'var(--border)';
+            }
+        }
+    </script>
+</body>
+</html>
