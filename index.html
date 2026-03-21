@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEUROSENTIX | MULTI-SCROLL DOCK</title>
+    <title>NEUROSENTIX | FINAL MASTER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { 
@@ -19,34 +19,46 @@
             overflow: hidden; display: flex; flex-direction: column;
         }
 
-        /* --- HEADER WITH MULTI-SCROLL DOCK --- */
+        /* --- HEADER & MULTI-SCROLL DOCK --- */
         .ui-header { 
-            height: 70px; display: flex; align-items: center; 
+            height: 75px; display: flex; align-items: center; 
             padding: 0 30px; border-bottom: 1px solid var(--edge-color); background: #09090b;
-            z-index: 100; gap: 20px;
+            z-index: 100; gap: 20px; flex-shrink: 0;
         }
 
-        /* The Scrollable Track */
-        #header-dock-track {
-            flex: 1; display: flex; align-items: center; gap: 10px;
-            overflow-x: auto; padding: 0 10px; height: 100%;
-            scrollbar-width: none; /* Firefox */
+        .dock-wrapper {
+            flex: 1; height: 100%; position: relative;
+            display: flex; align-items: center; overflow: hidden;
+            mask-image: linear-gradient(to right, black 90%, transparent 100%);
         }
-        #header-dock-track::-webkit-scrollbar { display: none; /* Chrome/Safari */ }
+
+        #header-dock-track {
+            display: flex; align-items: center; gap: 10px;
+            overflow-x: scroll; height: 55px; padding: 0 15px;
+            scroll-behavior: smooth;
+        }
+
+        /* SCROLLBAR FIX */
+        #header-dock-track::-webkit-scrollbar { height: 4px; }
+        #header-dock-track::-webkit-scrollbar-track { background: transparent; }
+        #header-dock-track::-webkit-scrollbar-thumb { 
+            background: #1c1c1e; border-radius: 10px; 
+        }
+        #header-dock-track:hover::-webkit-scrollbar-thumb { background: #3f3f46; }
 
         .header-slot {
-            min-width: 110px; height: 36px; border: 1px dashed #27272a; border-radius: 8px;
+            min-width: 110px; height: 38px; border: 1px dashed #27272a; border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-size: 8px; color: #3f3f46; font-weight: 900; letter-spacing: 0.1em;
-            transition: 0.2s; position: relative; flex-shrink: 0;
+            transition: 0.2s; flex-shrink: 0; background: rgba(255,255,255,0.01);
+            position: relative;
         }
         .header-slot.drag-over { border-color: var(--accent); background: rgba(245, 158, 11, 0.05); }
 
         /* --- WORKSPACE --- */
         .split-container { display: flex; flex: 1; padding: 10px; position: relative; background: var(--bg-main); }
         .pane { display: flex; flex-direction: column; background: var(--bg-pane); border: 1px solid var(--edge-color); border-radius: 12px; overflow: hidden; }
-        
-        #leftPane { width: 668px; flex-shrink: 0; transition: width 0.2s cubic-bezier(0.19, 1, 0.22, 1); }
+        #leftPane { width: 668px; flex-shrink: 0; transition: width 0.3s cubic-bezier(0.19, 1, 0.22, 1); }
         #rightPane { flex: 1; border-left: none; }
 
         .label-bar { height: 48px; background: #0d0d0f; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid var(--edge-color); cursor: grab; }
@@ -56,18 +68,20 @@
         #editor { flex: 1; background: transparent; border: none; outline: none; font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #facc15; white-space: pre-wrap; overflow-y: auto; }
         #live-preview { flex: 1; width: 100%; border: none; background: transparent; }
         
-        /* CLICK-SNAP DIVIDER */
-        .snap-divider { width: 14px; cursor: pointer; display: flex; justify-content: center; z-index: 50; margin: 0 -7px; }
+        /* CLICK-SNAP DIVIDER (DRAG DISABLED) */
+        .snap-divider { width: 16px; cursor: pointer; display: flex; justify-content: center; z-index: 50; margin: 0 -8px; }
         .divider-line { width: 2px; background: #1a1a1c; transition: 0.2s; }
-        .snap-divider:hover .divider-line { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+        .snap-divider:hover .divider-line { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
 
-        /* DOCKING STYLE OVERRIDES */
+        /* DOCKING STATE STYLES */
         .header-slot .pane { position: absolute; inset: 0; width: 100% !important; height: 100% !important; border: none; }
-        .header-slot .label-bar { height: 100%; border: none; background: transparent; justify-content: center; padding: 0; }
-        .header-slot .label-text { color: var(--accent); font-size: 8px; }
+        .header-slot .label-bar { height: 100%; border: none; background: transparent; justify-content: center; }
+        .header-slot .label-text { color: var(--accent); font-size: 8px; letter-spacing: 0.05em; }
         .header-slot #editor-scroll, .header-slot iframe, .header-slot .controls-wrap { display: none; }
 
-        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; }
+        .btn-action { background: #1c1c1e; color: var(--accent); font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 4px; border: 1px solid #2d2d30; cursor: pointer; transition: 0.2s; }
+        .btn-action:hover { border-color: var(--accent); }
+        
         .ns-path { stroke: var(--accent); stroke-width: 2; fill: none; stroke-dasharray: 100; stroke-dashoffset: 100; animation: draw 3s infinite alternate; }
         @keyframes draw { to { stroke-dashoffset: 0; } }
     </style>
@@ -77,20 +91,17 @@
     <header class="ui-header">
         <div class="flex items-center flex-shrink-0">
             <svg style="height:26px" viewBox="0 0 100 40"><path class="ns-path" d="M10,20 Q30,5 50,20 T90,20" /></svg>
-            <h1 style="font-size: 13px; font-weight: 900; letter-spacing: 0.2em; color: #52525b; margin-left: 12px;">NEUROSENTIX</h1>
+            <h1 style="font-size: 12px; font-weight: 900; letter-spacing: 0.2em; color: #52525b; margin-left: 10px;">NEUROSENTIX</h1>
         </div>
 
-        <div id="header-dock-track">
-            <div class="header-slot">SLOT 01</div>
-            <div class="header-slot">SLOT 02</div>
-            <div class="header-slot">SLOT 03</div>
-            <div class="header-slot">SLOT 04</div>
-            <div class="header-slot">SLOT 05</div>
-            <div class="header-slot">SLOT 06</div>
-            <div class="header-slot">SLOT 07</div>
-            <div class="header-slot">SLOT 08</div>
-            <div class="header-slot">SLOT 09</div>
-            <div class="header-slot">SLOT 10</div>
+        <div class="dock-wrapper">
+            <div id="header-dock-track">
+                <div class="header-slot">SLOT_01</div><div class="header-slot">SLOT_02</div>
+                <div class="header-slot">SLOT_03</div><div class="header-slot">SLOT_04</div>
+                <div class="header-slot">SLOT_05</div><div class="header-slot">SLOT_06</div>
+                <div class="header-slot">SLOT_07</div><div class="header-slot">SLOT_08</div>
+                <div class="header-slot">SLOT_09</div><div class="header-slot">SLOT_10</div>
+            </div>
         </div>
 
         <div id="status" class="flex-shrink-0" style="width: 8px; height: 8px; background: #22c55e; border-radius: 50%;"></div>
@@ -101,7 +112,7 @@
             <div class="label-bar" id="handle-l">
                 <span class="label-text">Source</span>
                 <div class="controls-wrap flex gap-2">
-                    <button id="clearBtn" class="btn-action">CLEAR</button>
+                    <button id="clearBtn" class="btn-action" style="color:#ef4444">CLEAR</button>
                     <button id="copyBtn" class="btn-action">COPY</button>
                 </div>
             </div>
@@ -128,27 +139,26 @@
         const update = () => {
             const doc = preview.contentDocument || preview.contentWindow.document;
             doc.open();
-            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;}</style>${editor.innerText || ""}`);
+            doc.write(`<style>body{background:#161618;color:#f59e0b;font-family:monospace;padding:20px;line-height:1.6;}</style>${editor.innerText || ""}`);
             doc.close();
         };
         editor.addEventListener('input', update);
 
-        // --- MOUSE WHEEL SCROLL FOR DOCK ---
+        // --- HORIZONTAL WHEEL SCROLL ---
         dockTrack.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            dockTrack.scrollLeft += e.deltaY;
+            if (e.deltaY !== 0) { e.preventDefault(); dockTrack.scrollLeft += e.deltaY; }
         });
 
-        // --- CLICK TO SNAP ---
+        // --- CLICK TO SNAP (MIDDLE) ---
         workspace.onmousedown = (e) => {
             if (e.target === workspace || e.target === snapBar || e.target.classList.contains('divider-line')) {
                 let rect = workspace.getBoundingClientRect();
                 let x = e.clientX - rect.left;
-                if (x > 150 && x < rect.width - 150) leftPane.style.width = x + 'px';
+                if (x > 180 && x < rect.width - 180) leftPane.style.width = x + 'px';
             }
         };
 
-        // --- DRAG LOGIC ---
+        // --- DRAG MECHANICS ---
         const setupDrag = (pane, handle) => {
             handle.onmousedown = () => pane.setAttribute('draggable', 'true');
             handle.onmouseup = () => pane.setAttribute('draggable', 'false');
@@ -164,16 +174,20 @@
         setupDrag(leftPane, document.getElementById('handle-l'));
         setupDrag(rightPane, document.getElementById('handle-r'));
 
+        // --- DROP INTO SLOTS ---
         document.querySelectorAll('.header-slot').forEach(slot => {
-            slot.ondragover = (e) => e.preventDefault();
+            slot.ondragover = (e) => { e.preventDefault(); slot.classList.add('drag-over'); };
+            slot.ondragleave = () => slot.classList.remove('drag-over');
             slot.ondrop = (e) => {
                 e.preventDefault();
+                slot.classList.remove('drag-over');
                 const id = e.dataTransfer.getData('text/plain');
                 const el = document.getElementById(id);
                 if (el) { slot.innerHTML = ""; slot.appendChild(el); checkMiddle(); }
             };
         });
 
+        // --- DROP INTO WORKSPACE ---
         workspace.ondragover = (e) => e.preventDefault();
         workspace.ondrop = (e) => {
             e.preventDefault();
@@ -190,8 +204,13 @@
             snapBar.style.display = (workspace.querySelectorAll('.pane').length === 2) ? 'flex' : 'none';
         }
 
-        document.getElementById('copyBtn').onclick = () => navigator.clipboard.writeText(editor.innerText);
+        document.getElementById('copyBtn').onclick = () => {
+            navigator.clipboard.writeText(editor.innerText);
+            document.getElementById('copyBtn').innerText = "COPIED";
+            setTimeout(() => document.getElementById('copyBtn').innerText = "COPY", 1000);
+        };
         document.getElementById('clearBtn').onclick = () => { editor.innerText = ""; update(); };
+        
         update();
     </script>
 </body>
