@@ -2,170 +2,221 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Core</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurosentix | Full-Stack Tactical HUD</title>
+    
     <style>
         :root {
             --hud-red: #ff1744;
             --hud-blue: #0066ff;
-            --bg-dark: #0a0a0f;
-            /* Syntax Palette */
-            --syn-tag: #ff79c6;   /* HTML/XML Tags */
-            --syn-attr: #50fa7b;  /* Attributes */
-            --syn-str: #f1fa8c;   /* Strings */
-            --syn-comm: #6272a4;  /* Comments */
-            --syn-val: #bd93f9;   /* Numbers/Values */
+            --bg-dark: #08090b;
+            --border: rgba(255, 255, 255, 0.05);
         }
 
+        * { box-sizing: border-box; }
+        
         body, html {
-            margin: 0; padding: 0; background: #000;
-            height: 100vh; width: 100vw; display: flex; 
+            margin: 0; padding: 0;
+            background-color: #000;
+            height: 100vh; width: 100vw;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+
+        /* --- LOADING / BOOT OVERLAY --- */
+        #boot-loader {
+            position: fixed; inset: 0;
+            background: var(--bg-dark);
+            z-index: 1000;
+            display: flex; flex-direction: column;
             justify-content: center; align-items: center;
-            font-family: 'Fira Code', 'Courier New', monospace;
-            overflow: hidden; color: #fff;
+            color: var(--hud-blue);
+            font-size: 10px; letter-spacing: 4px;
+            transition: opacity 0.6s ease, visibility 0.6s;
         }
 
-        /* --- THE HUD STRUCTURE --- */
+        .load-track { 
+            width: 220px; height: 2px; 
+            background: rgba(0,102,255,0.1); 
+            margin-top: 15px; position: relative; overflow: hidden; 
+        }
+
+        #load-bar { 
+            position: absolute; height: 100%; width: 0%; 
+            background: var(--hud-red); 
+            box-shadow: 0 0 10px var(--hud-red); 
+            transition: width 0.4s ease; 
+        }
+
+        /* --- THE HUD FRAME --- */
         .hud-wrapper {
-            width: 1366px; height: 657px; max-width: 95vw; max-height: 92vh;
-            position: relative; background: var(--bg-dark);
+            width: 1366px; height: 657px;
+            max-width: 95vw; max-height: 90vh;
+            position: relative;
+            background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
+            opacity: 0; transform: scale(0.98);
+            transition: opacity 0.8s ease, transform 0.8s ease;
         }
 
-        .viewport {
-            position: absolute; top: 40px; left: 20px; right: 20px; bottom: 20px;
-            display: flex; gap: 10px;
+        .hud-wrapper.visible { opacity: 1; transform: scale(1); }
+
+        .hud-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
         }
 
-        /* --- THE OMNI-EDITOR (STABILIZED) --- */
-        .editor-container {
-            flex: 0 0 50%; position: relative;
-            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05);
+        .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
+        .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
+
+        /* --- STUDIO LAYOUT --- */
+        .studio-container {
+            position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
+            display: flex; flex-direction: column; z-index: 10;
         }
 
-        /* The hidden brain that captures typing */
-        #main-input {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            padding: 20px; background: transparent; color: transparent;
-            caret-color: var(--hud-blue); border: none; outline: none;
-            resize: none; font-family: inherit; font-size: 14px;
-            line-height: 1.5; z-index: 2; white-space: pre; overflow: auto;
+        .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
+
+        .viewport { display: flex; flex: 1; overflow: hidden; }
+        
+        .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .editor-pane { flex: 0 0 50%; }
+        .preview-pane { flex: 1; background: #fff; }
+
+        .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
+
+        .code-area { 
+            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
+            font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto;
+            tab-size: 4;
         }
 
-        /* The visual layer that shows the colors */
-        #syntax-display {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            padding: 20px; pointer-events: none; z-index: 1;
-            white-space: pre; font-size: 14px; line-height: 1.5;
-            overflow: hidden;
+        .drag-bar { 
+            width: 4px; cursor: col-resize; background: transparent; 
+            transition: 0.2s; z-index: 100;
         }
+        .drag-bar:hover { background: var(--hud-red); }
 
-        .preview-pane { flex: 1; background: #fff; border: 1px solid #333; }
         iframe { width: 100%; height: 100%; border: none; }
-
-        /* Syntax Classes */
-        .s-tag { color: var(--syn-tag); font-weight: bold; }
-        .s-attr { color: var(--syn-attr); }
-        .s-str { color: var(--syn-str); }
-        .s-comm { color: var(--syn-comm); font-style: italic; }
-        .s-val { color: var(--syn-val); }
-
-        /* Dragbar 20px */
-        .drag-bar { width: 20px; cursor: col-resize; background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; }
-        .drag-bar:hover { background: rgba(0, 102, 255, 0.1); }
     </style>
 </head>
 <body>
 
-    <div class="hud-wrapper">
-        <div style="padding: 10px 20px; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px;">
-            NEUROSENTIX_CORE // OMNI_COMPILER_V15.5
+    <div id="boot-loader">
+        <div id="load-status">NEUROSENTIX_CORE_INITIALIZING...</div>
+        <div class="load-track">
+            <div id="load-bar"></div>
         </div>
+    </div>
 
-        <div class="viewport" id="viewport">
-            <div class="editor-container" id="edit-box">
-                <pre id="syntax-display"></pre>
-                <textarea id="main-input" spellcheck="false" autocomplete="off">
-<svg width="100" height="100">
-  <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
-</svg>
+    <div class="hud-wrapper" id="main-hud">
+        <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
+            <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
+            <text x="10" y="12" class="hud-text">X</text>
+            <text x="1353" y="12" class="hud-text">X</text>
+            <rect x="673" y="10" width="20" height="10" fill="var(--hud-red)" />
+        </svg>
 
-<style>
-  body { background: #f0f0f0; }
-  h1 { color: #0066ff; }
-</style>
-
-<h1>System Active</h1>
-
-<script>
-  console.log("Omni-Editor: Online");
-</script></textarea>
-            </div>
-
-            <div class="drag-bar" id="drag-handle"></div>
-
-            <div class="preview-pane">
-                <iframe id="preview-frame"></iframe>
-            </div>
+        <div class="studio-container">
+            <header class="studio-header">
+                <span>NEUROSENTIX_OMNI_EDITOR_v14.2</span>
+                <span id="status-indicator" style="color: var(--hud-red); font-weight: bold;">● LIVE_SYNC</span>
+            </header>
+            <main class="viewport" id="viewport">
+                <div class="pane editor-pane" id="editorPane">
+                    <div class="pane-label">MULTI-LAYER_SOURCE (HTML / CSS / JS / SVG)</div>
+                    <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
+                </div>
+                <div class="drag-bar" id="drag-handle"></div>
+                <section class="pane preview-pane">
+                    <div class="pane-label" style="background:#eee; color:#000;">UNIFIED_RUNTIME</div>
+                    <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
+                </section>
+            </main>
         </div>
     </div>
 
     <script>
-        const input = document.getElementById('main-input');
-        const display = document.getElementById('syntax-display');
-        const preview = document.getElementById('preview-frame');
-        const handle = document.getElementById('drag-handle');
-        const editBox = document.getElementById('edit-box');
+        const editor = document.getElementById('editorPane'),
+              handle = document.getElementById('drag-handle'),
+              viewport = document.getElementById('viewport'),
+              codeInput = document.getElementById('code-input'),
+              preview = document.getElementById('preview-frame'),
+              status = document.getElementById('status-indicator'),
+              loader = document.getElementById('boot-loader'),
+              loadBar = document.getElementById('load-bar'),
+              mainHud = document.getElementById('main-hud');
 
-        // MULTI-LANGUAGE HIGHLIGHTER (HTML, XML, SVG, CSS, JS)
-        function highlight(code) {
-            return code
-                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-                // Tags: <tagname or </tagname
-                .replace(/(&lt;\/?[a-zA-Z0-9]+)/g, '<span class="s-tag">$1</span>')
-                // Attributes: attr="value"
-                .replace(/\b([a-zA-Z\-]+)(?==)/g, '<span class="s-attr">$1</span>')
-                // Strings: "..." or '...'
-                .replace(/(['"])(.*?)\1/g, '<span class="s-str">$1$2$1</span>')
-                // Comments: or //
-                .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="s-comm">$1</span>')
-                .replace(/\/\/.*/g, '<span class="s-comm">$&</span>')
-                // Numbers
-                .replace(/\b(\d+px|\d+%|\d+)\b/g, '<span class="s-val">$1</span>');
+        let debounceTimer;
+        let currentBlobUrl = null;
+
+        /* PREVIEW COMPILER */
+        function updatePreview() {
+            status.style.opacity = "0.5";
+            const userContent = codeInput.innerText;
+            
+            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${userContent}</body></html>`;
+
+            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+            const blob = new Blob([blobContent], { type: 'text/html' });
+            currentBlobUrl = URL.createObjectURL(blob);
+            preview.src = currentBlobUrl;
+            
+            setTimeout(() => { status.style.opacity = "1"; }, 300);
         }
 
-        function update() {
-            // Sync Display
-            display.innerHTML = highlight(input.value) + "\n\n";
-            display.scrollTop = input.scrollTop;
-            display.scrollLeft = input.scrollLeft;
-
-            // Sync Preview (Injection)
-            const blob = new Blob([input.value], {type: 'text/html'});
-            if(preview.src) URL.revokeObjectURL(preview.src);
-            preview.src = URL.createObjectURL(blob);
-        }
-
-        // Stabilized Interaction Logic
-        input.addEventListener('input', update);
-        input.addEventListener('scroll', () => {
-            display.scrollTop = input.scrollTop;
-            display.scrollLeft = input.scrollLeft;
+        codeInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updatePreview, 600); 
         });
 
-        // 20px Drag Logic
+        /* DRAGBAR LOGIC */
         let isDragging = false;
         handle.addEventListener('mousedown', () => isDragging = true);
         document.addEventListener('mouseup', () => isDragging = false);
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            const rect = document.getElementById('viewport').getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            if (x > 50 && x < rect.width - 50) editBox.style.flex = `0 0 ${x}px`;
+            let x = e.clientX - viewport.getBoundingClientRect().left;
+            if (x > 200 && x < viewport.clientWidth - 200) {
+                editor.style.flex = `0 0 ${x}px`;
+            }
         });
 
-        // Initial Boot
-        window.onload = update;
+        /* BOOT SEQUENCE SCRIPT */
+        window.onload = () => {
+            // Stage 1: Fast Start
+            setTimeout(() => { loadBar.style.width = "40%"; }, 200);
+            
+            // Stage 2: Middle Crunch
+            setTimeout(() => { loadBar.style.width = "75%"; }, 800);
+            
+            // Stage 3: Finish and Reveal
+            setTimeout(() => { 
+                loadBar.style.width = "100%"; 
+                setTimeout(() => {
+                    loader.style.opacity = "0";
+                    setTimeout(() => {
+                        loader.style.visibility = "hidden";
+                        mainHud.classList.add('visible');
+                        codeInput.focus();
+                    }, 600);
+                }, 400);
+            }, 1400);
+
+            // Set Default Code
+            codeInput.innerText = 
+`<style>
+  body { background: #111; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
+  .glow { color: #0066ff; text-shadow: 0 0 10px #0066ff; font-size: 3rem; }
+</style>
+
+<h1 class="glow">CORE ACTIVE</h1>
+<svg width="60" height="60" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="40" stroke="#ff1744" stroke-width="8" fill="none" />
+</svg>`;
+
+            updatePreview();
+        };
     </script>
 </body>
 </html>
