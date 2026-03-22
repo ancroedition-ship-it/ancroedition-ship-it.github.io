@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Full Visual HUD</title>
+    <title>Neurosentix | Full Boot HUD</title>
     <style>
         :root {
             --hud-red: #ff1744;
@@ -19,20 +19,30 @@
             overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
         }
 
-        /* --- THE HUD FRAME & SVG OVERLAY --- */
+        /* --- BOOT LOADER (LOADING SCREEN) --- */
+        #boot-loader {
+            position: fixed; inset: 0; background: var(--bg-dark); z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--hud-blue); font-size: 10px; letter-spacing: 4px;
+            transition: opacity 0.6s ease, visibility 0.6s;
+        }
+        .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; }
+        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.4s ease; }
+
+        /* --- HUD FRAME --- */
         .hud-wrapper {
             width: 1366px; height: 657px;
             max-width: 98vw; max-height: 95vh;
             position: relative;
             background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
+            opacity: 0; transform: scale(0.98);
+            transition: opacity 0.8s ease, transform 0.8s ease;
         }
+        .hud-wrapper.visible { opacity: 1; transform: scale(1); }
 
-        /* RESTORED SVG BACKGROUND LAYER */
-        .hud-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100;
-        }
+        /* SVG OVERLAY */
+        .hud-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 100; }
         .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
         .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
@@ -40,23 +50,17 @@
             position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
             display: flex; flex-direction: column; z-index: 10;
         }
-
         .viewport { display: flex; flex: 1; overflow: hidden; position: relative; }
         .orientation-portrait { flex-direction: column !important; }
 
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
         .preview-pane { flex: 1; background: #fff; }
-
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); letter-spacing: 1px; }
         .code-area { flex: 1; padding: 20px; color: #a1a1aa; outline: none; font-size: 13px; white-space: pre-wrap; overflow-y: auto; tab-size: 4; }
 
         /* CLICK-TO-DRAG 20PX BAR */
-        .drag-bar { 
-            width: 20px; cursor: pointer; background: rgba(255, 255, 255, 0.03); 
-            display: flex; align-items: center; justify-content: center; z-index: 101;
-            transition: background 0.2s;
-        }
+        .drag-bar { width: 20px; cursor: pointer; background: rgba(255, 255, 255, 0.03); display: flex; align-items: center; justify-content: center; z-index: 101; transition: background 0.2s; }
         .drag-bar.active { background: var(--hud-red) !important; box-shadow: 0 0 15px rgba(255, 23, 68, 0.4); }
         .drag-bar::after { content: ":::"; color: rgba(255,255,255,0.2); transform: rotate(90deg); letter-spacing: 2px; }
 
@@ -65,28 +69,29 @@
 </head>
 <body>
 
+    <div id="boot-loader">
+        <div id="load-status">NEUROSENTIX_CORE_V14.8_INITIALIZING...</div>
+        <div class="load-track"><div id="load-bar"></div></div>
+    </div>
+
     <div class="hud-wrapper" id="main-hud">
         <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
             <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
-            <text x="10" y="12" class="hud-text">X</text>
-            <text x="1353" y="12" class="hud-text">X</text>
+            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
             <rect x="673" y="10" width="20" height="10" fill="var(--hud-red)" />
         </svg>
 
         <div class="studio-container">
             <header style="height:30px; display:flex; justify-content:space-between; align-items:center; color:var(--hud-blue); font-size:10px; letter-spacing:2px;">
-                <span>NEUROSENTIX_OMNI_v14.7</span>
+                <span>NEUROSENTIX_OMNI_v14.8</span>
                 <span id="status-msg">READY</span>
             </header>
-            
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">MULTI-LAYER_SOURCE (HTML / CSS / JS / SVG)</div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
                 </div>
-                
                 <div class="drag-bar" id="drag-handle"></div>
-                
                 <section class="pane preview-pane">
                     <div class="pane-label" style="background:#eee; color:#000;">UNIFIED_RUNTIME</div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
@@ -101,11 +106,13 @@
               handle = document.getElementById('drag-handle'),
               codeInput = document.getElementById('code-input'),
               preview = document.getElementById('preview-frame'),
-              statusMsg = document.getElementById('status-msg');
+              statusMsg = document.getElementById('status-msg'),
+              loader = document.getElementById('boot-loader'),
+              loadBar = document.getElementById('load-bar'),
+              mainHud = document.getElementById('main-hud');
 
         let isSticky = false;
 
-        // CLICK-TO-DRAG LOGIC
         handle.addEventListener('click', () => {
             isSticky = !isSticky;
             handle.classList.toggle('active', isSticky);
@@ -126,7 +133,6 @@
             }
         });
 
-        // ADAPTIVE BOUNDARIES
         function checkLayout() {
             const isPortrait = window.innerWidth < window.innerHeight;
             viewport.classList.toggle('orientation-portrait', isPortrait);
@@ -135,16 +141,27 @@
         }
         window.addEventListener('resize', checkLayout);
 
-        // RUNTIME COMPILER
         function update() {
-            const blob = new Blob([`<!DOCTYPE html><html><body>${codeInput.innerText}</body></html>`], {type: 'text/html'});
+            const blobContent = `<!DOCTYPE html><html><body style="margin:0; padding:0;">${codeInput.innerText}</body></html>`;
+            const blob = new Blob([blobContent], {type: 'text/html'});
             preview.src = URL.createObjectURL(blob);
         }
         codeInput.addEventListener('input', update);
         
         window.onload = () => {
             checkLayout();
-            codeInput.innerText = "<h1>Visuals Restored</h1><p>SVG Brackets, Labels, and Sticky-Drag are all Active.</p>";
+            // ANIMATED BOOT SEQUENCE
+            setTimeout(() => { loadBar.style.width = "100%"; }, 100);
+            setTimeout(() => {
+                loader.style.opacity = "0";
+                setTimeout(() => {
+                    loader.style.visibility = "hidden";
+                    mainHud.classList.add('visible');
+                    codeInput.focus();
+                }, 600);
+            }, 1200);
+
+            codeInput.innerText = "<h1>System Operational</h1><p>Boot Screen Restored.</p>";
             update();
         };
     </script>
