@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Physical Scale Studio</title>
+    <title>Neurosentix | Master Studio</title>
     
     <style>
         :root {
@@ -49,7 +49,7 @@
             padding: 15px 0; overflow: hidden; position: relative;
         }
 
-        /* --- LAYOUT MODES --- */
+        /* --- ORIENTATION LOGIC --- */
         @media (orientation: landscape) {
             .studio-viewport { flex-direction: row; }
             .middle-stack { flex: 0 0 600px; width: 600px; height: 100%; }
@@ -136,57 +136,55 @@
         const srcSize = document.getElementById('src-size');
         const visSize = document.getElementById('vis-size');
         const codeInput = document.getElementById('code-input');
+        const preview = document.getElementById('preview-frame');
         
         let isDragging = false;
-        const DPI = 96; // Standard Web DPI for Inch conversion
+        let debounceTimer;
+        const DPI = 96;
 
-        function pxToIn(px) {
-            return (px / DPI).toFixed(2);
-        }
+        function pxToIn(px) { return (px / DPI).toFixed(2); }
 
         function updateSizeLabels() {
             const editorRect = middleStack.getBoundingClientRect();
             const visualPane = document.querySelector('.visual-pane');
             const visualRect = visualPane.getBoundingClientRect();
-
-            // Display "Width x Height" format in inches
             srcSize.innerText = `${pxToIn(editorRect.width)}"W x ${pxToIn(editorRect.height)}"H`;
             visSize.innerText = `${pxToIn(visualRect.width)}"W x ${pxToIn(visualRect.height)}"H`;
+        }
+
+        // --- PREVIEW ENGINE (RESTORED) ---
+        function updatePreview() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const doc = preview.contentDocument || preview.contentWindow.document;
+                const content = codeInput.innerText;
+                const head = `<style>body{font-family:sans-serif;padding:15px;margin:0;word-wrap:break-word;background:#fff;}</style>`;
+                doc.open();
+                doc.write(head + content);
+                doc.close();
+            }, 300);
         }
 
         function onMove(e) {
             if (!isDragging) return;
             const isPortrait = window.innerHeight > window.innerWidth;
             const viewport = document.querySelector('.studio-viewport').getBoundingClientRect();
-            
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
             if (isPortrait) {
                 let newH = clientY - viewport.top;
-                const minH = 100;
                 const maxH = viewport.height - 150; 
-
-                if (newH <= minH || newH >= maxH) handle.classList.add('at-limit');
-                else handle.classList.remove('at-limit');
-
-                if (newH < minH) newH = minH;
+                if (newH < 100) newH = 100;
                 if (newH > maxH) newH = maxH;
-
                 middleStack.style.height = `${newH}px`;
                 middleStack.style.flex = `0 0 ${newH}px`;
                 middleStack.style.width = "100%";
             } else {
                 let newW = clientX - viewport.left;
-                const minW = 200;
                 const maxW = viewport.width - 250;
-
-                if (newW <= minW || newW >= maxW) handle.classList.add('at-limit');
-                else handle.classList.remove('at-limit');
-
-                if (newW < minW) newW = minW;
+                if (newW < 200) newW = 200;
                 if (newW > maxW) newW = maxW;
-
                 middleStack.style.width = `${newW}px`;
                 middleStack.style.flex = `0 0 ${newW}px`;
                 middleStack.style.height = "100%";
@@ -194,40 +192,31 @@
             updateSizeLabels();
         }
 
-        const startDrag = (e) => {
-            isDragging = true;
-            shield.style.display = 'block';
-            document.body.style.userSelect = 'none';
-        };
+        handle.addEventListener('mousedown', () => { isDragging = true; shield.style.display = 'block'; });
+        handle.addEventListener('touchstart', (e) => { isDragging = true; shield.style.display = 'block'; if(e.cancelable) e.preventDefault(); }, {passive: false});
 
-        handle.addEventListener('mousedown', startDrag);
-        handle.addEventListener('touchstart', startDrag, {passive: false});
         document.addEventListener('mousemove', onMove);
         document.addEventListener('touchmove', onMove, {passive: false});
         
-        document.addEventListener('mouseup', () => { 
-            isDragging = false; shield.style.display = 'none'; 
-            handle.classList.remove('at-limit');
-        });
-        document.addEventListener('touchend', () => { 
-            isDragging = false; shield.style.display = 'none'; 
+        document.addEventListener('mouseup', () => { isDragging = false; shield.style.display = 'none'; });
+        document.addEventListener('touchend', () => { isDragging = false; shield.style.display = 'none'; });
+
+        // --- INPUT LISTENERS ---
+        codeInput.addEventListener('input', updatePreview);
+        
+        // Handle Paste specifically
+        codeInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+            document.execCommand('insertText', false, text);
+            updatePreview(); // Immediate update on paste
         });
 
         window.addEventListener('resize', () => {
-            const isPortrait = window.innerHeight > window.innerWidth;
-            if (isPortrait) {
-                middleStack.style.height = "50%";
-                middleStack.style.width = "100%";
-                middleStack.style.flex = "0 0 50%";
-            } else {
-                middleStack.style.width = "600px";
-                middleStack.style.height = "100%";
-                middleStack.style.flex = "0 0 600px";
-            }
             updateSizeLabels();
         });
 
-        window.onload = () => { updateSizeLabels(); codeInput.focus(); };
+        window.onload = () => { updatePreview(); updateSizeLabels(); codeInput.focus(); };
     </script>
 </body>
 </html>
