@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix | Tactical HUD Plain</title>
+    <title>Neurosentix | Full-Stack Tactical HUD</title>
     
     <style>
         :root {
@@ -23,7 +23,7 @@
             overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
         }
 
-        /* --- THE HUD FRAME (MATCHING YOUR IMAGE) --- */
+        /* --- THE HUD FRAME --- */
         .hud-wrapper {
             width: 1366px; height: 657px;
             max-width: 95vw; max-height: 90vh;
@@ -32,14 +32,12 @@
             border: 1px solid rgba(0, 102, 255, 0.1);
         }
 
-        /* STATIC HUD SVG OVERLAY */
         .hud-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; z-index: 100;
         }
 
         .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
-        .hud-line { fill: none; stroke: var(--hud-red); stroke-width: 1; opacity: 0.5; }
         .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
         /* --- STUDIO LAYOUT --- */
@@ -48,26 +46,27 @@
             display: flex; flex-direction: column; z-index: 10;
         }
 
-        .studio-header { height: 40px; display: flex; align-items: center; color: var(--hud-blue); font-size: 11px; letter-spacing: 2px; }
+        .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
-        .viewport { display: flex; flex: 1; overflow: hidden; gap: 0; }
+        .viewport { display: flex; flex: 1; overflow: hidden; }
         
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
         .preview-pane { flex: 1; background: #fff; }
 
-        .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #444; border-bottom: 1px solid var(--border); }
+        .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
         .code-area { 
             flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
             font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto;
+            tab-size: 4;
         }
 
         .drag-bar { 
             width: 4px; cursor: col-resize; background: transparent; 
-            transition: 0.3s; z-index: 100;
+            transition: 0.2s; z-index: 100;
         }
-        .drag-bar:hover { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
+        .drag-bar:hover { background: var(--hud-red); }
 
         iframe { width: 100%; height: 100%; border: none; }
     </style>
@@ -76,51 +75,71 @@
 
     <div class="hud-wrapper">
         <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
-            <path class="hud-bracket" d="M60,15 L15,15 L15,60" /> 
-            <path class="hud-bracket" d="M1306,15 L1351,15 L1351,60" />
-            <path class="hud-bracket" d="M1351,597 L1351,642 L1306,642" />
-            <path class="hud-bracket" d="M15,597 L15,642 L60,642" />
-
-            <path class="hud-line" d="M100,15 L650,15 M716,15 L1266,15" />
-            <path class="hud-line" d="M100,642 L1266,642" />
-
+            <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
             <text x="10" y="12" class="hud-text">X</text>
             <text x="1353" y="12" class="hud-text">X</text>
-            <text x="1353" y="653" class="hud-text">X</text>
-            <text x="10" y="653" class="hud-text">X</text>
-
             <rect x="673" y="10" width="20" height="10" fill="var(--hud-red)" />
         </svg>
 
         <div class="studio-container">
-            <header class="studio-header">NEUROSENTIX_SYSTEM_CORE_v13.0</header>
+            <header class="studio-header">
+                <span>NEUROSENTIX_OMNI_EDITOR_v14.0</span>
+                <span id="status-indicator" style="color: var(--hud-red); font-weight: bold;">● LIVE_SYNC</span>
+            </header>
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
-                    <div class="pane-label">SOURCE_CODE</div>
+                    <div class="pane-label">MULTI-LAYER_SOURCE (HTML / CSS / JS / SVG)</div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
                 </div>
                 <div class="drag-bar" id="drag-handle"></div>
                 <section class="pane preview-pane">
-                    <div class="pane-label" style="background:#eee; color:#000;">VISUAL_PREVIEW</div>
-                    <iframe id="preview-frame"></iframe>
+                    <div class="pane-label" style="background:#eee; color:#000;">UNIFIED_RUNTIME</div>
+                    <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
                 </section>
             </main>
         </div>
     </div>
 
     <script>
-        const viewport = document.getElementById('viewport'),
+        const editor = document.getElementById('editorPane'),
               handle = document.getElementById('drag-handle'),
-              editor = document.getElementById('editorPane'),
+              viewport = document.getElementById('viewport'),
               codeInput = document.getElementById('code-input'),
-              preview = document.getElementById('preview-frame');
+              preview = document.getElementById('preview-frame'),
+              status = document.getElementById('status-indicator');
 
-        /* PREVIEW ENGINE (PLAIN) */
+        let debounceTimer;
+        let currentBlobUrl = null;
+
+        function updatePreview() {
+            status.style.opacity = "0.5";
+            const userContent = codeInput.innerText;
+            
+            // This structure accepts everything: SVG, Scripts, Styles, and HTML
+            const blobContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Runtime</title>
+                </head>
+                <body>
+                    ${userContent}
+                </body>
+                </html>
+            `;
+
+            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+            const blob = new Blob([blobContent], { type: 'text/html' });
+            currentBlobUrl = URL.createObjectURL(blob);
+            preview.src = currentBlobUrl;
+            
+            setTimeout(() => { status.style.opacity = "1"; }, 300);
+        }
+
         codeInput.addEventListener('input', () => {
-            const doc = preview.contentDocument;
-            doc.open();
-            doc.write(`<style>body{padding:2rem;font-family:sans-serif;}</style>` + codeInput.innerText);
-            doc.close();
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updatePreview, 600); 
         });
 
         /* DRAG LOGIC */
@@ -135,7 +154,33 @@
             }
         });
 
-        window.onload = () => { codeInput.focus(); };
+        window.onload = () => { 
+            // Default Multilayer Template
+            const defaultTemplate = 
+`<style>
+  body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; height: 100vh; justify-content: center; }
+  h1 { color: #0066ff; font-family: sans-serif; }
+  .box { transition: transform 0.3s; cursor: pointer; }
+  .box:hover { transform: scale(1.1); }
+</style>
+
+<h1>System Operational</h1>
+<svg width="100" height="100" class="box" onclick="sync()">
+  <rect width="100" height="100" fill="#ff1744" rx="15" />
+  <text x="50" y="55" fill="white" text-anchor="middle" font-family="sans-serif">PUSH</text>
+</svg>
+
+<script>
+  function sync() {
+    alert("Data Synchronized Successfully.");
+    console.log("HUD Handshake Complete");
+  }
+<\/script>`;
+            
+            codeInput.innerText = defaultTemplate;
+            updatePreview(); 
+            codeInput.focus(); 
+        };
     </script>
 </body>
 </html>
