@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Core</title>
+    <title>Neurosentix Studio</title>
     
     <style>
         :root {
@@ -80,6 +80,28 @@
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
+        /* --- SEARCH UI --- */
+        .search-container {
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+        }
+        #search-input {
+            background: transparent;
+            border: 1px solid var(--hud-blue);
+            color: var(--hud-blue);
+            font-family: inherit;
+            font-size: 10px;
+            padding: 4px 8px;
+            outline: none;
+            width: 100%;
+            text-transform: uppercase;
+        }
+        #search-input::placeholder { color: rgba(0, 102, 255, 0.3); }
+        mark { background: rgba(0, 102, 255, 0.4); color: #fff; }
+
         /* --- 20PX DRAGBAR --- */
         .drag-bar { 
             background: rgba(255, 255, 255, 0.04);
@@ -99,7 +121,7 @@
 <body>
 
     <div id="boot-loader">
-        <div id="load-status">NEUROSENTIX_CORE_BOOT_INIT</div>
+        <div id="load-status">NEUROSENTIX</div>
         <div class="load-track"><div id="load-bar"></div></div>
     </div>
 
@@ -117,6 +139,9 @@
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
+                    <div class="search-container">
+                        <input type="text" id="search-input" placeholder="SEARCH_SOURCE..." spellcheck="false">
+                    </div>
                     <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                 </div>
                 
@@ -139,9 +164,11 @@
               status = document.getElementById('status-indicator'),
               frame = document.getElementById('main-frame'),
               loadBar = document.getElementById('load-bar'),
-              loader = document.getElementById('boot-loader');
+              loader = document.getElementById('boot-loader'),
+              searchInput = document.getElementById('search-input');
 
         let isDragging = false;
+        let originalContent = "";
 
         /* BOOT SEQUENCE LOGIC */
         window.onload = () => {
@@ -208,9 +235,26 @@
             }
         });
 
+        /* SEARCH & HIGHLIGHT ENGINE */
+        searchInput.addEventListener('input', () => {
+            const query = searchInput.value;
+            const text = codeInput.innerText;
+
+            if (!query) {
+                codeInput.innerHTML = text; // Reset
+                return;
+            }
+
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            codeInput.innerHTML = text.replace(regex, '<mark>$1</mark>');
+        });
+
         /* OMNI-INJECTION ENGINE */
         function updatePreview() {
-            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${codeInput.innerText}</body></html>`;
+            // We use innerText to ensure we get raw code even if <mark> tags are present
+            const code = codeInput.innerText;
+            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
             const blob = new Blob([blobContent], { type: 'text/html' });
             preview.src = URL.createObjectURL(blob);
