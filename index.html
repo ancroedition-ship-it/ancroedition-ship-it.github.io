@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Precision Studio</title>
+    <title>Neurosentix | Physical Scale Studio</title>
     
     <style>
         :root {
@@ -79,8 +79,7 @@
             font-weight: bold; display: flex; justify-content: space-between;
         }
 
-        /* SIZE INDICATOR STYLE */
-        .size-tag { font-family: monospace; opacity: 0.6; font-size: 8px; color: #fff; }
+        .size-tag { font-family: monospace; opacity: 0.8; font-size: 9px; color: #fff; }
 
         .drag-bar { display: flex; justify-content: center; align-items: center; flex-shrink: 0; z-index: 100; touch-action: none; }
         .drag-bar::after { content: ''; background: var(--amber); box-shadow: 0 0 8px var(--amber-glow); transition: 0.1s; }
@@ -112,7 +111,7 @@
                 <section class="pane">
                     <div class="pane-label">
                         <span>Source Editor</span>
-                        <span class="size-tag" id="src-size">0px</span>
+                        <span class="size-tag" id="src-size">0.00"</span>
                     </div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
                 </section>
@@ -123,7 +122,7 @@
             <section class="pane visual-pane">
                 <div class="pane-label" style="color: #888; background: #f9f9f9;">
                     <span>Visual Output</span>
-                    <span class="size-tag" id="vis-size" style="color: #888;">0px</span>
+                    <span class="size-tag" id="vis-size" style="color: #666;">0.00"</span>
                 </div>
                 <iframe class="output-frame" id="preview-frame"></iframe>
             </section>
@@ -137,26 +136,24 @@
         const srcSize = document.getElementById('src-size');
         const visSize = document.getElementById('vis-size');
         const codeInput = document.getElementById('code-input');
-        const preview = document.getElementById('preview-frame');
         
         let isDragging = false;
+        const DPI = 96; // Standard Web DPI for Inch conversion
 
-        // --- UPDATE LABELS ---
-        function updateSizeLabels() {
-            const isPortrait = window.innerHeight > window.innerWidth;
-            const editorRect = middleStack.getBoundingClientRect();
-            const visualRect = document.querySelector('.visual-pane').getBoundingClientRect();
-
-            if (isPortrait) {
-                srcSize.innerText = `${Math.round(editorRect.height)}H`;
-                visSize.innerText = `${Math.round(visualRect.height)}H`;
-            } else {
-                srcSize.innerText = `${Math.round(editorRect.width)}W`;
-                visSize.innerText = `${Math.round(visualRect.width)}W`;
-            }
+        function pxToIn(px) {
+            return (px / DPI).toFixed(2);
         }
 
-        // --- DRAG ENGINE ---
+        function updateSizeLabels() {
+            const editorRect = middleStack.getBoundingClientRect();
+            const visualPane = document.querySelector('.visual-pane');
+            const visualRect = visualPane.getBoundingClientRect();
+
+            // Display "Width x Height" format in inches
+            srcSize.innerText = `${pxToIn(editorRect.width)}"W x ${pxToIn(editorRect.height)}"H`;
+            visSize.innerText = `${pxToIn(visualRect.width)}"W x ${pxToIn(visualRect.height)}"H`;
+        }
+
         function onMove(e) {
             if (!isDragging) return;
             const isPortrait = window.innerHeight > window.innerWidth;
@@ -167,13 +164,13 @@
 
             if (isPortrait) {
                 let newH = clientY - viewport.top;
-                const minTop = 100;
-                const maxH = viewport.height - 150; // Reserved for bottom pane
+                const minH = 100;
+                const maxH = viewport.height - 150; 
 
-                if (newH <= minTop || newH >= maxH) handle.classList.add('at-limit');
+                if (newH <= minH || newH >= maxH) handle.classList.add('at-limit');
                 else handle.classList.remove('at-limit');
 
-                if (newH < minTop) newH = minTop;
+                if (newH < minH) newH = minH;
                 if (newH > maxH) newH = maxH;
 
                 middleStack.style.height = `${newH}px`;
@@ -181,13 +178,13 @@
                 middleStack.style.width = "100%";
             } else {
                 let newW = clientX - viewport.left;
-                const minLeft = 200;
-                const maxW = viewport.width - 250; // Reserved for right pane
+                const minW = 200;
+                const maxW = viewport.width - 250;
 
-                if (newW <= minLeft || newW >= maxW) handle.classList.add('at-limit');
+                if (newW <= minW || newW >= maxW) handle.classList.add('at-limit');
                 else handle.classList.remove('at-limit');
 
-                if (newW < minLeft) newW = minLeft;
+                if (newW < minW) newW = minW;
                 if (newW > maxW) newW = maxW;
 
                 middleStack.style.width = `${newW}px`;
@@ -217,7 +214,6 @@
         });
 
         window.addEventListener('resize', () => {
-            // Reset layout on resize to keep 50/50 split
             const isPortrait = window.innerHeight > window.innerWidth;
             if (isPortrait) {
                 middleStack.style.height = "50%";
@@ -231,7 +227,6 @@
             updateSizeLabels();
         });
 
-        // Init
         window.onload = () => { updateSizeLabels(); codeInput.focus(); };
     </script>
 </body>
