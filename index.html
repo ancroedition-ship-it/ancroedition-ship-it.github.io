@@ -37,7 +37,6 @@
             box-shadow: 0 0 12px var(--hud-red); 
         }
 
-        /* --- LOADING OVERLAY --- */
         #boot-loader {
             position: absolute; inset: 0;
             background: var(--bg-dark);
@@ -52,7 +51,6 @@
         .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; overflow: hidden; }
         #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.3s; }
 
-        /* --- MAIN HUD FRAME --- */
         .hud-wrapper {
             width: 1366px; height: 657px;
             max-width: 95vw; max-height: 92vh;
@@ -73,6 +71,14 @@
 
         .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
+        /* --- NAV TOOLS --- */
+        .nav-tools { display: flex; align-items: center; gap: 15px; }
+        .hud-input-small { 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
+            font-size: 9px; padding: 2px 5px; width: 60px; outline: none; transition: border 0.2s;
+        }
+        .hud-input-small:focus { border-color: var(--hud-red); }
+
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
@@ -80,55 +86,29 @@
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
-        /* --- SEARCH UI --- */
-        .search-container {
-            padding: 5px 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
+        .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+        #search-input { background: transparent; border: 1px solid var(--hud-blue); color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
+        #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
+        #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
+
+        .editor-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
+        #line-numbers {
+            width: 45px; padding: 20px 8px; background: rgba(0,0,0,0.4);
+            color: #333; font-size: 12px; text-align: right; 
+            border-right: 1px solid var(--border); overflow: hidden; line-height: 1.5; pointer-events: none;
         }
-        #search-input {
-            background: transparent;
-            border: 1px solid var(--hud-blue);
-            color: var(--hud-blue);
-            font-family: inherit;
-            font-size: 10px;
-            padding: 4px 8px;
-            outline: none;
-            width: 100%;
-            text-transform: uppercase;
+        .code-area { 
+            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
+            font-size: 13px; white-space: pre; overflow: auto; 
+            user-select: text; line-height: 1.5; 
         }
-        #search-input::placeholder { color: rgba(0, 102, 255, 0.3); }
         
-        #match-count {
-            color: var(--hud-blue); 
-            font-size: 9px; 
-            margin-left: 10px; 
-            white-space: nowrap; 
-            opacity: 0.6;
-            transition: all 0.2s;
-        }
-        #match-count.found {
-            color: var(--hud-red);
-            text-shadow: 0 0 5px var(--hud-red);
-            opacity: 1;
-        }
+        mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; }
 
-        mark { background: rgba(255, 23, 68, 0.6); color: #fff; border-radius: 2px; }
-
-        /* --- 20PX DRAGBAR --- */
-        .drag-bar { 
-            background: rgba(255, 255, 255, 0.04);
-            z-index: 100; display: flex; align-items: center; justify-content: center;
-        }
+        .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
-        .drag-bar::before {
-            content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%;
-            box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3);
-        }
+        .drag-bar::before { content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%; box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3); }
 
-        .code-area { flex: 1; padding: 20px; color: #a1a1aa; outline: none; font-size: 13px; white-space: pre-wrap; overflow-y: auto; user-select: text; }
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
     </style>
@@ -148,8 +128,12 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V15.1</span>
-                <span id="status-indicator" style="transition: color 0.3s;">● LIVE_SYNC</span>
+                <span>NEUROSENTIX_CORE // V16.0</span>
+                <div class="nav-tools">
+                    <span style="opacity: 0.5;">GOTO_LINE:</span>
+                    <input type="number" id="goto-input" class="hud-input-small" placeholder="LN#">
+                    <span id="status-indicator">● LIVE_SYNC</span>
+                </div>
             </header>
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
@@ -158,7 +142,10 @@
                         <input type="text" id="search-input" placeholder="SEARCH_SOURCE..." spellcheck="false">
                         <span id="match-count">0 MATCHES</span>
                     </div>
-                    <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
+                    <div class="editor-layout">
+                        <div id="line-numbers">1</div>
+                        <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
+                    </div>
                 </div>
                 
                 <div class="drag-bar" id="drag-handle"></div>
@@ -182,118 +169,110 @@
               loadBar = document.getElementById('load-bar'),
               loader = document.getElementById('boot-loader'),
               searchInput = document.getElementById('search-input'),
-              matchDisplay = document.getElementById('match-count');
+              matchDisplay = document.getElementById('match-count'),
+              lineNumbers = document.getElementById('line-numbers'),
+              gotoInput = document.getElementById('goto-input');
 
         let isDragging = false;
 
-        /* BOOT SEQUENCE */
         window.onload = () => {
-            loadBar.style.width = "30%";
+            loadBar.style.width = "100%";
             setTimeout(() => {
-                loadBar.style.width = "70%";
                 handleOrientation();
                 updatePreview();
-                setTimeout(() => {
-                    loadBar.style.width = "100%";
-                    setTimeout(() => {
-                        loader.style.opacity = "0";
-                        setTimeout(() => loader.remove(), 500);
-                        codeInput.focus();
-                    }, 200);
-                }, 400);
-            }, 500);
+                updateLineNumbers();
+                loader.style.opacity = "0";
+                setTimeout(() => loader.remove(), 500);
+                codeInput.focus();
+            }, 600);
         };
 
-        /* ADAPTIVE LAYOUT */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
-            if (isPortrait) {
-                viewport.style.flexDirection = 'column';
-                handle.style.width = '100%'; handle.style.height = '20px';
-                handle.style.cursor = 'row-resize';
-                editor.style.flex = '0 0 40%';
-            } else {
-                viewport.style.flexDirection = 'row';
-                handle.style.width = '20px'; handle.style.height = '100%';
-                handle.style.cursor = 'col-resize';
-                editor.style.flex = '0 0 50%';
-            }
+            viewport.style.flexDirection = isPortrait ? 'column' : 'row';
+            handle.style.width = isPortrait ? '100%' : '20px';
+            handle.style.height = isPortrait ? '20px' : '100%';
+            handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
+            editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
-        /* DRAG ENGINE */
-        handle.addEventListener('mousedown', () => {
-            isDragging = true;
-            handle.classList.add('active');
-            preview.classList.add('shield');
-            status.innerHTML = "● MANUAL_OVERRIDE";
-            status.style.color = "var(--hud-red)";
-            frame.style.borderColor = "var(--hud-red)";
-        });
-
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-            handle.classList.remove('active');
-            preview.classList.remove('shield');
-            status.innerHTML = "● LIVE_SYNC";
-            status.style.color = "var(--hud-blue)";
-            frame.style.borderColor = "rgba(0, 102, 255, 0.1)";
-        });
-
-        document.addEventListener('mousemove', (e) => {
+        /* DRAG LOGIC */
+        handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
+        document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
+        document.onmousemove = (e) => {
             if (!isDragging) return;
             const rect = viewport.getBoundingClientRect();
             if (window.innerHeight > window.innerWidth) {
                 let y = e.clientY - rect.top;
-                if (y > 20 && y < rect.height - 20) editor.style.flex = `0 0 ${y}px`;
+                if (y > 40 && y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
             } else {
                 let x = e.clientX - rect.left;
-                if (x > 20 && x < rect.width - 20) editor.style.flex = `0 0 ${x}px`;
+                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
             }
-        });
+        };
 
-        /* SEARCH ENGINE (STABILIZED) */
-        searchInput.addEventListener('input', () => {
+        /* CORE ENGINE */
+        function updateLineNumbers() {
+            const lines = codeInput.innerText.split(/\r\n|\r|\n/).length;
+            let nums = "";
+            for(let i=1; i<=lines; i++) nums += i + "<br>";
+            lineNumbers.innerHTML = nums;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        /* GOTO LINE ENGINE */
+        gotoInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                const lineNum = parseInt(gotoInput.value);
+                const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
+                if (lineNum > 0) {
+                    codeInput.scrollTop = (lineNum - 1) * lineHeight;
+                    gotoInput.blur();
+                }
+            }
+        };
+
+        /* SEARCH ENGINE */
+        searchInput.oninput = () => {
             const query = searchInput.value;
-            const text = codeInput.innerText; // Get raw text to bypass existing marks
-
+            const text = codeInput.innerText;
             if (!query) {
-                codeInput.innerHTML = text; 
+                codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 return;
             }
-
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
-            
             const matches = text.match(regex);
-            const count = matches ? matches.length : 0;
-            matchDisplay.innerText = `${count} MATCHES`;
-            
-            if (count > 0) {
+            matchDisplay.innerText = `${matches ? matches.length : 0} MATCHES`;
+            if (matches) {
                 matchDisplay.classList.add('found');
-                // Temporarily inject visual highlights
-                codeInput.innerHTML = text.replace(regex, '<mark>$1</mark>');
+                codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
             } else {
                 matchDisplay.classList.remove('found');
-                codeInput.innerHTML = text;
+                codeInput.innerHTML = escapeHtml(text);
             }
-        });
+        };
 
-        /* FOCUS PROTECTION: Clear search before editing to prevent code breakage */
-        codeInput.addEventListener('focus', () => {
+        codeInput.onfocus = () => {
             if (searchInput.value !== "") {
-                const rawText = codeInput.innerText;
-                codeInput.innerHTML = rawText; // Strip all <mark> tags
+                const raw = codeInput.innerText;
+                codeInput.innerHTML = escapeHtml(raw);
                 searchInput.value = "";
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
             }
-        });
+        };
 
-        /* PREVIEW ENGINE */
+        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+
         function updatePreview() {
-            // innerText ensures we only send raw code, never HTML mark tags
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
@@ -301,8 +280,8 @@
             preview.src = URL.createObjectURL(blob);
         }
 
-        codeInput.addEventListener('input', updatePreview);
-        window.addEventListener('resize', handleOrientation);
+        codeInput.oninput = () => { updatePreview(); updateLineNumbers(); };
+        window.onresize = handleOrientation;
     </script>
 </body>
 </html>
