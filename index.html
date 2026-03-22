@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix | Full-Stack Tactical HUD</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Neurosentix | Adaptive Tactical HUD v14.3</title>
     
     <style>
         :root {
@@ -21,15 +21,18 @@
             height: 100vh; width: 100vw;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
+            overscroll-behavior-y: contain;
+            user-select: none;
         }
 
         /* --- THE HUD FRAME --- */
         .hud-wrapper {
             width: 1366px; height: 657px;
-            max-width: 95vw; max-height: 90vh;
+            max-width: 95vw; max-height: 92vh;
             position: relative;
             background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
+            transition: border 0.3s;
         }
 
         .hud-overlay {
@@ -56,44 +59,65 @@
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
+        /* --- 30PX DRAGBAR --- */
+        .drag-bar { 
+            background: rgba(255, 255, 255, 0.05);
+            transition: background 0.2s, box-shadow 0.2s;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: col-resize;
+        }
+        
+        .drag-bar.active {
+            background: rgba(255, 23, 68, 0.3);
+            box-shadow: inset 0 0 15px var(--hud-red);
+        }
+
+        /* Triple-Bar Grip */
+        .drag-bar::before {
+            content: "";
+            width: 16px; height: 2px;
+            background: rgba(255,255,255,0.2);
+            box-shadow: 0 5px 0 rgba(255,255,255,0.2), 0 -5px 0 rgba(255,255,255,0.2);
+        }
+
         .code-area { 
             flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
             font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto;
-            tab-size: 4;
+            user-select: text;
         }
-
-        .drag-bar { 
-            width: 4px; cursor: col-resize; background: transparent; 
-            transition: 0.2s; z-index: 100;
-        }
-        .drag-bar:hover { background: var(--hud-red); }
 
         iframe { width: 100%; height: 100%; border: none; }
+        .shield { pointer-events: none !important; }
+
+        #status-indicator { transition: color 0.3s; }
     </style>
 </head>
 <body>
 
-    <div class="hud-wrapper">
+    <div class="hud-wrapper" id="main-frame">
         <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
             <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
-            <text x="10" y="12" class="hud-text">X</text>
-            <text x="1353" y="12" class="hud-text">X</text>
-            <rect x="673" y="10" width="20" height="10" fill="var(--hud-red)" />
+            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
         </svg>
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_OMNI_EDITOR_v14.0</span>
-                <span id="status-indicator" style="color: var(--hud-red); font-weight: bold;">● LIVE_SYNC</span>
+                <span>NEUROSENTIX_OMNI_ADAPTIVE_v14.3</span>
+                <span id="status-indicator">● LIVE_SYNC</span>
             </header>
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
-                    <div class="pane-label">MULTI-LAYER_SOURCE (HTML / CSS / JS / SVG)</div>
-                    <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
+                    <div class="pane-label">SOURCE_EDITOR</div>
+                    <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                 </div>
+                
                 <div class="drag-bar" id="drag-handle"></div>
+                
                 <section class="pane preview-pane">
-                    <div class="pane-label" style="background:#eee; color:#000;">UNIFIED_RUNTIME</div>
+                    <div class="pane-label" style="background:#eee; color:#000;">RUNTIME_OUTPUT</div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
                 </section>
             </main>
@@ -101,83 +125,88 @@
     </div>
 
     <script>
-        const editor = document.getElementById('editorPane'),
+        const viewport = document.getElementById('viewport'),
               handle = document.getElementById('drag-handle'),
-              viewport = document.getElementById('viewport'),
+              editor = document.getElementById('editorPane'),
               codeInput = document.getElementById('code-input'),
               preview = document.getElementById('preview-frame'),
-              status = document.getElementById('status-indicator');
+              status = document.getElementById('status-indicator'),
+              frame = document.getElementById('main-frame');
 
+        let isDragging = false;
         let debounceTimer;
-        let currentBlobUrl = null;
 
+        /* ADAPTIVE ORIENTATION ENGINE */
+        function handleOrientation() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            if (isPortrait) {
+                viewport.style.flexDirection = 'column';
+                handle.style.width = '100%';
+                handle.style.height = '30px';
+                handle.style.cursor = 'row-resize';
+                editor.style.flex = '0 0 40%';
+                handle.style.flexDirection = 'row';
+            } else {
+                viewport.style.flexDirection = 'row';
+                handle.style.width = '30px';
+                handle.style.height = '100%';
+                handle.style.cursor = 'col-resize';
+                editor.style.flex = '0 0 50%';
+                handle.style.flexDirection = 'column';
+            }
+        }
+
+        /* CLICK-TO-HOLD DRAG LOGIC */
+        handle.addEventListener('mousedown', () => {
+            isDragging = true;
+            handle.classList.add('active');
+            preview.classList.add('shield');
+            status.innerHTML = "● MANUAL_OVERRIDE";
+            status.style.color = "var(--hud-red)";
+            frame.style.border = "1px solid var(--hud-red)";
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            handle.classList.remove('active');
+            preview.classList.remove('shield');
+            status.innerHTML = "● LIVE_SYNC";
+            status.style.color = "var(--hud-blue)";
+            frame.style.border = "1px solid rgba(0, 102, 255, 0.1)";
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const rect = viewport.getBoundingClientRect();
+            const isPortrait = window.innerHeight > window.innerWidth;
+
+            if (isPortrait) {
+                let y = e.clientY - rect.top;
+                if (y > 30 && y < rect.height - 30) editor.style.flex = `0 0 ${y}px`;
+            } else {
+                let x = e.clientX - rect.left;
+                if (x > 30 && x < rect.width - 30) editor.style.flex = `0 0 ${x}px`;
+            }
+        });
+
+        /* BLOB INJECTION PREVIEW */
         function updatePreview() {
-            status.style.opacity = "0.5";
-            const userContent = codeInput.innerText;
-            
-            // This structure accepts everything: SVG, Scripts, Styles, and HTML
-            const blobContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <title>Runtime</title>
-                </head>
-                <body>
-                    ${userContent}
-                </body>
-                </html>
-            `;
-
-            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${codeInput.innerText}</body></html>`;
+            if (preview.src) URL.revokeObjectURL(preview.src);
             const blob = new Blob([blobContent], { type: 'text/html' });
-            currentBlobUrl = URL.createObjectURL(blob);
-            preview.src = currentBlobUrl;
-            
-            setTimeout(() => { status.style.opacity = "1"; }, 300);
+            preview.src = URL.createObjectURL(blob);
         }
 
         codeInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(updatePreview, 600); 
+            debounceTimer = setTimeout(updatePreview, 600);
         });
 
-        /* DRAG LOGIC */
-        let isDragging = false;
-        handle.addEventListener('mousedown', () => isDragging = true);
-        document.addEventListener('mouseup', () => isDragging = false);
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            let x = e.clientX - viewport.getBoundingClientRect().left;
-            if (x > 200 && x < viewport.clientWidth - 200) {
-                editor.style.flex = `0 0 ${x}px`;
-            }
-        });
-
+        window.addEventListener('resize', handleOrientation);
         window.onload = () => { 
-            // Default Multilayer Template
-            const defaultTemplate = 
-`<style>
-  body { background: #f0f0f0; display: flex; flex-direction: column; align-items: center; height: 100vh; justify-content: center; }
-  h1 { color: #0066ff; font-family: sans-serif; }
-  .box { transition: transform 0.3s; cursor: pointer; }
-  .box:hover { transform: scale(1.1); }
-</style>
-
-<h1>System Operational</h1>
-<svg width="100" height="100" class="box" onclick="sync()">
-  <rect width="100" height="100" fill="#ff1744" rx="15" />
-  <text x="50" y="55" fill="white" text-anchor="middle" font-family="sans-serif">PUSH</text>
-</svg>
-
-<script>
-  function sync() {
-    alert("Data Synchronized Successfully.");
-    console.log("HUD Handshake Complete");
-  }
-<\/script>`;
-            
-            codeInput.innerText = defaultTemplate;
+            handleOrientation(); 
+            // Default Template
+            codeInput.innerText = "\n<h1>System Live</h1>\n\n\n<style>\nh1 { color: #0066ff; }\n</style>\n\n\n<script>\nconsole.log('Handshake Complete');\n<\/script>";
             updatePreview(); 
             codeInput.focus(); 
         };
