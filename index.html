@@ -100,7 +100,22 @@
             text-transform: uppercase;
         }
         #search-input::placeholder { color: rgba(0, 102, 255, 0.3); }
-        mark { background: rgba(0, 102, 255, 0.4); color: #fff; }
+        
+        #match-count {
+            color: var(--hud-blue); 
+            font-size: 9px; 
+            margin-left: 10px; 
+            white-space: nowrap; 
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+        #match-count.found {
+            color: var(--hud-red);
+            text-shadow: 0 0 5px var(--hud-red);
+            opacity: 1;
+        }
+
+        mark { background: rgba(255, 23, 68, 0.4); color: #fff; }
 
         /* --- 20PX DRAGBAR --- */
         .drag-bar { 
@@ -141,6 +156,7 @@
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
                         <input type="text" id="search-input" placeholder="SEARCH_SOURCE..." spellcheck="false">
+                        <span id="match-count">0 MATCHES</span>
                     </div>
                     <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                 </div>
@@ -165,10 +181,10 @@
               frame = document.getElementById('main-frame'),
               loadBar = document.getElementById('load-bar'),
               loader = document.getElementById('boot-loader'),
-              searchInput = document.getElementById('search-input');
+              searchInput = document.getElementById('search-input'),
+              matchDisplay = document.getElementById('match-count');
 
         let isDragging = false;
-        let originalContent = "";
 
         /* BOOT SEQUENCE LOGIC */
         window.onload = () => {
@@ -241,18 +257,30 @@
             const text = codeInput.innerText;
 
             if (!query) {
-                codeInput.innerHTML = text; // Reset
+                codeInput.innerHTML = text; 
+                matchDisplay.innerText = "0 MATCHES";
+                matchDisplay.classList.remove('found');
                 return;
             }
 
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
-            codeInput.innerHTML = text.replace(regex, '<mark>$1</mark>');
+            
+            const matches = text.match(regex);
+            const count = matches ? matches.length : 0;
+            matchDisplay.innerText = `${count} MATCHES`;
+            
+            if (count > 0) {
+                matchDisplay.classList.add('found');
+                codeInput.innerHTML = text.replace(regex, '<mark>$1</mark>');
+            } else {
+                matchDisplay.classList.remove('found');
+                codeInput.innerHTML = text;
+            }
         });
 
         /* OMNI-INJECTION ENGINE */
         function updatePreview() {
-            // We use innerText to ensure we get raw code even if <mark> tags are present
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
