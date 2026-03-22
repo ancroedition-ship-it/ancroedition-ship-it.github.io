@@ -2,207 +2,140 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | RGB Studio V7.5</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neurosentix | Tactical HUD Plain</title>
     
     <style>
         :root {
-            --bg-dark: #000;
-            --panel-bg: #0a0a0b;
-            --rgb-red: #ff0000;
-            --rgb-green: #00ff00;
-            --rgb-blue: #0066ff;
-            --red-glow: rgba(255, 0, 0, 0.4);
-            --blue-glow: rgba(0, 102, 255, 0.4);
+            --hud-red: #ff1744;
+            --hud-blue: #0066ff;
+            --bg-dark: #08090b;
             --border: rgba(255, 255, 255, 0.05);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         
         body, html {
             margin: 0; padding: 0;
-            background-color: var(--bg-dark);
+            background-color: #000;
             height: 100vh; width: 100vw;
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden; font-family: 'Inter', sans-serif;
+            overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
         }
 
-        body.dragging { cursor: col-resize; user-select: none; }
-
-        /* --- 1. BOOT LOADER --- */
-        #loader-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; display: flex; justify-content: center; align-items: center;
-            z-index: 9999; transition: opacity 0.8s ease, visibility 0.8s;
-        }
-        .loader-hidden { opacity: 0; visibility: hidden; }
-        .buffer-grid { display: flex; align-items: center; gap: 12px; -webkit-box-reflect: below 2px linear-gradient(transparent, rgba(255,255,255,0.05)); }
-        .loader-bar { width: 6px; height: 35px; background: rgba(255, 255, 255, 0.03); border-radius: 20px; position: relative; overflow: hidden; animation: barGrow 1.2s ease-in-out infinite; }
-        .loader-bar::after { content: ''; position: absolute; top: -100%; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent, var(--bar-color), transparent); animation: segmentSlide 0.8s ease-in-out infinite; filter: drop-shadow(0 0 10px var(--bar-color)); }
-        @keyframes barGrow { 0%, 100% { transform: scaleY(1); opacity: 0.1; } 50% { transform: scaleY(2.5); opacity: 1; } }
-        @keyframes segmentSlide { 0% { top: -100%; } 100% { top: 100%; } }
-        .lb-1 { --bar-color: var(--rgb-red); }
-        .lb-2 { --bar-color: var(--rgb-green); animation-delay: 0.1s; }
-        .lb-3 { --bar-color: var(--rgb-blue); animation-delay: 0.2s; }
-
-        /* --- 2. DRAG SHIELD (THE FIX) --- */
-        #drag-shield {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 9000; display: none; background: transparent;
+        /* --- THE HUD FRAME (MATCHING YOUR IMAGE) --- */
+        .hud-wrapper {
+            width: 1366px; height: 657px;
+            max-width: 95vw; max-height: 90vh;
+            position: relative;
+            background-color: var(--bg-dark);
+            border: 1px solid rgba(0, 102, 255, 0.1);
         }
 
-        /* --- 3. STUDIO UI --- */
-        .studio-frame-wrapper { 
-            width: 1366px; height: 657px; max-width: 95vw; max-height: 95vh; 
-            position: relative; background-color: #050506; border-radius: 14px; 
+        /* STATIC HUD SVG OVERLAY */
+        .hud-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 100;
         }
-        .trace-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
-        .trace-svg rect {
-            fill: none; stroke: url(#rgbGradient); stroke-width: 3px; rx: 14px; ry: 14px;
-            stroke-dasharray: 450 1150; stroke-dashoffset: 0; animation: rgbTrace 6s linear infinite;
-            filter: drop-shadow(0 0 5px var(--red-glow)) drop-shadow(0 0 10px var(--blue-glow));
-        }
-        @keyframes rgbTrace { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -1600; } }
 
-        .studio-container { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0 20px; position: relative; z-index: 10; }
-        .logo { font-weight: 900; background: linear-gradient(90deg, #ff0000, #00ff00, #0066ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 3px; font-size: 14px; line-height: 60px; }
+        .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
+        .hud-line { fill: none; stroke: var(--hud-red); stroke-width: 1; opacity: 0.5; }
+        .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
+
+        /* --- STUDIO LAYOUT --- */
+        .studio-container {
+            position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
+            display: flex; flex-direction: column; z-index: 10;
+        }
+
+        .studio-header { height: 40px; display: flex; align-items: center; color: var(--hud-blue); font-size: 11px; letter-spacing: 2px; }
+
+        .viewport { display: flex; flex: 1; overflow: hidden; gap: 0; }
         
-        .studio-viewport { display: flex; flex: 1; padding-bottom: 20px; overflow: hidden; gap: 0; }
-        .middle-stack { flex: 0 0 50%; min-width: 150px; display: flex; flex-direction: column; }
-        
-        .pane { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        .visual-pane { flex: 1; background: #fff; transition: background 0.3s ease; }
-        
-        .pane-label { font-size: 9px; text-transform: uppercase; letter-spacing: 2px; padding: 12px; background: rgba(255, 255, 255, 0.02); color: #555; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .editor-pane { flex: 0 0 50%; }
+        .preview-pane { flex: 1; background: #fff; }
+
+        .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #444; border-bottom: 1px solid var(--border); }
 
         .code-area { 
-            flex: 1; padding: 20px; font-family: 'SF Mono', monospace; font-size: 13px; 
-            color: #a1a1aa; overflow-y: auto; outline: none; line-height: 1.6;
-            white-space: pre-wrap; word-break: break-all;
+            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
+            font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto;
         }
 
-        /* THE DRAG BAR */
         .drag-bar { 
-            width: 24px; margin: 0 -12px; cursor: col-resize; z-index: 100; 
-            display: flex; justify-content: center; align-items: center; 
+            width: 4px; cursor: col-resize; background: transparent; 
+            transition: 0.3s; z-index: 100;
         }
-        .drag-bar::before { content: ''; width: 2px; height: 30px; background: #222; border-radius: 2px; transition: 0.3s; }
-        .drag-bar:hover::before, .drag-bar.active::before { height: 100%; background: var(--rgb-blue); box-shadow: 0 0 15px var(--rgb-blue); }
+        .drag-bar:hover { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
 
-        .output-frame { width: 100%; height: 100%; border: none; }
-        .theme-btn { cursor: pointer; color: var(--rgb-blue); font-size: 8px; font-weight: bold; }
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body>
 
-    <div id="loader-overlay"><div class="buffer-grid"><div class="loader-bar lb-1"></div><div class="loader-bar lb-2"></div><div class="loader-bar lb-3"></div></div></div>
-    <div id="drag-shield"></div>
+    <div class="hud-wrapper">
+        <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
+            <path class="hud-bracket" d="M60,15 L15,15 L15,60" /> 
+            <path class="hud-bracket" d="M1306,15 L1351,15 L1351,60" />
+            <path class="hud-bracket" d="M1351,597 L1351,642 L1306,642" />
+            <path class="hud-bracket" d="M15,597 L15,642 L60,642" />
 
-    <div class="studio-frame-wrapper">
-        <svg class="trace-svg"><rect width="100%" height="100%" rx="14" ry="14" stroke="url(#rgbGradient)"></rect>
-            <defs><linearGradient id="rgbGradient" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#f00"/><stop offset="50%" stop-color="#0f0"/><stop offset="100%" stop-color="#00f"/></linearGradient></defs>
+            <path class="hud-line" d="M100,15 L650,15 M716,15 L1266,15" />
+            <path class="hud-line" d="M100,642 L1266,642" />
+
+            <text x="10" y="12" class="hud-text">X</text>
+            <text x="1353" y="12" class="hud-text">X</text>
+            <text x="1353" y="653" class="hud-text">X</text>
+            <text x="10" y="653" class="hud-text">X</text>
+
+            <rect x="673" y="10" width="20" height="10" fill="var(--hud-red)" />
         </svg>
+
         <div class="studio-container">
-            <div class="logo">NEUROSENTIX V7.5</div>
-            <main class="studio-viewport" id="viewport">
-                <div class="middle-stack" id="middleStack">
-                    <section class="pane">
-                        <div class="pane-label">EDITOR</div>
-                        <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
-                    </section>
+            <header class="studio-header">NEUROSENTIX_SYSTEM_CORE_v13.0</header>
+            <main class="viewport" id="viewport">
+                <div class="pane editor-pane" id="editorPane">
+                    <div class="pane-label">SOURCE_CODE</div>
+                    <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
                 </div>
                 <div class="drag-bar" id="drag-handle"></div>
-                <section class="pane visual-pane" id="visualPane">
-                    <div class="pane-label">PREVIEW <div class="theme-btn" id="theme-toggle">THEME</div></div>
-                    <iframe class="output-frame" id="preview-frame"></iframe>
+                <section class="pane preview-pane">
+                    <div class="pane-label" style="background:#eee; color:#000;">VISUAL_PREVIEW</div>
+                    <iframe id="preview-frame"></iframe>
                 </section>
             </main>
         </div>
     </div>
 
     <script>
-        const viewport = document.getElementById('viewport'), handle = document.getElementById('drag-handle'), shield = document.getElementById('drag-shield'), middleStack = document.getElementById('middleStack'), visualPane = document.getElementById('visualPane'), codeInput = document.getElementById('code-input'), preview = document.getElementById('preview-frame'), loader = document.getElementById('loader-overlay'), themeBtn = document.getElementById('theme-toggle');
-        
-        let isDragging = false, isDarkMode = false, debounceTimer;
+        const viewport = document.getElementById('viewport'),
+              handle = document.getElementById('drag-handle'),
+              editor = document.getElementById('editorPane'),
+              codeInput = document.getElementById('code-input'),
+              preview = document.getElementById('preview-frame');
 
-        /* INITIALIZATION */
-        window.onload = () => { 
-            setTimeout(() => loader.classList.add('loader-hidden'), 1000); 
-            updatePreview(); 
-            codeInput.focus();
-        };
-
-        /* CURSOR SYNC */
-        function getOffset(el) {
-            const sel = window.getSelection();
-            if (sel.rangeCount > 0) {
-                const range = sel.getRangeAt(0), preRange = range.cloneRange();
-                preRange.selectNodeContents(el); preRange.setEnd(range.endContainer, range.endOffset);
-                return preRange.toString().length;
-            }
-            return 0;
-        }
-
-        function setOffset(el, offset) {
-            const range = document.createRange(), sel = window.getSelection();
-            let count = 0, stack = [el], node;
-            while (node = stack.pop()) {
-                if (node.nodeType === 3) {
-                    if (count + node.length >= offset) {
-                        range.setStart(node, offset - count); range.collapse(true);
-                        sel.removeAllRanges(); sel.addRange(range); return;
-                    }
-                    count += node.length;
-                } else {
-                    for (let i = node.childNodes.length; i--;) stack.push(node.childNodes[i]);
-                }
-            }
-        }
-
-        /* PREVIEW ENGINE */
-        function updatePreview() {
-            const pos = getOffset(codeInput);
-            const doc = preview.contentDocument;
-            const theme = isDarkMode ? { bg: '#0f0f11', text: '#a1a1aa' } : { bg: '#fff', text: '#1a1a1b' };
-            const style = `<style>body{font-family:sans-serif;padding:2rem;background:${theme.bg};color:${theme.text};}svg{max-width:100%;height:auto;}</style>`;
-            doc.open(); doc.write(style + codeInput.innerText); doc.close();
-            setOffset(codeInput, pos);
-        }
-
+        /* PREVIEW ENGINE (PLAIN) */
         codeInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(updatePreview, 200);
+            const doc = preview.contentDocument;
+            doc.open();
+            doc.write(`<style>body{padding:2rem;font-family:sans-serif;}</style>` + codeInput.innerText);
+            doc.close();
         });
 
-        themeBtn.addEventListener('click', () => {
-            isDarkMode = !isDarkMode;
-            visualPane.style.background = isDarkMode ? '#0f0f11' : '#fff';
-            updatePreview();
-        });
-
-        /* DRAG SYSTEM (STABLE) */
-        handle.addEventListener('mousedown', () => { 
-            isDragging = true; 
-            shield.style.display = 'block'; 
-            handle.classList.add('active');
-            document.body.classList.add('dragging');
-        });
-
-        document.addEventListener('mouseup', () => { 
-            isDragging = false; 
-            shield.style.display = 'none'; 
-            handle.classList.remove('active');
-            document.body.classList.remove('dragging');
-        });
-
+        /* DRAG LOGIC */
+        let isDragging = false;
+        handle.addEventListener('mousedown', () => isDragging = true);
+        document.addEventListener('mouseup', () => isDragging = false);
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            const rect = viewport.getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            if (x > 200 && x < rect.width - 200) {
-                middleStack.style.flex = `0 0 ${x}px`;
+            let x = e.clientX - viewport.getBoundingClientRect().left;
+            if (x > 200 && x < viewport.clientWidth - 200) {
+                editor.style.flex = `0 0 ${x}px`;
             }
         });
+
+        window.onload = () => { codeInput.focus(); };
     </script>
 </body>
 </html>
