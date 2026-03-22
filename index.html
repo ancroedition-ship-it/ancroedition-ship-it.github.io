@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Adaptive Tactical HUD v14.3</title>
+    <title>Neurosentix | Precision HUD v14.4</title>
     
     <style>
         :root {
@@ -32,7 +32,7 @@
             position: relative;
             background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
-            transition: border 0.3s;
+            transition: border 0.2s ease;
         }
 
         .hud-overlay {
@@ -59,9 +59,9 @@
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
-        /* --- 30PX DRAGBAR --- */
+        /* --- 20PX DRAGBAR --- */
         .drag-bar { 
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.04);
             transition: background 0.2s, box-shadow 0.2s;
             z-index: 100;
             display: flex;
@@ -71,16 +71,17 @@
         }
         
         .drag-bar.active {
-            background: rgba(255, 23, 68, 0.3);
-            box-shadow: inset 0 0 15px var(--hud-red);
+            background: rgba(255, 23, 68, 0.25);
+            box-shadow: inset 0 0 10px var(--hud-red);
         }
 
-        /* Triple-Bar Grip */
+        /* Minimal 20px Grip Dots */
         .drag-bar::before {
             content: "";
-            width: 16px; height: 2px;
-            background: rgba(255,255,255,0.2);
-            box-shadow: 0 5px 0 rgba(255,255,255,0.2), 0 -5px 0 rgba(255,255,255,0.2);
+            width: 4px; height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3);
         }
 
         .code-area { 
@@ -105,7 +106,7 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_OMNI_ADAPTIVE_v14.3</span>
+                <span>NEUROSENTIX_PRECISION_v14.4</span>
                 <span id="status-indicator">● LIVE_SYNC</span>
             </header>
             <main class="viewport" id="viewport">
@@ -117,7 +118,7 @@
                 <div class="drag-bar" id="drag-handle"></div>
                 
                 <section class="pane preview-pane">
-                    <div class="pane-label" style="background:#eee; color:#000;">RUNTIME_OUTPUT</div>
+                    <div class="pane-label" style="background:#eee; color:#000;">RUNTIME</div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
                 </section>
             </main>
@@ -136,19 +137,19 @@
         let isDragging = false;
         let debounceTimer;
 
-        /* ADAPTIVE ORIENTATION ENGINE */
+        /* ADAPTIVE ORIENTATION IF-ELSE */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             if (isPortrait) {
                 viewport.style.flexDirection = 'column';
                 handle.style.width = '100%';
-                handle.style.height = '30px';
+                handle.style.height = '20px'; // 20px for portrait
                 handle.style.cursor = 'row-resize';
                 editor.style.flex = '0 0 40%';
                 handle.style.flexDirection = 'row';
             } else {
                 viewport.style.flexDirection = 'row';
-                handle.style.width = '30px';
+                handle.style.width = '20px'; // 20px for landscape
                 handle.style.height = '100%';
                 handle.style.cursor = 'col-resize';
                 editor.style.flex = '0 0 50%';
@@ -156,14 +157,14 @@
             }
         }
 
-        /* CLICK-TO-HOLD DRAG LOGIC */
+        /* CLICK-TO-HOLD LOGIC */
         handle.addEventListener('mousedown', () => {
             isDragging = true;
             handle.classList.add('active');
             preview.classList.add('shield');
             status.innerHTML = "● MANUAL_OVERRIDE";
             status.style.color = "var(--hud-red)";
-            frame.style.border = "1px solid var(--hud-red)";
+            frame.style.borderColor = "rgba(255, 23, 68, 0.4)";
         });
 
         document.addEventListener('mouseup', () => {
@@ -172,7 +173,7 @@
             preview.classList.remove('shield');
             status.innerHTML = "● LIVE_SYNC";
             status.style.color = "var(--hud-blue)";
-            frame.style.border = "1px solid rgba(0, 102, 255, 0.1)";
+            frame.style.borderColor = "rgba(0, 102, 255, 0.1)";
         });
 
         document.addEventListener('mousemove', (e) => {
@@ -182,14 +183,14 @@
 
             if (isPortrait) {
                 let y = e.clientY - rect.top;
-                if (y > 30 && y < rect.height - 30) editor.style.flex = `0 0 ${y}px`;
+                if (y > 20 && y < rect.height - 20) editor.style.flex = `0 0 ${y}px`;
             } else {
                 let x = e.clientX - rect.left;
-                if (x > 30 && x < rect.width - 30) editor.style.flex = `0 0 ${x}px`;
+                if (x > 20 && x < rect.width - 20) editor.style.flex = `0 0 ${x}px`;
             }
         });
 
-        /* BLOB INJECTION PREVIEW */
+        /* PREVIEW ENGINE */
         function updatePreview() {
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${codeInput.innerText}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
@@ -203,13 +204,7 @@
         });
 
         window.addEventListener('resize', handleOrientation);
-        window.onload = () => { 
-            handleOrientation(); 
-            // Default Template
-            codeInput.innerText = "\n<h1>System Live</h1>\n\n\n<style>\nh1 { color: #0066ff; }\n</style>\n\n\n<script>\nconsole.log('Handshake Complete');\n<\/script>";
-            updatePreview(); 
-            codeInput.focus(); 
-        };
+        window.onload = () => { handleOrientation(); updatePreview(); codeInput.focus(); };
     </script>
 </body>
 </html>
