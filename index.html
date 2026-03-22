@@ -4,241 +4,168 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neurosentix Core</title>
-    
     <style>
         :root {
             --hud-red: #ff1744;
             --hud-blue: #0066ff;
-            --bg-dark: #08090b;
-            --neon-pink: #ff0080;
-            --neon-cyan: #00f0ff;
-            --border: rgba(255, 255, 255, 0.05);
+            --bg-dark: #0a0a0f;
             /* Syntax Palette */
-            --syntax-keyword: #ff79c6;
-            --syntax-string: #f1fa8c;
-            --syntax-func: #50fa7b;
-            --syntax-num: #bd93f9;
-            --syntax-obj: #8be9fd;
-            --syntax-def: #f8f8f2;
-            --syntax-comm: #6272a4;
+            --syn-tag: #ff79c6;   /* HTML/XML Tags */
+            --syn-attr: #50fa7b;  /* Attributes */
+            --syn-str: #f1fa8c;   /* Strings */
+            --syn-comm: #6272a4;  /* Comments */
+            --syn-val: #bd93f9;   /* Numbers/Values */
         }
 
-        * { box-sizing: border-box; }
-        
         body, html {
-            margin: 0; padding: 0;
-            background-color: #000;
-            height: 100vh; width: 100vw;
-            display: flex; justify-content: center; align-items: center;
-            overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
-            user-select: none;
+            margin: 0; padding: 0; background: #000;
+            height: 100vh; width: 100vw; display: flex; 
+            justify-content: center; align-items: center;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            overflow: hidden; color: #fff;
         }
 
-        /* --- TACTICAL SCROLLBARS --- */
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
-        ::-webkit-scrollbar-thumb { background: var(--hud-blue); border-radius: 10px; box-shadow: 0 0 8px var(--hud-blue); }
-        ::-webkit-scrollbar-thumb:hover { background: var(--hud-red); box-shadow: 0 0 12px var(--hud-red); }
-
-        /* --- LOADING OVERLAY --- */
-        #boot-loader {
-            position: absolute; inset: 0; background: var(--bg-dark); z-index: 500;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: var(--hud-blue); font-size: 10px; letter-spacing: 4px; transition: opacity 0.5s ease;
-        }
-        .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; overflow: hidden; }
-        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.3s; }
-
-        /* --- MAIN HUD FRAME --- */
+        /* --- THE HUD STRUCTURE --- */
         .hud-wrapper {
             width: 1366px; height: 657px; max-width: 95vw; max-height: 92vh;
-            position: relative; background-color: var(--bg-dark);
-            border: 1px solid rgba(0, 102, 255, 0.1); transition: border 0.2s;
+            position: relative; background: var(--bg-dark);
+            border: 1px solid rgba(0, 102, 255, 0.1);
         }
-        .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
-        .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
-        .studio-container {
-            position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
-            display: flex; flex-direction: column; z-index: 10;
+        .viewport {
+            position: absolute; top: 40px; left: 20px; right: 20px; bottom: 20px;
+            display: flex; gap: 10px;
         }
-        .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
-        .viewport { display: flex; flex: 1; overflow: hidden; }
-        .pane { background: rgba(10, 10, 15, 0.8); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
-        .editor-pane { flex: 0 0 50%; position: relative; }
-        .preview-pane { flex: 1; background: #fff; }
+        /* --- THE OMNI-EDITOR (STABILIZED) --- */
+        .editor-container {
+            flex: 0 0 50%; position: relative;
+            background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05);
+        }
 
-        /* --- SVG EDITOR STYLES --- */
-        #hidden-input { position: absolute; opacity: 0; pointer-events: none; }
-        .code-svg { width: 100%; height: 100%; cursor: text; }
-        .line-number { fill: #3b3b4f; font-size: 11px; user-select: none; }
-        .cursor { fill: var(--neon-cyan); animation: blink 1s infinite; }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        
-        /* --- 20PX DRAGBAR --- */
-        .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; cursor: col-resize; }
-        .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
-        .drag-bar::before { content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%; box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3); }
+        /* The hidden brain that captures typing */
+        #main-input {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            padding: 20px; background: transparent; color: transparent;
+            caret-color: var(--hud-blue); border: none; outline: none;
+            resize: none; font-family: inherit; font-size: 14px;
+            line-height: 1.5; z-index: 2; white-space: pre; overflow: auto;
+        }
 
+        /* The visual layer that shows the colors */
+        #syntax-display {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            padding: 20px; pointer-events: none; z-index: 1;
+            white-space: pre; font-size: 14px; line-height: 1.5;
+            overflow: hidden;
+        }
+
+        .preview-pane { flex: 1; background: #fff; border: 1px solid #333; }
         iframe { width: 100%; height: 100%; border: none; }
-        .shield { pointer-events: none !important; }
+
+        /* Syntax Classes */
+        .s-tag { color: var(--syn-tag); font-weight: bold; }
+        .s-attr { color: var(--syn-attr); }
+        .s-str { color: var(--syn-str); }
+        .s-comm { color: var(--syn-comm); font-style: italic; }
+        .s-val { color: var(--syn-val); }
+
+        /* Dragbar 20px */
+        .drag-bar { width: 20px; cursor: col-resize; background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; }
+        .drag-bar:hover { background: rgba(0, 102, 255, 0.1); }
     </style>
 </head>
 <body>
 
-    <div id="boot-loader">
-        <div id="load-status">NEUROSENTIX_CORE_LOAD_V15.2</div>
-        <div class="load-track"><div id="load-bar"></div></div>
-    </div>
+    <div class="hud-wrapper">
+        <div style="padding: 10px 20px; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px;">
+            NEUROSENTIX_CORE // OMNI_COMPILER_V15.5
+        </div>
 
-    <div class="hud-wrapper" id="main-frame">
-        <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
-            <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
-            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
-        </svg>
+        <div class="viewport" id="viewport">
+            <div class="editor-container" id="edit-box">
+                <pre id="syntax-display"></pre>
+                <textarea id="main-input" spellcheck="false" autocomplete="off">
+<svg width="100" height="100">
+  <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+</svg>
 
-        <div class="studio-container">
-            <header class="studio-header">
-                <span>NEUROSENTIX_CORE // OMNI_SVG</span>
-                <span id="status-indicator">● LIVE_SYNC</span>
-            </header>
-            <main class="viewport" id="viewport">
-                <div class="pane editor-pane" id="editorPane" onclick="document.getElementById('hidden-input').focus()">
-                    <textarea id="hidden-input" spellcheck="false"></textarea>
-                    <svg class="code-svg" id="svg-editor">
-                        <defs>
-                            <filter id="neon-glow"><feGaussianBlur stdDeviation="2" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/></filter>
-                            <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                                <path d="M 30 0 L 0 0 0 30" fill="none" stroke="rgba(0, 240, 255, 0.04)" stroke-width="1"/>
-                            </pattern>
-                        </defs>
-                        <rect width="100%" height="100%" fill="url(#grid)" />
-                        <rect id="line-highlight" x="0" y="0" width="100%" height="24" fill="rgba(255,255,255,0.03)" />
-                        <g id="line-numbers" transform="translate(15, 25)"></g>
-                        <g id="code-layer" transform="translate(55, 25)" style="font-size:13px; font-family:'Fira Code', monospace;"></g>
-                        <rect id="svg-cursor" class="cursor" width="2" height="16" x="55" y="10" filter="url(#neon-glow)" />
-                    </svg>
-                </div>
-                
-                <div class="drag-bar" id="drag-handle"></div>
-                
-                <section class="pane preview-pane">
-                    <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
-                </section>
-            </main>
+<style>
+  body { background: #f0f0f0; }
+  h1 { color: #0066ff; }
+</style>
+
+<h1>System Active</h1>
+
+<script>
+  console.log("Omni-Editor: Online");
+</script></textarea>
+            </div>
+
+            <div class="drag-bar" id="drag-handle"></div>
+
+            <div class="preview-pane">
+                <iframe id="preview-frame"></iframe>
+            </div>
         </div>
     </div>
 
     <script>
-        const input = document.getElementById('hidden-input'),
-              codeLayer = document.getElementById('code-layer'),
-              lineNumbers = document.getElementById('line-numbers'),
-              cursor = document.getElementById('svg-cursor'),
-              highlight = document.getElementById('line-highlight'),
-              preview = document.getElementById('preview-frame'),
-              handle = document.getElementById('drag-handle'),
-              editorPane = document.getElementById('editorPane'),
-              viewport = document.getElementById('viewport');
+        const input = document.getElementById('main-input');
+        const display = document.getElementById('syntax-display');
+        const preview = document.getElementById('preview-frame');
+        const handle = document.getElementById('drag-handle');
+        const editBox = document.getElementById('edit-box');
 
-        const tokens = {
-            keywords: /\b(const|let|var|function|return|if|else|for|while|export|import|class|new|this|async|await)\b/g,
-            strings: /(['"`])(.*?)\1/g,
-            funcs: /\b([a-zA-Z_]\w*)(?=\s*\()/g,
-            nums: /\b(\d+(\.\d+)?)\b/g,
-            comments: /(\/\/.*|\/\*[\s\S]*?\*\/)/g,
-            objs: /\b([a-zA-Z_]\w*)(?=\s*\:|\s*\.)/g
-        };
-
-        let currentCode = `// Neurosentix Omni-SVG v15.2
-function launchCore() {
-    const status = "INITIALIZED";
-    console.log(status);
-    
-    return {
-        power: 100,
-        active: true
-    };
-}`;
-
-        input.value = currentCode;
-
-        function renderEditor() {
-            const lines = input.value.split('\n');
-            codeLayer.innerHTML = '';
-            lineNumbers.innerHTML = '';
-            
-            lines.forEach((line, i) => {
-                const y = i * 24;
+        // MULTI-LANGUAGE HIGHLIGHTER (HTML, XML, SVG, CSS, JS)
+        function highlight(code) {
+            return code
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                // Tags: <tagname or </tagname
+                .replace(/(&lt;\/?[a-zA-Z0-9]+)/g, '<span class="s-tag">$1</span>')
+                // Attributes: attr="value"
+                .replace(/\b([a-zA-Z\-]+)(?==)/g, '<span class="s-attr">$1</span>')
+                // Strings: "..." or '...'
+                .replace(/(['"])(.*?)\1/g, '<span class="s-str">$1$2$1</span>')
+                // Comments: or //
+                .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="s-comm">$1</span>')
+                .replace(/\/\/.*/g, '<span class="s-comm">$&</span>')
                 // Numbers
-                const num = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                num.setAttribute("y", y); num.setAttribute("class", "line-number");
-                num.textContent = (i + 1).toString().padStart(2, '0');
-                lineNumbers.appendChild(num);
-
-                // Code
-                const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                txt.setAttribute("y", y);
-                
-                let processed = line.split(/(\s+|\b)/g).map(t => {
-                    if (t === ' ') return `<tspan xml:space="preserve"> </tspan>`;
-                    if (t.match(tokens.comments)) return `<tspan fill="var(--syntax-comm)">${t}</tspan>`;
-                    if (t.match(tokens.keywords)) return `<tspan fill="var(--syntax-keyword)">${t}</tspan>`;
-                    if (t.match(tokens.strings)) return `<tspan fill="var(--syntax-string)">${t}</tspan>`;
-                    if (t.match(tokens.funcs)) return `<tspan fill="var(--syntax-func)">${t}</tspan>`;
-                    if (t.match(tokens.nums)) return `<tspan fill="var(--syntax-num)">${t}</tspan>`;
-                    if (t.match(tokens.objs)) return `<tspan fill="var(--syntax-obj)">${t}</tspan>`;
-                    return `<tspan fill="var(--syntax-def)">${t}</tspan>`;
-                }).join('');
-                
-                txt.innerHTML = processed;
-                codeLayer.appendChild(txt);
-            });
-            updateCursor();
-            updatePreview();
+                .replace(/\b(\d+px|\d+%|\d+)\b/g, '<span class="s-val">$1</span>');
         }
 
-        function updateCursor() {
-            const lines = input.value.substring(0, input.selectionStart).split('\n');
-            const lineIdx = lines.length - 1;
-            const charIdx = lines[lineIdx].length;
-            const x = 55 + (charIdx * 7.8);
-            const y = 10 + (lineIdx * 24);
-            cursor.setAttribute('x', x); cursor.setAttribute('y', y);
-            highlight.setAttribute('y', lineIdx * 24 + 10);
-        }
+        function update() {
+            // Sync Display
+            display.innerHTML = highlight(input.value) + "\n\n";
+            display.scrollTop = input.scrollTop;
+            display.scrollLeft = input.scrollLeft;
 
-        function updatePreview() {
-            const blob = new Blob([`<!DOCTYPE html><html><body style="font-family:sans-serif;padding:20px">${input.value}</body></html>`], {type: 'text/html'});
+            // Sync Preview (Injection)
+            const blob = new Blob([input.value], {type: 'text/html'});
             if(preview.src) URL.revokeObjectURL(preview.src);
             preview.src = URL.createObjectURL(blob);
         }
 
-        /* HUD CONTROLS */
+        // Stabilized Interaction Logic
+        input.addEventListener('input', update);
+        input.addEventListener('scroll', () => {
+            display.scrollTop = input.scrollTop;
+            display.scrollLeft = input.scrollLeft;
+        });
+
+        // 20px Drag Logic
         let isDragging = false;
         handle.addEventListener('mousedown', () => isDragging = true);
         document.addEventListener('mouseup', () => isDragging = false);
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
-            const rect = viewport.getBoundingClientRect();
+            const rect = document.getElementById('viewport').getBoundingClientRect();
             let x = e.clientX - rect.left;
-            if (x > 100 && x < rect.width - 100) editorPane.style.flex = `0 0 ${x}px`;
+            if (x > 50 && x < rect.width - 50) editBox.style.flex = `0 0 ${x}px`;
         });
 
-        window.onload = () => {
-            const lbar = document.getElementById('load-bar');
-            lbar.style.width = "100%";
-            setTimeout(() => {
-                document.getElementById('boot-loader').style.opacity = "0";
-                renderEditor();
-                input.focus();
-            }, 800);
-        };
-
-        input.addEventListener('input', renderEditor);
-        input.addEventListener('keydown', () => setTimeout(updateCursor, 5));
-        input.addEventListener('click', updateCursor);
+        // Initial Boot
+        window.onload = update;
     </script>
 </body>
 </html>
