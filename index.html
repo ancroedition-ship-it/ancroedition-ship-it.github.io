@@ -71,7 +71,6 @@
 
         .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
-        /* --- NAV TOOLS --- */
         .nav-tools { display: flex; align-items: center; gap: 15px; }
         .hud-input-small { 
             background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
@@ -103,7 +102,7 @@
             user-select: text; line-height: 1.5; 
         }
         
-        mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; }
+        mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
 
         .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
@@ -128,10 +127,10 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V16.0</span>
+                <span>NEUROSENTIX_CORE // V16.5</span>
                 <div class="nav-tools">
-                    <span style="opacity: 0.5;">GOTO_LINE:</span>
-                    <input type="number" id="goto-input" class="hud-input-small" placeholder="LN#">
+                    <span style="opacity: 0.5;">GOTO_LN:</span>
+                    <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
                     <span id="status-indicator">● LIVE_SYNC</span>
                 </div>
             </header>
@@ -175,6 +174,7 @@
 
         let isDragging = false;
 
+        /* BOOT SEQUENCE */
         window.onload = () => {
             loadBar.style.width = "100%";
             setTimeout(() => {
@@ -187,6 +187,7 @@
             }, 600);
         };
 
+        /* ADAPTIVE LAYOUT */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             viewport.style.flexDirection = isPortrait ? 'column' : 'row';
@@ -196,7 +197,7 @@
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
-        /* DRAG LOGIC */
+        /* DRAG ENGINE */
         handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
         document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
         document.onmousemove = (e) => {
@@ -211,7 +212,7 @@
             }
         };
 
-        /* CORE ENGINE */
+        /* LINE COUNTER */
         function updateLineNumbers() {
             const lines = codeInput.innerText.split(/\r\n|\r|\n/).length;
             let nums = "";
@@ -225,7 +226,7 @@
             return div.innerHTML;
         }
 
-        /* GOTO LINE ENGINE */
+        /* GOTO LINE */
         gotoInput.onkeydown = (e) => {
             if (e.key === 'Enter') {
                 const lineNum = parseInt(gotoInput.value);
@@ -237,29 +238,41 @@
             }
         };
 
-        /* SEARCH ENGINE */
+        /* STABILIZED SEARCH ENGINE */
         searchInput.oninput = () => {
             const query = searchInput.value;
             const text = codeInput.innerText;
+
             if (!query) {
                 codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 return;
             }
+
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
             const matches = text.match(regex);
+            
             matchDisplay.innerText = `${matches ? matches.length : 0} MATCHES`;
+            
             if (matches) {
                 matchDisplay.classList.add('found');
                 codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                
+                // AUTO-SCROLL TO FIRST MATCH
+                const firstMatch = codeInput.querySelector('mark');
+                if (firstMatch) {
+                    const topPos = firstMatch.offsetTop - (codeInput.offsetHeight / 2);
+                    codeInput.scrollTo({ top: topPos, behavior: 'smooth' });
+                }
             } else {
                 matchDisplay.classList.remove('found');
                 codeInput.innerHTML = escapeHtml(text);
             }
         };
 
+        /* FOCUS PROTECTION */
         codeInput.onfocus = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.innerText;
@@ -270,8 +283,10 @@
             }
         };
 
+        /* SCROLL SYNC */
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
 
+        /* RUNTIME PREVIEW */
         function updatePreview() {
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
