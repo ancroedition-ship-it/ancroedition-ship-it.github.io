@@ -115,7 +115,7 @@
             opacity: 1;
         }
 
-        mark { background: rgba(255, 23, 68, 0.4); color: #fff; }
+        mark { background: rgba(255, 23, 68, 0.6); color: #fff; border-radius: 2px; }
 
         /* --- 20PX DRAGBAR --- */
         .drag-bar { 
@@ -186,7 +186,7 @@
 
         let isDragging = false;
 
-        /* BOOT SEQUENCE LOGIC */
+        /* BOOT SEQUENCE */
         window.onload = () => {
             loadBar.style.width = "30%";
             setTimeout(() => {
@@ -204,7 +204,7 @@
             }, 500);
         };
 
-        /* ADAPTIVE ORIENTATION IF-ELSE */
+        /* ADAPTIVE LAYOUT */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             if (isPortrait) {
@@ -251,10 +251,10 @@
             }
         });
 
-        /* SEARCH & HIGHLIGHT ENGINE */
+        /* SEARCH ENGINE (STABILIZED) */
         searchInput.addEventListener('input', () => {
             const query = searchInput.value;
-            const text = codeInput.innerText;
+            const text = codeInput.innerText; // Get raw text to bypass existing marks
 
             if (!query) {
                 codeInput.innerHTML = text; 
@@ -272,6 +272,7 @@
             
             if (count > 0) {
                 matchDisplay.classList.add('found');
+                // Temporarily inject visual highlights
                 codeInput.innerHTML = text.replace(regex, '<mark>$1</mark>');
             } else {
                 matchDisplay.classList.remove('found');
@@ -279,8 +280,20 @@
             }
         });
 
-        /* OMNI-INJECTION ENGINE */
+        /* FOCUS PROTECTION: Clear search before editing to prevent code breakage */
+        codeInput.addEventListener('focus', () => {
+            if (searchInput.value !== "") {
+                const rawText = codeInput.innerText;
+                codeInput.innerHTML = rawText; // Strip all <mark> tags
+                searchInput.value = "";
+                matchDisplay.innerText = "0 MATCHES";
+                matchDisplay.classList.remove('found');
+            }
+        });
+
+        /* PREVIEW ENGINE */
         function updatePreview() {
+            // innerText ensures we only send raw code, never HTML mark tags
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
