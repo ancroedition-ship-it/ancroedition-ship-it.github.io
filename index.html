@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neurosentix | Full-Stack Tactical HUD</title>
+    <title>Neurosentix | Tactical HUD 20px</title>
     
     <style>
         :root {
@@ -23,79 +23,53 @@
             overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
         }
 
-        /* --- LOADING / BOOT OVERLAY --- */
+        /* --- BOOT LOADER --- */
         #boot-loader {
-            position: fixed; inset: 0;
-            background: var(--bg-dark);
-            z-index: 1000;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center;
-            color: var(--hud-blue);
-            font-size: 10px; letter-spacing: 4px;
+            position: fixed; inset: 0; background: var(--bg-dark); z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: var(--hud-blue); font-size: 10px; letter-spacing: 4px;
             transition: opacity 0.6s ease, visibility 0.6s;
         }
+        .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; }
+        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.4s ease; }
 
-        .load-track { 
-            width: 220px; height: 2px; 
-            background: rgba(0,102,255,0.1); 
-            margin-top: 15px; position: relative; overflow: hidden; 
-        }
-
-        #load-bar { 
-            position: absolute; height: 100%; width: 0%; 
-            background: var(--hud-red); 
-            box-shadow: 0 0 10px var(--hud-red); 
-            transition: width 0.4s ease; 
-        }
-
-        /* --- THE HUD FRAME --- */
+        /* --- HUD FRAME --- */
         .hud-wrapper {
-            width: 1366px; height: 657px;
-            max-width: 95vw; max-height: 90vh;
-            position: relative;
-            background-color: var(--bg-dark);
+            width: 1366px; height: 657px; max-width: 95vw; max-height: 90vh;
+            position: relative; background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
             opacity: 0; transform: scale(0.98);
             transition: opacity 0.8s ease, transform 0.8s ease;
         }
-
         .hud-wrapper.visible { opacity: 1; transform: scale(1); }
 
-        .hud-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100;
-        }
-
+        .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
         .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
-        /* --- STUDIO LAYOUT --- */
         .studio-container {
             position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
             display: flex; flex-direction: column; z-index: 10;
         }
-
         .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
         .viewport { display: flex; flex: 1; overflow: hidden; }
-        
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
         .preview-pane { flex: 1; background: #fff; }
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
+        .code-area { flex: 1; padding: 20px; color: #a1a1aa; outline: none; font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto; tab-size: 4; }
 
-        .code-area { 
-            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
-            font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto;
-            tab-size: 4;
-        }
-
+        /* --- THE 20PX DRAG-BAR --- */
         .drag-bar { 
-            width: 4px; cursor: col-resize; background: transparent; 
-            transition: 0.2s; z-index: 100;
+            width: 20px; cursor: col-resize; 
+            background: rgba(255, 255, 255, 0.03); 
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s, box-shadow 0.2s; z-index: 100;
         }
-        .drag-bar:hover { background: var(--hud-red); }
+        .drag-bar:hover { background: rgba(255, 23, 68, 0.1); box-shadow: inset 0 0 10px rgba(255, 23, 68, 0.2); }
+        .drag-bar::after { content: ":::"; color: rgba(255,255,255,0.2); font-size: 14px; transform: rotate(90deg); letter-spacing: 2px; }
 
         iframe { width: 100%; height: 100%; border: none; }
     </style>
@@ -103,33 +77,30 @@
 <body>
 
     <div id="boot-loader">
-        <div id="load-status">NEUROSENTIX_CORE_INITIALIZING...</div>
-        <div class="load-track">
-            <div id="load-bar"></div>
-        </div>
+        <div id="load-status">NEUROSENTIX_CORE_V14.3_INIT...</div>
+        <div class="load-track"><div id="load-bar"></div></div>
     </div>
 
     <div class="hud-wrapper" id="main-hud">
         <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
             <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
-            <text x="10" y="12" class="hud-text">X</text>
-            <text x="1353" y="12" class="hud-text">X</text>
+            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
             <rect x="673" y="10" width="20" height="10" fill="var(--hud-red)" />
         </svg>
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_OMNI_EDITOR_v14.2</span>
+                <span>NEUROSENTIX_OMNI_v14.3</span>
                 <span id="status-indicator" style="color: var(--hud-red); font-weight: bold;">● LIVE_SYNC</span>
             </header>
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
-                    <div class="pane-label">MULTI-LAYER_SOURCE (HTML / CSS / JS / SVG)</div>
+                    <div class="pane-label">SOURCE_CODE_PANE</div>
                     <div class="code-area" contenteditable="true" spellcheck="false" id="code-input"></div>
                 </div>
                 <div class="drag-bar" id="drag-handle"></div>
                 <section class="pane preview-pane">
-                    <div class="pane-label" style="background:#eee; color:#000;">UNIFIED_RUNTIME</div>
+                    <div class="pane-label" style="background:#eee; color:#000;">RUNTIME_VIEWPORT</div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
                 </section>
             </main>
@@ -147,33 +118,24 @@
               loadBar = document.getElementById('load-bar'),
               mainHud = document.getElementById('main-hud');
 
-        let debounceTimer;
         let currentBlobUrl = null;
 
-        /* PREVIEW COMPILER */
         function updatePreview() {
             status.style.opacity = "0.5";
-            const userContent = codeInput.innerText;
-            
-            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${userContent}</body></html>`;
-
+            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${codeInput.innerText}</body></html>`;
             if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
             const blob = new Blob([blobContent], { type: 'text/html' });
             currentBlobUrl = URL.createObjectURL(blob);
             preview.src = currentBlobUrl;
-            
             setTimeout(() => { status.style.opacity = "1"; }, 300);
         }
 
-        codeInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(updatePreview, 600); 
-        });
+        codeInput.addEventListener('input', updatePreview);
 
-        /* DRAGBAR LOGIC */
+        /* 20PX DRAG LOGIC */
         let isDragging = false;
-        handle.addEventListener('mousedown', () => isDragging = true);
-        document.addEventListener('mouseup', () => isDragging = false);
+        handle.addEventListener('mousedown', () => { isDragging = true; document.body.style.cursor = 'col-resize'; });
+        document.addEventListener('mouseup', () => { isDragging = false; document.body.style.cursor = 'default'; });
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             let x = e.clientX - viewport.getBoundingClientRect().left;
@@ -182,39 +144,18 @@
             }
         });
 
-        /* BOOT SEQUENCE SCRIPT */
         window.onload = () => {
-            // Stage 1: Fast Start
-            setTimeout(() => { loadBar.style.width = "40%"; }, 200);
-            
-            // Stage 2: Middle Crunch
-            setTimeout(() => { loadBar.style.width = "75%"; }, 800);
-            
-            // Stage 3: Finish and Reveal
-            setTimeout(() => { 
-                loadBar.style.width = "100%"; 
+            setTimeout(() => { loadBar.style.width = "100%"; }, 100);
+            setTimeout(() => {
+                loader.style.opacity = "0";
                 setTimeout(() => {
-                    loader.style.opacity = "0";
-                    setTimeout(() => {
-                        loader.style.visibility = "hidden";
-                        mainHud.classList.add('visible');
-                        codeInput.focus();
-                    }, 600);
-                }, 400);
-            }, 1400);
+                    loader.style.visibility = "hidden";
+                    mainHud.classList.add('visible');
+                    codeInput.focus();
+                }, 600);
+            }, 1200);
 
-            // Set Default Code
-            codeInput.innerText = 
-`<style>
-  body { background: #111; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: sans-serif; }
-  .glow { color: #0066ff; text-shadow: 0 0 10px #0066ff; font-size: 3rem; }
-</style>
-
-<h1 class="glow">CORE ACTIVE</h1>
-<svg width="60" height="60" viewBox="0 0 100 100">
-  <circle cx="50" cy="50" r="40" stroke="#ff1744" stroke-width="8" fill="none" />
-</svg>`;
-
+            codeInput.innerText = `<h1>System Ready</h1>\n<p>Drag the center bar to resize.</p>`;
             updatePreview();
         };
     </script>
