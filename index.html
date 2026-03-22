@@ -216,7 +216,7 @@
         function updateLineNumbers() {
             const lines = codeInput.innerText.split(/\r\n|\r|\n/).length;
             let nums = "";
-            for(let i=1; i<=lines; i++) nums += i + "<br>";
+            for(let i=1; i<=999; i++) nums += i + "<br>";
             lineNumbers.innerHTML = nums;
         }
 
