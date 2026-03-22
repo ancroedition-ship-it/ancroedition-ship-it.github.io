@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix | Precision HUD v14.4</title>
+    <title>Neurosentix | OS v15.0</title>
     
     <style>
         :root {
@@ -21,29 +21,51 @@
             height: 100vh; width: 100vw;
             display: flex; justify-content: center; align-items: center;
             overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
-            overscroll-behavior-y: contain;
             user-select: none;
         }
 
-        /* --- THE HUD FRAME --- */
+        /* --- TACTICAL SCROLLBARS --- */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        ::-webkit-scrollbar-thumb { 
+            background: var(--hud-blue); 
+            border-radius: 10px; 
+            box-shadow: 0 0 8px var(--hud-blue); 
+        }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: var(--hud-red); 
+            box-shadow: 0 0 12px var(--hud-red); 
+        }
+
+        /* --- LOADING OVERLAY --- */
+        #boot-loader {
+            position: absolute; inset: 0;
+            background: var(--bg-dark);
+            z-index: 500;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            color: var(--hud-blue);
+            font-size: 10px; letter-spacing: 4px;
+            transition: opacity 0.5s ease;
+        }
+
+        .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; overflow: hidden; }
+        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.3s; }
+
+        /* --- MAIN HUD FRAME --- */
         .hud-wrapper {
             width: 1366px; height: 657px;
             max-width: 95vw; max-height: 92vh;
             position: relative;
             background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
-            transition: border 0.2s ease;
+            transition: border 0.2s;
         }
 
-        .hud-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100;
-        }
-
+        .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
         .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
-        /* --- STUDIO LAYOUT --- */
         .studio-container {
             position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
             display: flex; flex-direction: column; z-index: 10;
@@ -52,7 +74,6 @@
         .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
         .viewport { display: flex; flex: 1; overflow: hidden; }
-        
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
         .preview-pane { flex: 1; background: #fff; }
@@ -62,41 +83,25 @@
         /* --- 20PX DRAGBAR --- */
         .drag-bar { 
             background: rgba(255, 255, 255, 0.04);
-            transition: background 0.2s, box-shadow 0.2s;
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: col-resize;
+            z-index: 100; display: flex; align-items: center; justify-content: center;
         }
-        
-        .drag-bar.active {
-            background: rgba(255, 23, 68, 0.25);
-            box-shadow: inset 0 0 10px var(--hud-red);
-        }
-
-        /* Minimal 20px Grip Dots */
+        .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
         .drag-bar::before {
-            content: "";
-            width: 4px; height: 4px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 50%;
+            content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%;
             box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3);
         }
 
-        .code-area { 
-            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
-            font-size: 13px; white-space: pre-wrap; word-break: break-all; overflow-y: auto;
-            user-select: text;
-        }
-
+        .code-area { flex: 1; padding: 20px; color: #a1a1aa; outline: none; font-size: 13px; white-space: pre-wrap; overflow-y: auto; user-select: text; }
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
-
-        #status-indicator { transition: color 0.3s; }
     </style>
 </head>
 <body>
+
+    <div id="boot-loader">
+        <div id="load-status">NEUROSENTIX_SYSTEM_INIT</div>
+        <div class="load-track"><div id="load-bar"></div></div>
+    </div>
 
     <div class="hud-wrapper" id="main-frame">
         <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
@@ -106,12 +111,12 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_PRECISION_v14.4</span>
-                <span id="status-indicator">● LIVE_SYNC</span>
+                <span>SYSTEM_CORE_v15.0</span>
+                <span id="status-indicator" style="transition: color 0.3s;">● LIVE_SYNC</span>
             </header>
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
-                    <div class="pane-label">SOURCE_EDITOR</div>
+                    <div class="pane-label">OMNI_EDITOR</div>
                     <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                 </div>
                 
@@ -132,39 +137,54 @@
               codeInput = document.getElementById('code-input'),
               preview = document.getElementById('preview-frame'),
               status = document.getElementById('status-indicator'),
-              frame = document.getElementById('main-frame');
+              frame = document.getElementById('main-frame'),
+              loadBar = document.getElementById('load-bar'),
+              loader = document.getElementById('boot-loader');
 
         let isDragging = false;
-        let debounceTimer;
+
+        /* BOOT SEQUENCE LOGIC */
+        window.onload = () => {
+            loadBar.style.width = "30%";
+            setTimeout(() => {
+                loadBar.style.width = "70%";
+                handleOrientation();
+                updatePreview();
+                setTimeout(() => {
+                    loadBar.style.width = "100%";
+                    setTimeout(() => {
+                        loader.style.opacity = "0";
+                        setTimeout(() => loader.remove(), 500);
+                        codeInput.focus();
+                    }, 200);
+                }, 400);
+            }, 500);
+        };
 
         /* ADAPTIVE ORIENTATION IF-ELSE */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             if (isPortrait) {
                 viewport.style.flexDirection = 'column';
-                handle.style.width = '100%';
-                handle.style.height = '20px'; // 20px for portrait
+                handle.style.width = '100%'; handle.style.height = '20px';
                 handle.style.cursor = 'row-resize';
                 editor.style.flex = '0 0 40%';
-                handle.style.flexDirection = 'row';
             } else {
                 viewport.style.flexDirection = 'row';
-                handle.style.width = '20px'; // 20px for landscape
-                handle.style.height = '100%';
+                handle.style.width = '20px'; handle.style.height = '100%';
                 handle.style.cursor = 'col-resize';
                 editor.style.flex = '0 0 50%';
-                handle.style.flexDirection = 'column';
             }
         }
 
-        /* CLICK-TO-HOLD LOGIC */
+        /* DRAG ENGINE */
         handle.addEventListener('mousedown', () => {
             isDragging = true;
             handle.classList.add('active');
             preview.classList.add('shield');
             status.innerHTML = "● MANUAL_OVERRIDE";
             status.style.color = "var(--hud-red)";
-            frame.style.borderColor = "rgba(255, 23, 68, 0.4)";
+            frame.style.borderColor = "var(--hud-red)";
         });
 
         document.addEventListener('mouseup', () => {
@@ -179,9 +199,7 @@
         document.addEventListener('mousemove', (e) => {
             if (!isDragging) return;
             const rect = viewport.getBoundingClientRect();
-            const isPortrait = window.innerHeight > window.innerWidth;
-
-            if (isPortrait) {
+            if (window.innerHeight > window.innerWidth) {
                 let y = e.clientY - rect.top;
                 if (y > 20 && y < rect.height - 20) editor.style.flex = `0 0 ${y}px`;
             } else {
@@ -190,7 +208,7 @@
             }
         });
 
-        /* PREVIEW ENGINE */
+        /* OMNI-INJECTION ENGINE */
         function updatePreview() {
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${codeInput.innerText}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
@@ -198,13 +216,8 @@
             preview.src = URL.createObjectURL(blob);
         }
 
-        codeInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(updatePreview, 600);
-        });
-
+        codeInput.addEventListener('input', updatePreview);
         window.addEventListener('resize', handleOrientation);
-        window.onload = () => { handleOrientation(); updatePreview(); codeInput.focus(); };
     </script>
 </body>
 </html>
