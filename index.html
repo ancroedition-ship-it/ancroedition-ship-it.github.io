@@ -163,7 +163,7 @@
         mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
 
         .drag-bar { 
-    background: rgba(0, 102, 255, 0.1); /* Subtle HUD blue */
+    background: rgba(0, 102, 255, 0.1); 
     z-index: 100; 
     display: flex; 
     align-items: center; 
@@ -171,20 +171,20 @@
     border: 1px solid var(--border);
 }
 
-/* Changed middle color to HUD blue and removed the 3-dot shadow effect */
+
 .drag-bar::before { 
     content: ""; 
     width: 2px; 
     height: 30%; 
     background: var(--hud-blue); 
     border-radius: 2px; 
-    box-shadow: 0 0 8px var(--hud-blue); /* Added a slight glow to match the theme */
+    box-shadow: 0 0 8px var(--hud-blue);
+    transition: all 0.3s ease;
 }
 
-/* Active state now matches the HUD red accent */
-.drag-bar.active::before {
-    background: var(--hud-red);
-    box-shadow: 0 0 12px var(--hud-red);
+#viewport[style*="flex-direction: column"] #drag-handle::before {
+    width: 30%;  /* Now it stretches horizontally */
+    height: 2px; /* Now it is thin vertically */
 }
 
         iframe { width: 100%; height: 100%; border: none; }
