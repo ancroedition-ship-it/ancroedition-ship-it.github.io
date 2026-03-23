@@ -26,7 +26,6 @@
             user-select: none;
         }
 
-        /* --- TACTICAL SCROLLBARS --- */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
         ::-webkit-scrollbar-thumb { 
@@ -87,11 +86,10 @@
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
-        /* SEARCH BOUNDARY */
         .search-container { 
             padding: 5px 10px; 
             background: rgba(0, 0, 0, 0.2); 
-            border: 1px solid var(--boundary-color); /* Search Box Boundary */
+            border: 1px solid var(--boundary-color); 
             margin: 5px;
             display: flex; 
             align-items: center; 
@@ -100,7 +98,6 @@
         #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
         #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
-        /* MAIN EDITOR BOUNDARY */
         .editor-layout { 
             display: flex; 
             flex: 1; 
@@ -110,7 +107,6 @@
             margin: 5px;
         }
         
-        /* LINE NUMBER BOUNDARY */
         #line-numbers {
             width: 50px; 
             padding: 20px 0; 
@@ -118,7 +114,7 @@
             color: #333; 
             font-size: 13px; 
             text-align: center; 
-            border-right: 2px solid var(--boundary-color); /* Boundary between gutter and code */
+            border-right: 2px solid var(--boundary-color); 
             overflow: hidden; 
             line-height: 1.5; 
             pointer-events: none;
@@ -132,7 +128,6 @@
             background: rgba(255, 23, 68, 0.05);
         }
 
-        /* SOURCE TEXT BOUNDARY */
         .code-area { 
             flex: 1; 
             padding: 20px; 
@@ -145,11 +140,11 @@
             line-height: 1.5; 
             position: relative;
             font-family: var(--font-main);
-            /* Optional: subtle inner border to define the "page" */
             border-left: 1px solid var(--border);
         }
         
-        mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
+        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
+        mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
 
         .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; }
         .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
@@ -185,7 +180,7 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="SEARCH_SOURCE..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="SEARCH (ENTER FOR NEXT)..." spellcheck="false">
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
@@ -210,16 +205,16 @@
               editor = document.getElementById('editorPane'),
               codeInput = document.getElementById('code-input'),
               preview = document.getElementById('preview-frame'),
-              status = document.getElementById('status-indicator'),
-              frame = document.getElementById('main-frame'),
-              loadBar = document.getElementById('load-bar'),
-              loader = document.getElementById('boot-loader'),
               searchInput = document.getElementById('search-input'),
               matchDisplay = document.getElementById('match-count'),
               lineNumbers = document.getElementById('line-numbers'),
-              gotoInput = document.getElementById('goto-input');
+              gotoInput = document.getElementById('goto-input'),
+              loadBar = document.getElementById('load-bar'),
+              loader = document.getElementById('boot-loader');
 
         let isDragging = false;
+        let currentMatchIndex = -1;
+        let matchElements = [];
 
         window.onload = () => {
             loadBar.style.width = "100%";
@@ -257,15 +252,12 @@
         };
 
         function updateLineNumbers() {
-            // Split by br tags or newlines to detect count accurately
             const linesContent = codeInput.innerHTML.split(/\r\n|\r|\n|<br>/);
             const totalLines = Math.max(linesContent.length, 1);
-            
             let nums = "";
             for(let i = 1; i <= totalLines; i++) {
-                const hasMatch = linesContent[i-1] && linesContent[i-1].includes('<mark>');
+                const hasMatch = linesContent[i-1] && linesContent[i-1].includes('<mark');
                 const className = hasMatch ? 'ln-mark' : '';
-                // Using div for structured alignment
                 nums += `<div class="${className}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
             lineNumbers.innerHTML = nums;
@@ -276,6 +268,73 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        /* NEXT MATCH LOGIC */
+        function scrollToMatch(index) {
+            if (matchElements.length === 0) return;
+            
+            // Remove previous current-match class
+            matchElements.forEach(el => el.classList.remove('current-match'));
+            
+            // Loop index if out of bounds
+            currentMatchIndex = (index + matchElements.length) % matchElements.length;
+            
+            const target = matchElements[currentMatchIndex];
+            target.classList.add('current-match');
+            
+            // Centering Scroll
+            const parentRect = codeInput.getBoundingClientRect();
+            const matchRect = target.getBoundingClientRect();
+            const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
+            const relativeLeft = (matchRect.left - parentRect.left) + codeInput.scrollLeft;
+
+            codeInput.scrollTo({ 
+                top: relativeTop - (codeInput.offsetHeight / 2), 
+                left: relativeLeft - (codeInput.offsetWidth / 2),
+                behavior: 'smooth' 
+            });
+
+            matchDisplay.innerText = `${currentMatchIndex + 1}/${matchElements.length} MATCHES`;
+        }
+
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Enter' && matchElements.length > 0) {
+                e.preventDefault();
+                scrollToMatch(currentMatchIndex + 1);
+            }
+        };
+
+        searchInput.oninput = () => {
+            const query = searchInput.value;
+            const text = codeInput.innerText;
+            currentMatchIndex = -1;
+
+            if (!query || query.trim() === "") {
+                codeInput.innerHTML = escapeHtml(text);
+                matchDisplay.innerText = "0 MATCHES";
+                matchDisplay.classList.remove('found');
+                matchElements = [];
+                updateLineNumbers();
+                return;
+            }
+
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            
+            if (text.match(regex)) {
+                codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                matchElements = Array.from(codeInput.querySelectorAll('mark'));
+                matchDisplay.classList.add('found');
+                updateLineNumbers();
+                scrollToMatch(0); // Auto-scroll to first
+            } else {
+                matchDisplay.classList.remove('found');
+                matchDisplay.innerText = "0 MATCHES";
+                codeInput.innerHTML = escapeHtml(text);
+                matchElements = [];
+                updateLineNumbers();
+            }
+        };
 
         gotoInput.onkeydown = (e) => {
             if (e.key === 'Enter') {
@@ -288,54 +347,6 @@
             }
         };
 
-        searchInput.oninput = () => {
-            const query = searchInput.value;
-            const text = codeInput.innerText;
-
-            if (!query || query.trim() === "") {
-                codeInput.innerHTML = escapeHtml(text);
-                matchDisplay.innerText = "0 MATCHES";
-                matchDisplay.classList.remove('found');
-                updateLineNumbers();
-                return;
-            }
-
-            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
-            const matches = text.match(regex);
-            
-            if (matches) {
-                matchDisplay.innerText = `${matches.length} MATCHES`;
-                matchDisplay.classList.add('found');
-                codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
-                
-                updateLineNumbers();
-
-                const firstMatch = codeInput.querySelector('mark');
-                if (firstMatch) {
-                    const parentRect = codeInput.getBoundingClientRect();
-                    const matchRect = firstMatch.getBoundingClientRect();
-                    
-                    const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
-                    const relativeLeft = (matchRect.left - parentRect.left) + codeInput.scrollLeft;
-
-                    const vCenter = relativeTop - (codeInput.offsetHeight / 2);
-                    const hCenter = relativeLeft - (codeInput.offsetWidth / 2);
-
-                    codeInput.scrollTo({ 
-                        top: vCenter, 
-                        left: hCenter,
-                        behavior: 'smooth' 
-                    });
-                }
-            } else {
-                matchDisplay.classList.remove('found');
-                matchDisplay.innerText = "0 MATCHES";
-                codeInput.innerHTML = escapeHtml(text);
-                updateLineNumbers();
-            }
-        };
-
         codeInput.onfocus = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.innerText;
@@ -343,6 +354,7 @@
                 searchInput.value = "";
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
+                matchElements = [];
                 updateLineNumbers();
             }
         };
