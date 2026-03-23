@@ -99,7 +99,7 @@
         .code-area { 
             flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
             font-size: 13px; white-space: pre; overflow: auto; 
-            user-select: text; line-height: 1.5; 
+            user-select: text; line-height: 1.5; position: relative;
         }
         
         mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
@@ -213,16 +213,15 @@
         };
 
         /* LINE COUNTER */
-       function updateLineNumbers() {
-    // Force a minimum of 1, and count based on visible line breaks
-    const text = codeInput.innerText || "";
-    const lines = text.split(/\r\n|\r|\n/).length;
-    let nums = "";
-    for(let i = 1; i <= 999; i++) {
-        nums += i + "<br>";
-    }
-    lineNumbers.innerHTML = nums;
-}
+        function updateLineNumbers() {
+            const text = codeInput.innerText || "";
+            const lines = text.split(/\r\n|\r|\n/).length;
+            let nums = "";
+            for(let i = 1; i <= Math.max(lines, 50); i++) {
+                nums += i + "<br>";
+            }
+            lineNumbers.innerHTML = nums;
+        }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -242,36 +241,44 @@
             }
         };
 
-        /* STABILIZED SEARCH ENGINE */
+        /* STABILIZED SEARCH ENGINE WITH AUTO-SCROLL */
         searchInput.oninput = () => {
             const query = searchInput.value;
             const text = codeInput.innerText;
 
-            if (!query) {
+            if (!query || query.trim() === "") {
                 codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 return;
             }
 
+            // Escape special characters for literal search
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
             const matches = text.match(regex);
             
-            matchDisplay.innerText = `${matches ? matches.length : 0} MATCHES`;
-            
             if (matches) {
+                matchDisplay.innerText = `${matches.length} MATCHES`;
                 matchDisplay.classList.add('found');
                 codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
                 
                 // AUTO-SCROLL TO FIRST MATCH
                 const firstMatch = codeInput.querySelector('mark');
                 if (firstMatch) {
-                    const topPos = firstMatch.offsetTop - (codeInput.offsetHeight / 2);
-                    codeInput.scrollTo({ top: topPos, behavior: 'smooth' });
+                    const parentRect = codeInput.getBoundingClientRect();
+                    const matchRect = firstMatch.getBoundingClientRect();
+                    // Calculate relative position within the scrollable container
+                    const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
+                    
+                    codeInput.scrollTo({ 
+                        top: relativeTop - 50, 
+                        behavior: 'smooth' 
+                    });
                 }
             } else {
                 matchDisplay.classList.remove('found');
+                matchDisplay.innerText = "0 MATCHES";
                 codeInput.innerHTML = escapeHtml(text);
             }
         };
