@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Studio</title>
+    <title>Neurosentix Studio // TACTICAL_V17.2</title>
     
     <style>
         :root {
@@ -101,7 +101,7 @@
             user-select: text; line-height: 1.5; 
         }
         
-        /* Tactical Highlighting */
+        /* Tactical Highlighting: No stroke, pure contrast */
         mark { background: rgba(255, 23, 68, 0.25); color: #fff; border-radius: 1px; transition: background 0.1s; }
         mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 15px var(--hud-red); }
 
@@ -127,7 +127,7 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V17.0</span>
+                <span>NEUROSENTIX_CORE // V17.2_TACTICAL</span>
                 <div class="nav-tools">
                     <span style="opacity: 0.5;">GOTO_LN:</span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
@@ -255,7 +255,7 @@
             }, 800);
         };
 
-        /* TACTICAL SEARCH ENGINE (CASE-SENSITIVE) */
+        /* --- TACTICAL SEARCH ENGINE: INSTANT + CASE-SENSITIVE --- */
         function runSearch() {
             const query = searchInput.value;
             const text = codeInput.innerText;
@@ -271,14 +271,16 @@
 
             try {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`(${escapedQuery})`, 'g'); // Enforced Case Match
+                const regex = new RegExp(`(${escapedQuery})`, 'g'); // Case-Sensitive
                 const matches = text.match(regex);
 
                 if (matches) {
                     matchDisplay.classList.add('found');
                     searchNext.style.display = "block";
                     codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
-                    jumpToMatch(0); // Auto-jump immediately
+                    
+                    // EVERY SEARCH TRIGGERS AUTO-SCROLL IMMEDIATELY
+                    jumpToMatch(0); 
                 } else {
                     matchDisplay.classList.remove('found');
                     matchDisplay.innerText = "0 MATCHES";
@@ -288,6 +290,7 @@
             } catch (e) { console.error(e); }
         }
 
+        /* --- INSTANT SNAP ENGINE --- */
         function jumpToMatch(index) {
             const marks = codeInput.querySelectorAll('mark');
             if (marks.length === 0) return;
@@ -297,7 +300,9 @@
             const target = marks[currentMatchIndex];
             
             target.classList.add('active-match');
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // BEHAVIOR: 'AUTO' ensures the scrollbar moves at maximum speed (no animation lag)
+            target.scrollIntoView({ behavior: 'auto', block: 'center' });
             
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
         }
@@ -311,7 +316,7 @@
         };
         searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
 
-        /* FOCUS PROTECTION & SCROLL */
+        /* FOCUS PROTECTION & NAVIGATION */
         codeInput.onmousedown = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.innerText;
