@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Studio // TACTICAL_V17.2</title>
+    <title>Neurosentix Studio // V17.4_TACTICAL</title>
     
     <style>
         :root {
@@ -95,13 +95,14 @@
             color: #333; font-size: 12px; text-align: right; 
             border-right: 1px solid var(--border); overflow: hidden; line-height: 1.5; pointer-events: none;
         }
+        /* plaintext-only is critical for search accuracy */
         .code-area { 
             flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
             font-size: 13px; white-space: pre; overflow: auto; 
             user-select: text; line-height: 1.5; 
         }
         
-        /* Tactical Highlighting: No stroke, pure contrast */
+        /* Tactical Highlighting: No Stroke */
         mark { background: rgba(255, 23, 68, 0.25); color: #fff; border-radius: 1px; transition: background 0.1s; }
         mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 15px var(--hud-red); }
 
@@ -127,7 +128,7 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V17.2_TACTICAL</span>
+                <span>NEUROSENTIX_CORE // V17.4_TACTICAL</span>
                 <div class="nav-tools">
                     <span style="opacity: 0.5;">GOTO_LN:</span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
@@ -144,7 +145,7 @@
                     </div>
                     <div class="editor-layout">
                         <div id="line-numbers"></div>
-                        <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
+                        <div id="code-input" class="code-area" contenteditable="plaintext-only" spellcheck="false"></div>
                     </div>
                 </div>
                 
@@ -181,7 +182,6 @@
         let syncTimer;
         let currentMatchIndex = -1;
 
-        /* BOOT SEQUENCE */
         window.onload = () => {
             loadBar.style.width = "100%";
             setTimeout(() => {
@@ -194,7 +194,6 @@
             }, 600);
         };
 
-        /* ADAPTIVE LAYOUT */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             viewport.style.flexDirection = isPortrait ? 'column' : 'row';
@@ -204,7 +203,6 @@
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
-        /* DRAG ENGINE */
         handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
         document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
         document.onmousemove = (e) => {
@@ -231,7 +229,6 @@
             return div.innerHTML;
         }
 
-        /* SMART SYNC */
         function updatePreview() {
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
@@ -255,10 +252,11 @@
             }, 800);
         };
 
-        /* --- TACTICAL SEARCH ENGINE: INSTANT + CASE-SENSITIVE --- */
+        /* --- SEARCH ENGINE: CASE-SENSITIVE + INSTANT SCROLL --- */
         function runSearch() {
             const query = searchInput.value;
-            const text = codeInput.innerText;
+            // Use textContent to ensure we are matching raw characters only
+            const text = codeInput.textContent; 
 
             if (!query || query.trim() === "") {
                 codeInput.innerHTML = escapeHtml(text);
@@ -271,7 +269,8 @@
 
             try {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`(${escapedQuery})`, 'g'); // Case-Sensitive
+                // Removed 'i' flag for Case Sensitivity
+                const regex = new RegExp(`(${escapedQuery})`, 'g'); 
                 const matches = text.match(regex);
 
                 if (matches) {
@@ -279,7 +278,7 @@
                     searchNext.style.display = "block";
                     codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
                     
-                    // EVERY SEARCH TRIGGERS AUTO-SCROLL IMMEDIATELY
+                    // Always snap to the first match on typing
                     jumpToMatch(0); 
                 } else {
                     matchDisplay.classList.remove('found');
@@ -301,7 +300,7 @@
             
             target.classList.add('active-match');
             
-            // BEHAVIOR: 'AUTO' ensures the scrollbar moves at maximum speed (no animation lag)
+            // BEHAVIOR 'AUTO' = INSTANT SNAP (NO LAG)
             target.scrollIntoView({ behavior: 'auto', block: 'center' });
             
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
@@ -316,10 +315,10 @@
         };
         searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
 
-        /* FOCUS PROTECTION & NAVIGATION */
+        /* CLEANUP ON CLICK */
         codeInput.onmousedown = () => {
             if (searchInput.value !== "") {
-                const raw = codeInput.innerText;
+                const raw = codeInput.textContent;
                 codeInput.innerHTML = escapeHtml(raw);
                 searchInput.value = "";
                 matchDisplay.innerText = "0 MATCHES";
