@@ -12,6 +12,7 @@
             --bg-dark: #08090b;
             --border: rgba(255, 255, 255, 0.05);
             --boundary-color: rgba(0, 102, 255, 0.2);
+            --font-main: 'SF Mono', 'Fira Code', monospace;
         }
 
         * { box-sizing: border-box; }
@@ -21,7 +22,7 @@
             background-color: #000;
             height: 100vh; width: 100vw;
             display: flex; justify-content: center; align-items: center;
-            overflow: hidden; font-family: 'SF Mono', 'Fira Code', monospace;
+            overflow: hidden; font-family: var(--font-main);
             user-select: none;
         }
 
@@ -91,25 +92,47 @@
         #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
         #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
-        /* FULL ENCLOSURE BOUNDARY */
         .editor-layout { 
             display: flex; 
             flex: 1; 
             overflow: hidden; 
             position: relative; 
-            border: 2px solid var(--boundary-color); /* Top, Bottom, Left, Right */
-            box-shadow: inset 0 0 15px rgba(0, 102, 255, 0.05);
+            border: 2px solid var(--boundary-color);
         }
         
         #line-numbers {
-            width: 45px; padding: 20px 8px; background: rgba(0,0,0,0.4);
-            color: #333; font-size: 12px; text-align: right; 
-            border-right: 1px solid var(--border); overflow: hidden; line-height: 1.5; pointer-events: none;
+            width: 50px; 
+            padding: 20px 10px; 
+            background: rgba(0,0,0,0.4);
+            color: #333; 
+            font-size: 13px; 
+            text-align: right; 
+            border-right: 1px solid var(--border); 
+            overflow: hidden; 
+            line-height: 1.5; 
+            pointer-events: none;
+            font-family: var(--font-main);
         }
+
+        /* HIGHLIGHT FOR THE LINE NUMBER ITSELF */
+        .ln-mark { 
+            color: var(--hud-red); 
+            text-shadow: 0 0 5px var(--hud-red);
+            font-weight: bold;
+        }
+
         .code-area { 
-            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
-            font-size: 13px; white-space: pre; overflow: auto; 
-            user-select: text; line-height: 1.5; position: relative;
+            flex: 1; 
+            padding: 20px; 
+            color: #a1a1aa; 
+            outline: none; 
+            font-size: 13px; 
+            white-space: pre; 
+            overflow: auto; 
+            user-select: text; 
+            line-height: 1.5; 
+            position: relative;
+            font-family: var(--font-main);
         }
         
         mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
@@ -152,7 +175,7 @@
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
-                        <div id="line-numbers">1</div>
+                        <div id="line-numbers"></div>
                         <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                     </div>
                 </div>
@@ -184,7 +207,6 @@
 
         let isDragging = false;
 
-        /* BOOT SEQUENCE */
         window.onload = () => {
             loadBar.style.width = "100%";
             setTimeout(() => {
@@ -197,7 +219,6 @@
             }, 600);
         };
 
-        /* ADAPTIVE LAYOUT */
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             viewport.style.flexDirection = isPortrait ? 'column' : 'row';
@@ -207,7 +228,6 @@
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
-        /* DRAG ENGINE */
         handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
         document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
         document.onmousemove = (e) => {
@@ -222,13 +242,18 @@
             }
         };
 
-        /* LINE COUNTER */
+        /* UPDATED LINE COUNTER WITH ALIGNMENT & HIGHLIGHT LOGIC */
         function updateLineNumbers() {
-            const text = codeInput.innerText || "";
-            const lines = text.split(/\r\n|\r|\n/).length;
+            // Get code content split by lines to check for highlights
+            const linesContent = codeInput.innerHTML.split(/\r\n|\r|\n|<br>/);
+            const totalLines = Math.max(linesContent.length, 1);
+            
             let nums = "";
-            for(let i = 1; i <= Math.max(lines, 50); i++) {
-                nums += i + "<br>";
+            for(let i = 1; i <= totalLines; i++) {
+                // Check if the current line in the code area contains a <mark> tag
+                const hasMatch = linesContent[i-1] && linesContent[i-1].includes('<mark>');
+                const className = hasMatch ? 'ln-mark' : '';
+                nums += `<div class="${className}">${i}</div>`;
             }
             lineNumbers.innerHTML = nums;
         }
@@ -239,7 +264,6 @@
             return div.innerHTML;
         }
 
-        /* GOTO LINE */
         gotoInput.onkeydown = (e) => {
             if (e.key === 'Enter') {
                 const lineNum = parseInt(gotoInput.value);
@@ -251,7 +275,7 @@
             }
         };
 
-        /* STABILIZED SEARCH ENGINE WITH AUTO-SCROLL */
+        /* SEARCH ENGINE WITH SIMULTANEOUS LINE HIGHLIGHTING */
         searchInput.oninput = () => {
             const query = searchInput.value;
             const text = codeInput.innerText;
@@ -260,6 +284,7 @@
                 codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
+                updateLineNumbers();
                 return;
             }
 
@@ -272,18 +297,19 @@
                 matchDisplay.classList.add('found');
                 codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
                 
+                // Sync line numbers after markers are injected
+                updateLineNumbers();
+
                 const firstMatch = codeInput.querySelector('mark');
                 if (firstMatch) {
                     const parentRect = codeInput.getBoundingClientRect();
                     const matchRect = firstMatch.getBoundingClientRect();
                     
-                    // Vertical & Horizontal centering scroll
                     const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
                     const relativeLeft = (matchRect.left - parentRect.left) + codeInput.scrollLeft;
 
-                    // Centering calculation
-                    const vCenter = relativeTop - (codeInput.offsetHeight / 2) + (matchRect.height / 2);
-                    const hCenter = relativeLeft - (codeInput.offsetWidth / 2) + (matchRect.width / 2);
+                    const vCenter = relativeTop - (codeInput.offsetHeight / 2);
+                    const hCenter = relativeLeft - (codeInput.offsetWidth / 2);
 
                     codeInput.scrollTo({ 
                         top: vCenter, 
@@ -295,10 +321,10 @@
                 matchDisplay.classList.remove('found');
                 matchDisplay.innerText = "0 MATCHES";
                 codeInput.innerHTML = escapeHtml(text);
+                updateLineNumbers();
             }
         };
 
-        /* FOCUS PROTECTION */
         codeInput.onfocus = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.innerText;
@@ -306,13 +332,12 @@
                 searchInput.value = "";
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
+                updateLineNumbers();
             }
         };
 
-        /* SCROLL SYNC */
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
 
-        /* RUNTIME PREVIEW */
         function updatePreview() {
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
