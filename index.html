@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Studio // V17.5_TACTICAL</title>
+    <title>Neurosentix Studio // V17.6_STRICT_CASE</title>
     
     <style>
         :root {
@@ -101,7 +101,7 @@
             user-select: text; line-height: 1.5; 
         }
         
-        /* Tactical Highlighting: Strict Casing No Outlines */
+        /* Tactical Highlighting */
         mark { background: rgba(255, 23, 68, 0.25); color: #fff; border-radius: 1px; transition: background 0.1s; }
         mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 15px var(--hud-red); }
 
@@ -127,7 +127,7 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V17.5_TACTICAL</span>
+                <span>NEUROSENTIX_CORE // V17.6_STRICT</span>
                 <div class="nav-tools">
                     <span style="opacity: 0.5;">GOTO_LN:</span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
@@ -138,7 +138,7 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="STRICT CASE SEARCH..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="STRICT BINARY CASE SEARCH..." spellcheck="false">
                         <button id="search-next">NEXT ></button>
                         <span id="match-count">0 MATCHES</span>
                     </div>
@@ -251,10 +251,9 @@
             }, 800);
         };
 
-        /* --- STRICT SEARCH ENGINE: CONNECTED CASE SENSITIVITY --- */
+        /* --- TACTICAL SEARCH: STRICT BINARY CASE SENSITIVITY --- */
         function runSearch() {
             const query = searchInput.value;
-            // Strict use of textContent to ignore hidden HTML but capture case
             const text = codeInput.textContent; 
 
             if (!query || query.trim() === "") {
@@ -268,19 +267,24 @@
 
             try {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                // Flag 'g' only: enforces strict case sensitivity
+                // Capture group with strict global flag (NO 'i' flag)
                 const regex = new RegExp(`(${escapedQuery})`, 'g'); 
-                const matches = text.match(regex);
+                
+                // Manual Verification: Ensure browser normalization isn't ignoring case
+                const rawMatches = text.match(regex);
+                const validMatchesCount = rawMatches ? rawMatches.filter(m => m === query).length : 0;
 
-                if (matches && matches.length > 0) {
+                if (validMatchesCount > 0) {
                     matchDisplay.classList.add('found');
-                    matchDisplay.innerText = `${matches.length} MATCHES`;
+                    matchDisplay.innerText = `${validMatchesCount} MATCHES`;
                     searchNext.style.display = "block";
                     
-                    // Highlight based on strict case match
-                    codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                    // Highlight ONLY if character codes are a 100% match
+                    codeInput.innerHTML = escapeHtml(text).replace(regex, (match) => {
+                        return match === query ? `<mark>${match}</mark>` : match;
+                    });
                     
-                    // AUTO-SCROLL CONNECTED ONLY TO SUCCESSFUL MATCH
+                    // MANDATORY AUTO-SCROLL ON EVERY TYPED MATCH
                     jumpToMatch(0); 
                 } else {
                     matchDisplay.classList.remove('found');
@@ -288,7 +292,7 @@
                     searchNext.style.display = "none";
                     codeInput.innerHTML = escapeHtml(text);
                 }
-            } catch (e) { console.error("Search Logic Failure", e); }
+            } catch (e) { console.error("Search Fail:", e); }
         }
 
         /* --- INSTANT COORDINATE SNAP --- */
@@ -302,7 +306,7 @@
             
             target.classList.add('active-match');
             
-            // Fast snapping - zero animation lag
+            // BEHAVIOR 'AUTO' = MAXIMUM SPEED
             target.scrollIntoView({ behavior: 'auto', block: 'center' });
             
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
@@ -317,6 +321,7 @@
         };
         searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
 
+        /* CLEANUP ON CLICK */
         codeInput.onmousedown = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.textContent;
