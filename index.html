@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Studio // V19.5_FIXED_AGNOSTIC</title>
+    <title>Neurosentix Studio // TACTICAL_V17.2</title>
     
     <style>
         :root {
@@ -11,10 +11,6 @@
             --hud-blue: #0066ff;
             --bg-dark: #08090b;
             --border: rgba(255, 255, 255, 0.05);
-            /* CRITICAL SYNC VARIABLES */
-            --editor-lh: 1.6;
-            --editor-fs: 13px;
-            --editor-pad: 20px;
         }
 
         * { box-sizing: border-box; }
@@ -28,9 +24,18 @@
             user-select: none;
         }
 
+        /* --- TACTICAL SCROLLBARS --- */
         ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.1); }
-        ::-webkit-scrollbar-thumb { background: var(--hud-blue); border-radius: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+        ::-webkit-scrollbar-thumb { 
+            background: var(--hud-blue); 
+            border-radius: 10px; 
+            box-shadow: 0 0 8px var(--hud-blue); 
+        }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: var(--hud-red); 
+            box-shadow: 0 0 12px var(--hud-red); 
+        }
 
         #boot-loader {
             position: absolute; inset: 0;
@@ -44,7 +49,7 @@
         }
 
         .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; overflow: hidden; }
-        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); transition: width 0.3s; }
+        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.3s; }
 
         .hud-wrapper {
             width: 1366px; height: 657px;
@@ -56,6 +61,7 @@
 
         .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
         .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
+        .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
         .studio-container {
             position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
@@ -64,96 +70,91 @@
 
         .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
+        .nav-tools { display: flex; align-items: center; gap: 15px; }
+        .hud-input-small { 
+            background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
+            font-size: 9px; padding: 2px 5px; width: 60px; outline: none; transition: border 0.2s;
+        }
+
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
-        .preview-pane { flex: 1; background: #fff; }
+        .preview-pane { flex: 1; background: #333333; }
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
         .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
         #search-input { background: transparent; border: 1px solid var(--hud-blue); color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
-        #search-next { background: var(--hud-blue); border: none; color: white; font-size: 9px; cursor: pointer; padding: 3px 10px; display: none; border-radius: 2px; }
+        #search-next { background: var(--hud-blue); border: none; color: white; font-size: 9px; cursor: pointer; padding: 3px 10px; display: none; border-radius: 2px; font-weight: bold; }
         #match-count { color: var(--hud-blue); font-size: 9px; white-space: nowrap; opacity: 0.6; }
         #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
         .editor-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
-        
         #line-numbers {
-            width: 50px; 
-            padding: var(--editor-pad) 0;
-            background: rgba(0,0,0,0.4);
-            color: #333; 
-            font-size: var(--editor-fs); 
-            line-height: var(--editor-lh);
-            text-align: center; 
-            border-right: 1px solid var(--border); 
-            overflow: hidden; 
-            pointer-events: none;
+            width: 45px; padding: 20px 8px; background: rgba(0,0,0,0.4);
+            color: #333; font-size: 12px; text-align: right; 
+            border-right: 1px solid var(--border); overflow: hidden; line-height: 1.5; pointer-events: none;
         }
-
-        .ln-item { display: block; width: 100%; }
-        .ln-hit { 
-            color: var(--hud-red) !important; 
-            font-weight: bold; 
-            background: rgba(255, 23, 68, 0.1);
-            box-shadow: inset 2px 0 0 var(--hud-red);
-        }
-
         .code-area { 
-            flex: 1; 
-            padding: var(--editor-pad); 
-            color: #a1a1aa; 
-            outline: none; 
-            font-size: var(--editor-fs); 
-            line-height: var(--editor-lh);
-            white-space: pre; 
-            overflow: auto; 
-            user-select: text; 
+            flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
+            font-size: 13px; white-space: pre; overflow: auto; 
+            user-select: text; line-height: 1.5; 
         }
         
-        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; }
-        mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 10px var(--hud-red); }
+        /* Tactical Highlighting: No stroke, pure contrast */
+        mark { background: rgba(255, 23, 68, 0.25); color: #fff; border-radius: 1px; transition: background 0.1s; }
+        mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 15px var(--hud-red); }
 
-        .drag-bar { background: rgba(255,255,255,0.04); z-index: 100; width: 10px; cursor: col-resize; }
-        iframe { width: 100%; height: 100%; border: none; }
+        .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; width: 10px; cursor: col-resize; }
+        .drag-bar.active { background: rgba(255, 23, 68, 0.2); }
+
+        iframe { width: 100%; height: 100%; border: none; background: #fff; }
+        .shield { pointer-events: none !important; }
     </style>
 </head>
 <body>
 
     <div id="boot-loader">
-        <div id="load-status">NEUROSENTIX_SYNC</div>
+        <div id="load-status">NEUROSENTIX</div>
         <div class="load-track"><div id="load-bar"></div></div>
     </div>
 
     <div class="hud-wrapper" id="main-frame">
         <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
             <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
+            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
         </svg>
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX // V19.5_FIXED (A=a)</span>
-                <span id="status-indicator">● LIVE_SYNC</span>
+                <span>NEUROSENTIX_CORE // V17.2_TACTICAL</span>
+                <div class="nav-tools">
+                    <span style="opacity: 0.5;">GOTO_LN:</span>
+                    <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
+                    <span id="status-indicator">● LIVE_SYNC</span>
+                </div>
             </header>
             <main class="viewport" id="viewport">
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="SEARCH (A=a, B=b)..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="CASE-SENSITIVE SEARCH..." spellcheck="false">
                         <button id="search-next">NEXT ></button>
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
                         <div id="line-numbers"></div>
-                        <div id="code-input" class="code-area" contenteditable="plaintext-only" spellcheck="false"></div>
+                        <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                     </div>
                 </div>
                 
                 <div class="drag-bar" id="drag-handle"></div>
                 
                 <section class="pane preview-pane">
-                    <div class="pane-label">RUNTIME_VIEW</div>
+                    <div class="pane-label" style="background:#eee; color:#000; display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;">
+                        <span>RUNTIME</span>
+                        <span id="sync-status" style="font-size: 8px; font-weight: bold; color: #888;">READY</span>
+                    </div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
                 </section>
             </main>
@@ -161,28 +162,68 @@
     </div>
 
     <script>
-        const codeInput = document.getElementById('code-input'),
+        const viewport = document.getElementById('viewport'),
+              handle = document.getElementById('drag-handle'),
+              editor = document.getElementById('editorPane'),
+              codeInput = document.getElementById('code-input'),
               preview = document.getElementById('preview-frame'),
-              lineNumbers = document.getElementById('line-numbers'),
+              status = document.getElementById('status-indicator'),
+              syncStatus = document.getElementById('sync-status'),
+              loadBar = document.getElementById('load-bar'),
+              loader = document.getElementById('boot-loader'),
               searchInput = document.getElementById('search-input'),
               searchNext = document.getElementById('search-next'),
               matchDisplay = document.getElementById('match-count'),
-              loadBar = document.getElementById('load-bar'),
-              loader = document.getElementById('boot-loader');
+              lineNumbers = document.getElementById('line-numbers'),
+              gotoInput = document.getElementById('goto-input');
 
-        let syncTimer, currentMatchIndex = -1;
+        let isDragging = false;
+        let syncTimer;
+        let currentMatchIndex = -1;
 
+        /* BOOT SEQUENCE */
         window.onload = () => {
             loadBar.style.width = "100%";
-            lineNumbers.innerHTML = Array.from({length: 500}, (_, i) => 
-                `<span class="ln-item" id="ln-${i+1}">${i+1}</span>`).join('');
-            
             setTimeout(() => {
+                handleOrientation();
+                updateLineNumbers();
+                updatePreview();
                 loader.style.opacity = "0";
                 setTimeout(() => loader.remove(), 500);
                 codeInput.focus();
             }, 600);
         };
+
+        /* ADAPTIVE LAYOUT */
+        function handleOrientation() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            viewport.style.flexDirection = isPortrait ? 'column' : 'row';
+            handle.style.width = isPortrait ? '100%' : '10px';
+            handle.style.height = isPortrait ? '10px' : '100%';
+            handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
+            editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
+        }
+
+        /* DRAG ENGINE */
+        handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
+        document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            const rect = viewport.getBoundingClientRect();
+            if (window.innerHeight > window.innerWidth) {
+                let y = e.clientY - rect.top;
+                if (y > 40 && y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
+            } else {
+                let x = e.clientX - rect.left;
+                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+            }
+        };
+
+        function updateLineNumbers() {
+            let nums = "";
+            for(let i = 1; i <= 999; i++) nums += i + "<br>";
+            lineNumbers.innerHTML = nums;
+        }
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -190,46 +231,52 @@
             return div.innerHTML;
         }
 
+        /* SMART SYNC */
         function updatePreview() {
-            const blobContent = `<!DOCTYPE html><html><body>${codeInput.innerText}</body></html>`;
+            const code = codeInput.innerText;
+            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
             if (preview.src) URL.revokeObjectURL(preview.src);
             const blob = new Blob([blobContent], { type: 'text/html' });
             preview.src = URL.createObjectURL(blob);
         }
 
         codeInput.oninput = () => {
+            syncStatus.innerText = "EDITING - SYNC PAUSED";
+            syncStatus.style.color = "var(--hud-red)";
+            status.innerText = "● BUSY";
+            status.style.color = "var(--hud-red)";
             clearTimeout(syncTimer);
-            syncTimer = setTimeout(updatePreview, 500);
+            syncTimer = setTimeout(() => {
+                updatePreview();
+                syncStatus.innerText = "SYNCED";
+                syncStatus.style.color = "#000";
+                status.innerText = "● LIVE_SYNC";
+                status.style.color = "var(--hud-blue)";
+            }, 800);
         };
 
-        /* --- UPDATED ALGORITHM: CASE-NEUTRAL --- */
+        /* --- TACTICAL SEARCH ENGINE: INSTANT + CASE-SENSITIVE --- */
         function runSearch() {
             const query = searchInput.value;
-            const text = codeInput.innerText; // innerText handles newlines better than textContent
-
-            // Clear Highlights
-            document.querySelectorAll('.ln-item').forEach(el => el.classList.remove('ln-hit'));
+            const text = codeInput.innerText;
 
             if (!query || query.trim() === "") {
                 codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 searchNext.style.display = "none";
+                currentMatchIndex = -1;
                 return;
             }
 
             try {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                // 'gi' flag is the engine that makes A=a, B=b
-                const regex = new RegExp(`(${escapedQuery})`, 'gi'); 
+                const regex = new RegExp(`(${escapedQuery})`, 'g'); // Case-Sensitive
                 const matches = text.match(regex);
-                
+
                 if (matches) {
                     matchDisplay.classList.add('found');
-                    matchDisplay.innerText = `${matches.length} MATCHES`;
                     searchNext.style.display = "block";
-                    
-                    // Replace using $1 to keep original character case while matching insensitively
                     codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
                     jumpToMatch(0); 
                 } else {
@@ -238,36 +285,55 @@
                     searchNext.style.display = "none";
                     codeInput.innerHTML = escapeHtml(text);
                 }
-            } catch (e) { console.error("Regex Error", e); }
+            } catch (e) { console.error(e); }
         }
 
+        /* --- INSTANT SNAP ENGINE --- */
         function jumpToMatch(index) {
             const marks = codeInput.querySelectorAll('mark');
             if (marks.length === 0) return;
 
             marks.forEach(m => m.classList.remove('active-match'));
             currentMatchIndex = (index + marks.length) % marks.length;
-            
             const target = marks[currentMatchIndex];
-            target.classList.add('active-match');
-
-            // Alignment Logic for Gutter
-            const lh = parseFloat(getComputedStyle(codeInput).lineHeight);
-            const pad = parseFloat(getComputedStyle(codeInput).paddingTop);
-            const topPos = target.offsetTop - codeInput.offsetTop - pad;
-            const lineNum = Math.floor(topPos / lh) + 1;
-
-            document.querySelectorAll('.ln-item').forEach(el => el.classList.remove('ln-hit'));
-            const ln = document.getElementById(`ln-${lineNum}`);
-            if (ln) ln.classList.add('ln-hit');
             
+            target.classList.add('active-match');
             target.scrollIntoView({ behavior: 'auto', block: 'center' });
+            
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
         }
 
         searchInput.oninput = runSearch;
+        searchInput.onkeydown = (e) => { 
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                jumpToMatch(currentMatchIndex + 1); 
+            }
+        };
         searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
+
+        /* FOCUS PROTECTION & NAVIGATION */
+        codeInput.onmousedown = () => {
+            if (searchInput.value !== "") {
+                const raw = codeInput.innerText;
+                codeInput.innerHTML = escapeHtml(raw);
+                searchInput.value = "";
+                matchDisplay.innerText = "0 MATCHES";
+                matchDisplay.classList.remove('found');
+                searchNext.style.display = "none";
+            }
+        };
+
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+        gotoInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                const lineNum = parseInt(gotoInput.value);
+                const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
+                if (lineNum > 0) codeInput.scrollTop = (lineNum - 1) * lineHeight;
+            }
+        };
+        
+        window.onresize = handleOrientation;
     </script>
 </body>
 </html>
