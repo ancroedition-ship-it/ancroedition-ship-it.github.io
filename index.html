@@ -218,7 +218,7 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="search" spellcheck="false">
+                        <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
@@ -284,10 +284,10 @@
             const rect = viewport.getBoundingClientRect();
             if (window.innerHeight > window.innerWidth) {
                 let y = e.clientY - rect.top;
-                if (y > 40 && y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
+                if (y > 40 &amp;amp;&amp;amp; y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
             } else {
                 let x = e.clientX - rect.left;
-                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+                if (x > 100 &amp;amp;&amp;amp; x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
             }
         };
 
@@ -328,7 +328,7 @@
         }
 
         searchInput.onkeydown = (e) => {
-            if (e.key === 'Enter' && matchElements.length > 0) {
+            if (e.key === 'Enter' &amp;amp;&amp;amp; matchElements.length > 0) {
                 e.preventDefault();
                 scrollToMatch(currentMatchIndex + 1);
             }
@@ -348,7 +348,7 @@
                 return;
             }
 
-            const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&amp;amp;');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
  
             const escapedFullText = escapeHtml(text);
