@@ -98,7 +98,7 @@
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
-        .preview-pane { flex: 1; background: #fff; border: 2px solid #ccc; }
+        .preview-pane { flex: 1; background: rgba(0, 102, 255, 0.05); border: 2px solid #ccc; }
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
@@ -187,7 +187,7 @@
             <header class="studio-header">
                 <span>NEUROSENTIX STUDIO </span>
                 <div class="nav-tools">
-                    <span style="opacity: 0.5;">Numbers:</span>
+                    <span style="opacity: 0.5;"></span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
                     <button id="goto-btn">GO</button>
                     <span id="status-indicator">● LIVE_SYNC</span>
@@ -197,7 +197,7 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="SEARCH (ENTER FOR NEXT)..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="search" spellcheck="false">
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
