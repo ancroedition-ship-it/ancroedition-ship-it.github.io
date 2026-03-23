@@ -57,12 +57,7 @@
             position: relative;
             background-color: var(--bg-dark);
             border: 1px solid rgba(0, 102, 255, 0.1);
-            transition: border 0.2s;
         }
-
-        .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
-        .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
         .studio-container {
             position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
@@ -74,9 +69,8 @@
         .nav-tools { display: flex; align-items: center; gap: 15px; }
         .hud-input-small { 
             background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
-            font-size: 9px; padding: 2px 5px; width: 60px; outline: none; transition: border 0.2s;
+            font-size: 9px; padding: 2px 5px; width: 60px; outline: none;
         }
-        .hud-input-small:focus { border-color: var(--hud-red); }
 
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
@@ -85,10 +79,11 @@
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
-        .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid var(--border); display: flex; align-items: center; }
+        .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
         #search-input { background: transparent; border: 1px solid var(--hud-blue); color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
-        #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
-        #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
+        #search-next { background: var(--hud-blue); border: none; color: white; font-size: 8px; cursor: pointer; padding: 4px 8px; display: none; }
+        #match-count { color: var(--hud-blue); font-size: 9px; white-space: nowrap; opacity: 0.6; }
+        #match-count.found { color: var(--hud-red); opacity: 1; }
 
         .editor-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
         #line-numbers {
@@ -102,14 +97,12 @@
             user-select: text; line-height: 1.5; 
         }
         
-        mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
+        mark { background: rgba(255, 23, 68, 0.5); color: #fff; }
+        mark.active-match { outline: 2px solid white; background: var(--hud-red); }
 
-        .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
-        .drag-bar::before { content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%; box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3); }
+        .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; width: 20px; cursor: col-resize; }
 
         iframe { width: 100%; height: 100%; border: none; background: #fff; }
-        .shield { pointer-events: none !important; }
     </style>
 </head>
 <body>
@@ -120,11 +113,6 @@
     </div>
 
     <div class="hud-wrapper" id="main-frame">
-        <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
-            <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
-            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
-        </svg>
-
         <div class="studio-container">
             <header class="studio-header">
                 <span>NEUROSENTIX_CORE // V16.5</span>
@@ -138,11 +126,12 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="SEARCH_SOURCE..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="SEARCH_SOURCE (REGEX SAFE)..." spellcheck="false">
+                        <button id="search-next">NEXT ></button>
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
-                        <div id="line-numbers">1</div>
+                        <div id="line-numbers"></div>
                         <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                     </div>
                 </div>
@@ -152,8 +141,8 @@
                 <section class="pane preview-pane">
                     <div class="pane-label" style="background:#eee; color:#000; display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;">
                         <span>RUNTIME</span>
-                        <span id="lock-btn" style="cursor: pointer; display: flex; align-items: center;" title="Toggle Runtime Lock">
-                            <svg id="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #000; transition: all 0.2s;">
+                        <span id="lock-btn" style="cursor: pointer; display: flex; align-items: center;">
+                            <svg id="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                                 <path id="lock-path" d="M7 11V7a5 5 0 0 1 9.9-1"></path>
                                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                             </svg>
@@ -166,167 +155,119 @@
     </div>
 
     <script>
-        const viewport = document.getElementById('viewport'),
-              handle = document.getElementById('drag-handle'),
-              editor = document.getElementById('editorPane'),
-              codeInput = document.getElementById('code-input'),
-              preview = document.getElementById('preview-frame'),
-              status = document.getElementById('status-indicator'),
-              loadBar = document.getElementById('load-bar'),
-              loader = document.getElementById('boot-loader'),
-              searchInput = document.getElementById('search-input'),
-              matchDisplay = document.getElementById('match-count'),
+        const codeInput = document.getElementById('code-input'),
               lineNumbers = document.getElementById('line-numbers'),
-              gotoInput = document.getElementById('goto-input'),
+              preview = document.getElementById('preview-frame'),
+              searchInput = document.getElementById('search-input'),
+              searchNext = document.getElementById('search-next'),
+              matchDisplay = document.getElementById('match-count'),
               lockBtn = document.getElementById('lock-btn'),
-              lockIcon = document.getElementById('lock-icon'),
-              lockPath = document.getElementById('lock-path');
+              lockPath = document.getElementById('lock-path'),
+              status = document.getElementById('status-indicator');
 
-        let isDragging = false;
         let isRuntimeLocked = false;
+        let currentMatchIndex = -1;
 
-        /* BOOT SEQUENCE */
         window.onload = () => {
-            loadBar.style.width = "100%";
+            document.getElementById('load-bar').style.width = "100%";
             setTimeout(() => {
-                handleOrientation();
-                updatePreview();
                 updateLineNumbers();
-                loader.style.opacity = "0";
-                setTimeout(() => loader.remove(), 500);
+                updatePreview();
+                document.getElementById('boot-loader').remove();
                 codeInput.focus();
             }, 600);
         };
 
-        /* ADAPTIVE LAYOUT */
-        function handleOrientation() {
-            const isPortrait = window.innerHeight > window.innerWidth;
-            viewport.style.flexDirection = isPortrait ? 'column' : 'row';
-            handle.style.width = isPortrait ? '100%' : '20px';
-            handle.style.height = isPortrait ? '20px' : '100%';
-            handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
-            editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
-        }
-
-        /* DRAG ENGINE */
-        handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
-        document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
-        document.onmousemove = (e) => {
-            if (!isDragging) return;
-            const rect = viewport.getBoundingClientRect();
-            if (window.innerHeight > window.innerWidth) {
-                let y = e.clientY - rect.top;
-                if (y > 40 && y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
-            } else {
-                let x = e.clientX - rect.left;
-                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
-            }
-        };
-
-        /* LINE COUNTER (1-999) */
+        /* --- LINE NUMBERS (1-999) --- */
         function updateLineNumbers() {
             let nums = "";
-            for(let i = 1; i <= 999; i++) {
-                nums += i + "<br>";
-            }
+            for(let i = 1; i <= 999; i++) nums += i + "<br>";
             lineNumbers.innerHTML = nums;
         }
 
+        /* --- SEARCH ENGINE (Handles Special Characters) --- */
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        /* GOTO LINE */
-        gotoInput.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-                const lineNum = parseInt(gotoInput.value);
-                const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
-                if (lineNum > 0) {
-                    codeInput.scrollTop = (lineNum - 1) * lineHeight;
-                    gotoInput.blur();
-                }
-            }
-        };
-
-        /* RUNTIME LOCK SYSTEM */
-        lockBtn.onclick = () => {
-            isRuntimeLocked = !isRuntimeLocked;
-            if (isRuntimeLocked) {
-                lockIcon.style.color = "var(--hud-red)";
-                lockPath.setAttribute("d", "M7 11V7a5 5 0 0 1 10 0v4"); // Closed
-                status.innerText = "● SYNC_PAUSED";
-                status.style.color = "var(--hud-red)";
-            } else {
-                lockIcon.style.color = "#000";
-                lockPath.setAttribute("d", "M7 11V7a5 5 0 0 1 9.9-1"); // Open
-                status.innerText = "● LIVE_SYNC";
-                status.style.color = "var(--hud-blue)";
-                updatePreview();
-            }
-        };
-
-        /* ROBUST SEARCH ENGINE */
-        searchInput.oninput = () => {
+        function runSearch() {
             const query = searchInput.value;
             const text = codeInput.innerText;
 
-            if (!query || query.trim() === "") {
+            if (!query) {
                 codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
-                matchDisplay.classList.remove('found');
+                searchNext.style.display = "none";
                 return;
             }
 
-            try {
-                const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`(${escapedQuery})`, 'gi');
-                const matches = text.match(regex);
-                matchDisplay.innerText = `${matches ? matches.length : 0} MATCHES`;
+            // Escape special chars like [ ] ( ) $ * + ? . 
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            const matches = text.match(regex);
 
-                if (matches) {
-                    matchDisplay.classList.add('found');
-                    codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
-                    const firstMatch = codeInput.querySelector('mark');
-                    if (firstMatch) {
-                        firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }
-                } else {
-                    matchDisplay.classList.remove('found');
-                    codeInput.innerHTML = escapeHtml(text);
-                }
-            } catch (e) { console.error(e); }
+            if (matches) {
+                matchDisplay.classList.add('found');
+                searchNext.style.display = "block";
+                codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                jumpToMatch(0);
+            } else {
+                matchDisplay.classList.remove('found');
+                matchDisplay.innerText = "0 MATCHES";
+                searchNext.style.display = "none";
+                codeInput.innerHTML = escapeHtml(text);
+            }
+        }
+
+        function jumpToMatch(index) {
+            const marks = codeInput.querySelectorAll('mark');
+            if (marks.length === 0) return;
+
+            // Clear previous active
+            marks.forEach(m => m.classList.remove('active-match'));
+            
+            currentMatchIndex = (index + marks.length) % marks.length;
+            const target = marks[currentMatchIndex];
+            
+            target.classList.add('active-match');
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
+        }
+
+        searchInput.oninput = runSearch;
+        searchInput.onkeydown = (e) => { if(e.key === 'Enter') jumpToMatch(currentMatchIndex + 1); };
+        searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
+
+        /* --- RUNTIME LOCK --- */
+        lockBtn.onclick = () => {
+            isRuntimeLocked = !isRuntimeLocked;
+            lockPath.setAttribute("d", isRuntimeLocked ? "M7 11V7a5 5 0 0 1 10 0v4" : "M7 11V7a5 5 0 0 1 9.9-1");
+            status.innerText = isRuntimeLocked ? "● SYNC_PAUSED" : "● LIVE_SYNC";
+            status.style.color = isRuntimeLocked ? "var(--hud-red)" : "var(--hud-blue)";
+            if(!isRuntimeLocked) updatePreview();
         };
 
-        /* FOCUS PROTECTION */
-        codeInput.onfocus = () => {
-            if (searchInput.value !== "") {
+        /* --- CORE LOGIC --- */
+        function updatePreview() {
+            const blob = new Blob([`<!DOCTYPE html><html><body style="padding:20px;font-family:sans-serif">${codeInput.innerText}</body></html>`], {type: 'text/html'});
+            preview.src = URL.createObjectURL(blob);
+        }
+
+        codeInput.oninput = () => { if(!isRuntimeLocked) updatePreview(); };
+        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+
+        // Reset search highlights on click to allow editing
+        codeInput.onmousedown = () => {
+            if (searchInput.value) {
                 const raw = codeInput.innerText;
                 codeInput.innerHTML = escapeHtml(raw);
                 searchInput.value = "";
                 matchDisplay.innerText = "0 MATCHES";
-                matchDisplay.classList.remove('found');
+                searchNext.style.display = "none";
             }
         };
-
-        /* SCROLL SYNC */
-        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
-
-        /* RUNTIME PREVIEW */
-        function updatePreview() {
-            const code = codeInput.innerText;
-            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
-            if (preview.src) URL.revokeObjectURL(preview.src);
-            const blob = new Blob([blobContent], { type: 'text/html' });
-            preview.src = URL.createObjectURL(blob);
-        }
-
-        codeInput.oninput = () => { 
-            if (!isRuntimeLocked) updatePreview(); 
-        };
-        
-        window.onresize = handleOrientation;
     </script>
 </body>
 </html>
