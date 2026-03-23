@@ -81,7 +81,7 @@
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
-        .preview-pane { flex: 1; background: #fff; }
+        .preview-pane { flex: 1; background: #333333; }
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
@@ -108,7 +108,7 @@
         .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
         .drag-bar::before { content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%; box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3); }
 
-        iframe { width: 100%; height: 100%; border: none; }
+        iframe { width: 100%; height: 100%; border: none; background: #fff; }
         .shield { pointer-events: none !important; }
     </style>
 </head>
@@ -150,7 +150,15 @@
                 <div class="drag-bar" id="drag-handle"></div>
                 
                 <section class="pane preview-pane">
-                    <div class="pane-label" style="background:#eee; color:#000;">RUNTIME</div>
+                    <div class="pane-label" style="background:#eee; color:#000; display: flex; justify-content: space-between; align-items: center; padding: 4px 10px;">
+                        <span>RUNTIME</span>
+                        <span id="lock-btn" style="cursor: pointer; display: flex; align-items: center;">
+                            <svg id="lock-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #000; transition: all 0.2s;">
+                                <path id="lock-path" d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            </svg>
+                        </span>
+                    </div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
                 </section>
             </main>
@@ -170,7 +178,10 @@
               searchInput = document.getElementById('search-input'),
               matchDisplay = document.getElementById('match-count'),
               lineNumbers = document.getElementById('line-numbers'),
-              gotoInput = document.getElementById('goto-input');
+              gotoInput = document.getElementById('goto-input'),
+              lockBtn = document.getElementById('lock-btn'),
+              lockIcon = document.getElementById('lock-icon'),
+              lockPath = document.getElementById('lock-path');
 
         let isDragging = false;
 
@@ -212,11 +223,12 @@
             }
         };
 
-        /* LINE COUNTER */
+        /* LINE COUNTER (1-999) */
         function updateLineNumbers() {
-            const lines = codeInput.innerText.split(/\r\n|\r|\n/).length;
             let nums = "";
-            for(let i=1; i<=999; i++) nums += i + "<br>";
+            for(let i = 1; i <= 999; i++) {
+                nums += i + "<br>";
+            }
             lineNumbers.innerHTML = nums;
         }
 
@@ -238,29 +250,42 @@
             }
         };
 
+        /* LOCK SYSTEM */
+        lockBtn.onclick = () => {
+            const isUnlocked = codeInput.contentEditable === "true";
+            if (isUnlocked) {
+                codeInput.contentEditable = "false";
+                codeInput.style.opacity = "0.5";
+                codeInput.style.cursor = "not-allowed";
+                lockIcon.style.color = "var(--hud-red)";
+                lockPath.setAttribute("d", "M7 11V7a5 5 0 0 1 10 0v4"); // Closed shackle
+            } else {
+                codeInput.contentEditable = "true";
+                codeInput.style.opacity = "1";
+                codeInput.style.cursor = "text";
+                lockIcon.style.color = "#000";
+                lockPath.setAttribute("d", "M7 11V7a5 5 0 0 1 9.9-1"); // Open shackle
+                codeInput.focus();
+            }
+        };
+
         /* STABILIZED SEARCH ENGINE */
         searchInput.oninput = () => {
             const query = searchInput.value;
             const text = codeInput.innerText;
-
             if (!query) {
                 codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 return;
             }
-
             const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedQuery})`, 'gi');
             const matches = text.match(regex);
-            
             matchDisplay.innerText = `${matches ? matches.length : 0} MATCHES`;
-            
             if (matches) {
                 matchDisplay.classList.add('found');
                 codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
-                
-                // AUTO-SCROLL TO FIRST MATCH
                 const firstMatch = codeInput.querySelector('mark');
                 if (firstMatch) {
                     const topPos = firstMatch.offsetTop - (codeInput.offsetHeight / 2);
@@ -295,7 +320,7 @@
             preview.src = URL.createObjectURL(blob);
         }
 
-        codeInput.oninput = () => { updatePreview(); updateLineNumbers(); };
+        codeInput.oninput = () => { updatePreview(); };
         window.onresize = handleOrientation;
     </script>
 </body>
