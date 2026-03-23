@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Neurosentix Studio // V17.6_STRICT_CASE</title>
+    <title>Neurosentix Studio // V17.7_GUTTER_LINK</title>
     
     <style>
         :root {
@@ -90,18 +90,23 @@
         #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
         .editor-layout { display: flex; flex: 1; overflow: hidden; position: relative; }
+        
         #line-numbers {
-            width: 45px; padding: 20px 8px; background: rgba(0,0,0,0.4);
-            color: #333; font-size: 12px; text-align: right; 
+            width: 45px; padding: 20px 0; background: rgba(0,0,0,0.4);
+            color: #333; font-size: 12px; text-align: center; 
             border-right: 1px solid var(--border); overflow: hidden; line-height: 1.5; pointer-events: none;
         }
+
+        /* Line Number Highlight Style */
+        .ln-item { display: block; width: 100%; transition: color 0.1s; }
+        .ln-hit { color: var(--hud-red) !important; font-weight: bold; text-shadow: 0 0 5px var(--hud-red); background: rgba(255, 23, 68, 0.1); }
+
         .code-area { 
             flex: 1; padding: 20px; color: #a1a1aa; outline: none; 
             font-size: 13px; white-space: pre; overflow: auto; 
             user-select: text; line-height: 1.5; 
         }
         
-        /* Tactical Highlighting */
         mark { background: rgba(255, 23, 68, 0.25); color: #fff; border-radius: 1px; transition: background 0.1s; }
         mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 15px var(--hud-red); }
 
@@ -127,7 +132,7 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V17.6_STRICT</span>
+                <span>NEUROSENTIX_CORE // V17.7_LN_LINK</span>
                 <div class="nav-tools">
                     <span style="opacity: 0.5;">GOTO_LN:</span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
@@ -138,7 +143,7 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="STRICT BINARY CASE SEARCH..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="STRICT SEARCH..." spellcheck="false">
                         <button id="search-next">NEXT ></button>
                         <span id="match-count">0 MATCHES</span>
                     </div>
@@ -218,7 +223,9 @@
 
         function updateLineNumbers() {
             let nums = "";
-            for(let i = 1; i <= 999; i++) nums += i + "<br>";
+            for(let i = 1; i <= 999; i++) {
+                nums += `<span class="ln-item" id="ln-${i}">${i}</span>`;
+            }
             lineNumbers.innerHTML = nums;
         }
 
@@ -251,10 +258,13 @@
             }, 800);
         };
 
-        /* --- TACTICAL SEARCH: STRICT BINARY CASE SENSITIVITY --- */
+        /* --- TACTICAL SEARCH + GUTTER SYNC --- */
         function runSearch() {
             const query = searchInput.value;
             const text = codeInput.textContent; 
+
+            // Clear previous line highlights
+            document.querySelectorAll('.ln-item').forEach(el => el.classList.remove('ln-hit'));
 
             if (!query || query.trim() === "") {
                 codeInput.innerHTML = escapeHtml(text);
@@ -267,10 +277,8 @@
 
             try {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                // Capture group with strict global flag (NO 'i' flag)
                 const regex = new RegExp(`(${escapedQuery})`, 'g'); 
                 
-                // Manual Verification: Ensure browser normalization isn't ignoring case
                 const rawMatches = text.match(regex);
                 const validMatchesCount = rawMatches ? rawMatches.filter(m => m === query).length : 0;
 
@@ -279,12 +287,10 @@
                     matchDisplay.innerText = `${validMatchesCount} MATCHES`;
                     searchNext.style.display = "block";
                     
-                    // Highlight ONLY if character codes are a 100% match
                     codeInput.innerHTML = escapeHtml(text).replace(regex, (match) => {
                         return match === query ? `<mark>${match}</mark>` : match;
                     });
                     
-                    // MANDATORY AUTO-SCROLL ON EVERY TYPED MATCH
                     jumpToMatch(0); 
                 } else {
                     matchDisplay.classList.remove('found');
@@ -292,21 +298,34 @@
                     searchNext.style.display = "none";
                     codeInput.innerHTML = escapeHtml(text);
                 }
-            } catch (e) { console.error("Search Fail:", e); }
+            } catch (e) { console.error(e); }
         }
 
-        /* --- INSTANT COORDINATE SNAP --- */
+        /* --- INSTANT SNAP + LN HIGHLIGHT --- */
         function jumpToMatch(index) {
             const marks = codeInput.querySelectorAll('mark');
             if (marks.length === 0) return;
 
+            // Clean up UI
             marks.forEach(m => m.classList.remove('active-match'));
+            document.querySelectorAll('.ln-item').forEach(el => el.classList.remove('ln-hit'));
+
             currentMatchIndex = (index + marks.length) % marks.length;
             const target = marks[currentMatchIndex];
             
             target.classList.add('active-match');
+
+            /* --- CALCULATE LINE NUMBER --- */
+            // Get vertical offset of the match relative to the container
+            const matchTop = target.offsetTop - codeInput.offsetTop;
+            const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
+            const lineNum = Math.floor(matchTop / lineHeight) + 1;
+
+            // Highlight the line number in the gutter
+            const lnElement = document.getElementById(`ln-${lineNum}`);
+            if (lnElement) lnElement.classList.add('ln-hit');
             
-            // BEHAVIOR 'AUTO' = MAXIMUM SPEED
+            // Instant scroll to match
             target.scrollIntoView({ behavior: 'auto', block: 'center' });
             
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
@@ -321,7 +340,6 @@
         };
         searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
 
-        /* CLEANUP ON CLICK */
         codeInput.onmousedown = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.textContent;
@@ -330,10 +348,12 @@
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 searchNext.style.display = "none";
+                document.querySelectorAll('.ln-item').forEach(el => el.classList.remove('ln-hit'));
             }
         };
 
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+        
         gotoInput.onkeydown = (e) => {
             if (e.key === 'Enter') {
                 const lineNum = parseInt(gotoInput.value);
