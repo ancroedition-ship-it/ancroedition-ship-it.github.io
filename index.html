@@ -101,8 +101,9 @@
             user-select: text; line-height: 1.5; 
         }
         
-        mark { background: rgba(255, 23, 68, 0.4); color: #fff; border-radius: 1px; }
-        mark.active-match { outline: 2px solid white; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
+        /* Highlight Styling */
+        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
+        mark.active-match { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
 
         .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; width: 10px; cursor: col-resize; }
         .drag-bar.active { background: rgba(255, 23, 68, 0.2); }
@@ -241,15 +242,11 @@
         }
 
         codeInput.oninput = () => {
-            // Disable live sync while editing
             syncStatus.innerText = "EDITING - SYNC PAUSED";
             syncStatus.style.color = "var(--hud-red)";
             status.innerText = "● BUSY";
             status.style.color = "var(--hud-red)";
-
             clearTimeout(syncTimer);
-
-            // Allow sync after 800ms of inactivity
             syncTimer = setTimeout(() => {
                 updatePreview();
                 syncStatus.innerText = "SYNCED";
@@ -257,18 +254,6 @@
                 status.innerText = "● LIVE_SYNC";
                 status.style.color = "var(--hud-blue)";
             }, 800);
-        };
-
-        /* GOTO LINE */
-        gotoInput.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-                const lineNum = parseInt(gotoInput.value);
-                const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
-                if (lineNum > 0) {
-                    codeInput.scrollTop = (lineNum - 1) * lineHeight;
-                    gotoInput.blur();
-                }
-            }
         };
 
         /* ADVANCED SEARCH ENGINE */
@@ -285,7 +270,6 @@
             }
 
             try {
-                // Escape special characters for regex safety
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 const regex = new RegExp(`(${escapedQuery})`, 'gi');
                 const matches = text.match(regex);
@@ -294,6 +278,8 @@
                     matchDisplay.classList.add('found');
                     searchNext.style.display = "block";
                     codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                    
+                    // AUTO-SCROLL TO FIRST MATCH IMMEDIATELY
                     jumpToMatch(0);
                 } else {
                     matchDisplay.classList.remove('found');
@@ -308,12 +294,19 @@
             const marks = codeInput.querySelectorAll('mark');
             if (marks.length === 0) return;
 
+            // Remove active state from all
             marks.forEach(m => m.classList.remove('active-match'));
+            
+            // Set current
             currentMatchIndex = (index + marks.length) % marks.length;
             const target = marks[currentMatchIndex];
             
+            // Add active state (changes background, no stroke)
             target.classList.add('active-match');
+            
+            // Auto-scroll logic
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
         }
 
@@ -333,8 +326,16 @@
             }
         };
 
-        /* SCROLL SYNC */
+        /* SCROLL SYNC & GOTO */
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+        gotoInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                const lineNum = parseInt(gotoInput.value);
+                const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
+                if (lineNum > 0) codeInput.scrollTop = (lineNum - 1) * lineHeight;
+            }
+        };
+        
         window.onresize = handleOrientation;
     </script>
 </body>
