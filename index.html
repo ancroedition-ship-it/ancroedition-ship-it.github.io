@@ -284,10 +284,10 @@
             const rect = viewport.getBoundingClientRect();
             if (window.innerHeight > window.innerWidth) {
                 let y = e.clientY - rect.top;
-                if (y > 40 &amp;amp;&amp;amp; y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
+                if (y > 40 && y < rect.height - 40) editor.style.flex = `0 0 ${y}px`;
             } else {
                 let x = e.clientX - rect.left;
-                if (x > 100 &amp;amp;&amp;amp; x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
             }
         };
 
@@ -295,7 +295,7 @@
             const linesContent = codeInput.innerText.split(/\r\n|\r|\n/);
             const totalLines = Math.max(linesContent.length, 1);
             let nums = "";
-            for(let i = 1; i <= 999; i++) {
+            for(let i = 1; i <= totalLines; i++) {
                 const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
                 nums += `<div class="${existingMark}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
@@ -328,7 +328,7 @@
         }
 
         searchInput.onkeydown = (e) => {
-            if (e.key === 'Enter' &amp;amp;&amp;amp; matchElements.length > 0) {
+            if (e.key === 'Enter' && matchElements.length > 0) {
                 e.preventDefault();
                 scrollToMatch(currentMatchIndex + 1);
             }
@@ -340,7 +340,7 @@
             currentMatchIndex = -1;
 
             if (!query || query.trim() === "") {
-                codeInput.innerText = text;
+                codeInput.innerHTML = escapeHtml(text);
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 matchElements = [];
@@ -348,26 +348,26 @@
                 return;
             }
 
-            const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&amp;amp;');
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                                      .replace(/</g, '&lt;')
+                                      .replace(/>/g, '&gt;');
  
-            const escapedFullText = escapeHtml(text);
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
             
-                if (escapedFullText.match(regex)) {
-        codeInput.innerHTML = escapedFullText.replace(regex, '<mark>$1</mark>');
-        
-        matchElements = Array.from(codeInput.querySelectorAll('mark'));
-        matchDisplay.classList.add('found');
-        updateLineNumbers();
-        scrollToMatch(0);
-    } else {
-        matchDisplay.classList.remove('found');
-        matchDisplay.innerText = "0 MATCHES";
-        codeInput.innerText = text; 
-        matchElements = [];
-        updateLineNumbers();
-    }
-};
+            if (text.match(regex)) {
+                codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
+                matchElements = Array.from(codeInput.querySelectorAll('mark'));
+                matchDisplay.classList.add('found');
+                updateLineNumbers();
+                scrollToMatch(0);
+            } else {
+                matchDisplay.classList.remove('found');
+                matchDisplay.innerText = "0 MATCHES";
+                codeInput.innerHTML = escapeHtml(text);
+                matchElements = [];
+                updateLineNumbers();
+            }
+        };
 
         function executeGoto() {
             const lineNum = parseInt(gotoInput.value);
