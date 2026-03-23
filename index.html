@@ -83,44 +83,56 @@
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
-        .preview-pane { flex: 1; background: #fff; }
+        .preview-pane { flex: 1; background: #fff; border: 2px solid #ccc; }
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
-        .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border-bottom: 1px solid var(--border); display: flex; align-items: center; }
-        #search-input { background: transparent; border: 1px solid var(--hud-blue); color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
+        /* SEARCH BOUNDARY */
+        .search-container { 
+            padding: 5px 10px; 
+            background: rgba(0, 0, 0, 0.2); 
+            border: 1px solid var(--boundary-color); /* Search Box Boundary */
+            margin: 5px;
+            display: flex; 
+            align-items: center; 
+        }
+        #search-input { background: transparent; border: none; color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
         #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
         #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
+        /* MAIN EDITOR BOUNDARY */
         .editor-layout { 
             display: flex; 
             flex: 1; 
             overflow: hidden; 
             position: relative; 
-            border: 2px solid var(--boundary-color);
+            border: 2px solid var(--boundary-color); 
+            margin: 5px;
         }
         
+        /* LINE NUMBER BOUNDARY */
         #line-numbers {
             width: 50px; 
-            padding: 20px 10px; 
+            padding: 20px 0; 
             background: rgba(0,0,0,0.4);
             color: #333; 
             font-size: 13px; 
-            text-align: right; 
-            border-right: 1px solid var(--border); 
+            text-align: center; 
+            border-right: 2px solid var(--boundary-color); /* Boundary between gutter and code */
             overflow: hidden; 
             line-height: 1.5; 
             pointer-events: none;
             font-family: var(--font-main);
         }
 
-        /* HIGHLIGHT FOR THE LINE NUMBER ITSELF */
         .ln-mark { 
             color: var(--hud-red); 
             text-shadow: 0 0 5px var(--hud-red);
             font-weight: bold;
+            background: rgba(255, 23, 68, 0.05);
         }
 
+        /* SOURCE TEXT BOUNDARY */
         .code-area { 
             flex: 1; 
             padding: 20px; 
@@ -133,6 +145,8 @@
             line-height: 1.5; 
             position: relative;
             font-family: var(--font-main);
+            /* Optional: subtle inner border to define the "page" */
+            border-left: 1px solid var(--border);
         }
         
         mark { background: rgba(255, 23, 68, 0.5); color: #fff; border-radius: 1px; box-shadow: 0 0 8px rgba(255, 23, 68, 0.5); }
@@ -242,18 +256,17 @@
             }
         };
 
-        /* UPDATED LINE COUNTER WITH ALIGNMENT & HIGHLIGHT LOGIC */
         function updateLineNumbers() {
-            // Get code content split by lines to check for highlights
+            // Split by br tags or newlines to detect count accurately
             const linesContent = codeInput.innerHTML.split(/\r\n|\r|\n|<br>/);
             const totalLines = Math.max(linesContent.length, 1);
             
             let nums = "";
             for(let i = 1; i <= totalLines; i++) {
-                // Check if the current line in the code area contains a <mark> tag
                 const hasMatch = linesContent[i-1] && linesContent[i-1].includes('<mark>');
                 const className = hasMatch ? 'ln-mark' : '';
-                nums += `<div class="${className}">${i}</div>`;
+                // Using div for structured alignment
+                nums += `<div class="${className}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
             lineNumbers.innerHTML = nums;
         }
@@ -275,7 +288,6 @@
             }
         };
 
-        /* SEARCH ENGINE WITH SIMULTANEOUS LINE HIGHLIGHTING */
         searchInput.oninput = () => {
             const query = searchInput.value;
             const text = codeInput.innerText;
@@ -297,7 +309,6 @@
                 matchDisplay.classList.add('found');
                 codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
                 
-                // Sync line numbers after markers are injected
                 updateLineNumbers();
 
                 const firstMatch = codeInput.querySelector('mark');
