@@ -6,6 +6,37 @@
     <title>Neurosentix Studio</title>
     
     <style>
+        document.addEventListener('keydown', (e) => {
+    // Press 'H' to hide/show Editor
+    if (e.ctrlKey && e.key === 'h') {
+        e.preventDefault();
+        viewport.classList.toggle('editor-hidden');
+    }
+    
+    // Press 'P' to hide/show Preview
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        viewport.classList.toggle('preview-hidden');
+    }
+});
+.editor-hidden .editor-pane {
+    flex: 0 !important;
+    width: 0;
+    visibility: hidden;
+    margin: 0;
+}
+
+/* State for hiding the Preview */
+.preview-hidden .preview-pane {
+    flex: 0 !important;
+    width: 0;
+    visibility: hidden;
+}
+
+/* Ensure the drag bar hides if either is gone */
+.editor-hidden .drag-bar, .preview-hidden .drag-bar {
+    display: none;
+}
         :root {
             --hud-red: #ff1744;
             --hud-blue: #0066ff;
