@@ -335,39 +335,39 @@
         };
 
         searchInput.oninput = () => {
-            const query = searchInput.value;
-            const text = codeInput.innerText;
-            currentMatchIndex = -1;
+    const query = searchInput.value;
+    const text = codeInput.innerText; 
+    currentMatchIndex = -1;
 
-            if (!query || query.trim() === "") {
-                codeInput.innerHTML = escapeHtml(text);
-                matchDisplay.innerText = "0 MATCHES";
-                matchDisplay.classList.remove('found');
-                matchElements = [];
-                updateLineNumbers();
-                return;
-            }
+    if (!query || query.trim() === "") {
+        codeInput.textContent = text;
+        matchDisplay.innerText = "0 MATCHES";
+        matchDisplay.classList.remove('found');
+        matchElements = [];
+        updateLineNumbers();
+        return;
+    }
 
-            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                                      .replace(/</g, '&lt;')
-                                      .replace(/>/g, '&gt;');
- 
-            const regex = new RegExp(`(${escapedQuery})`, 'gi');
-            
-            if (text.match(regex)) {
-                codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
-                matchElements = Array.from(codeInput.querySelectorAll('mark'));
-                matchDisplay.classList.add('found');
-                updateLineNumbers();
-                scrollToMatch(0);
-            } else {
-                matchDisplay.classList.remove('found');
-                matchDisplay.innerText = "0 MATCHES";
-                codeInput.innerHTML = escapeHtml(text);
-                matchElements = [];
-                updateLineNumbers();
-            }
-        };
+    const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`(${escapedQuery})`, 'gi');
+
+    const escapedFullText = escapeHtml(text);
+    
+    if (escapedFullText.match(regex)) {
+        codeInput.innerHTML = escapedFullText.replace(regex, '<mark>$1</mark>');
+        
+        matchElements = Array.from(codeInput.querySelectorAll('mark'));
+        matchDisplay.classList.add('found');
+        updateLineNumbers();
+        scrollToMatch(0);
+    } else {
+        matchDisplay.classList.remove('found');
+        matchDisplay.innerText = "0 MATCHES";
+        codeInput.innerText = text
+        matchElements = [];
+        updateLineNumbers();
+    }
+};
 
         function executeGoto() {
             const lineNum = parseInt(gotoInput.value);
