@@ -101,9 +101,9 @@
             user-select: text; line-height: 1.5; 
         }
         
-        /* Highlight Styling */
-        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
-        mark.active-match { background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); }
+        /* Tactical Highlighting */
+        mark { background: rgba(255, 23, 68, 0.25); color: #fff; border-radius: 1px; transition: background 0.1s; }
+        mark.active-match { background: var(--hud-red) !important; box-shadow: 0 0 15px var(--hud-red); }
 
         .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; width: 10px; cursor: col-resize; }
         .drag-bar.active { background: rgba(255, 23, 68, 0.2); }
@@ -127,7 +127,7 @@
 
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX_CORE // V16.5</span>
+                <span>NEUROSENTIX_CORE // V17.0</span>
                 <div class="nav-tools">
                     <span style="opacity: 0.5;">GOTO_LN:</span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
@@ -138,7 +138,7 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="SEARCH (REGEX SAFE)..." spellcheck="false">
+                        <input type="text" id="search-input" placeholder="CASE-SENSITIVE SEARCH..." spellcheck="false">
                         <button id="search-next">NEXT ></button>
                         <span id="match-count">0 MATCHES</span>
                     </div>
@@ -219,7 +219,6 @@
             }
         };
 
-        /* LINE COUNTER (1-999) */
         function updateLineNumbers() {
             let nums = "";
             for(let i = 1; i <= 999; i++) nums += i + "<br>";
@@ -232,7 +231,7 @@
             return div.innerHTML;
         }
 
-        /* RUNTIME PREVIEW & SMART SYNC */
+        /* SMART SYNC */
         function updatePreview() {
             const code = codeInput.innerText;
             const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
@@ -256,7 +255,7 @@
             }, 800);
         };
 
-        /* ADVANCED SEARCH ENGINE */
+        /* TACTICAL SEARCH ENGINE (CASE-SENSITIVE) */
         function runSearch() {
             const query = searchInput.value;
             const text = codeInput.innerText;
@@ -266,21 +265,20 @@
                 matchDisplay.innerText = "0 MATCHES";
                 matchDisplay.classList.remove('found');
                 searchNext.style.display = "none";
+                currentMatchIndex = -1;
                 return;
             }
 
             try {
                 const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(`(${escapedQuery})`, 'gi');
+                const regex = new RegExp(`(${escapedQuery})`, 'g'); // Enforced Case Match
                 const matches = text.match(regex);
 
                 if (matches) {
                     matchDisplay.classList.add('found');
                     searchNext.style.display = "block";
                     codeInput.innerHTML = escapeHtml(text).replace(regex, '<mark>$1</mark>');
-                    
-                    // AUTO-SCROLL TO FIRST MATCH IMMEDIATELY
-                    jumpToMatch(0);
+                    jumpToMatch(0); // Auto-jump immediately
                 } else {
                     matchDisplay.classList.remove('found');
                     matchDisplay.innerText = "0 MATCHES";
@@ -294,27 +292,26 @@
             const marks = codeInput.querySelectorAll('mark');
             if (marks.length === 0) return;
 
-            // Remove active state from all
             marks.forEach(m => m.classList.remove('active-match'));
-            
-            // Set current
             currentMatchIndex = (index + marks.length) % marks.length;
             const target = marks[currentMatchIndex];
             
-            // Add active state (changes background, no stroke)
             target.classList.add('active-match');
-            
-            // Auto-scroll logic
             target.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
             matchDisplay.innerText = `${currentMatchIndex + 1} / ${marks.length} MATCHES`;
         }
 
         searchInput.oninput = runSearch;
-        searchInput.onkeydown = (e) => { if(e.key === 'Enter') jumpToMatch(currentMatchIndex + 1); };
+        searchInput.onkeydown = (e) => { 
+            if(e.key === 'Enter') {
+                e.preventDefault();
+                jumpToMatch(currentMatchIndex + 1); 
+            }
+        };
         searchNext.onclick = () => jumpToMatch(currentMatchIndex + 1);
 
-        /* FOCUS PROTECTION */
+        /* FOCUS PROTECTION & SCROLL */
         codeInput.onmousedown = () => {
             if (searchInput.value !== "") {
                 const raw = codeInput.innerText;
@@ -326,7 +323,6 @@
             }
         };
 
-        /* SCROLL SYNC & GOTO */
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
         gotoInput.onkeydown = (e) => {
             if (e.key === 'Enter') {
