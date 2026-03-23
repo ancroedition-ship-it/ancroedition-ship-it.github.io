@@ -98,7 +98,7 @@
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; }
-        .preview-pane { flex: 1; background: rgba(0, 102, 255, 0.05); border: 2px solid #ccc; }
+        .preview-pane { flex: 1; background: #fff; border: 2px solid #ccc; }
 
         .pane-label { font-size: 9px; padding: 10px; background: rgba(255,255,255,0.02); color: #555; border-bottom: 1px solid var(--border); }
 
@@ -162,9 +162,30 @@
         mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
         mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
 
-        .drag-bar { background: rgba(255, 255, 255, 0.04); z-index: 100; display: flex; align-items: center; justify-content: center; }
-        .drag-bar.active { background: rgba(255, 23, 68, 0.2); box-shadow: inset 0 0 10px var(--hud-red); }
-        .drag-bar::before { content: ""; width: 4px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 50%; box-shadow: 0 8px 0 rgba(255,255,255,0.3), 0 -8px 0 rgba(255,255,255,0.3); }
+        .drag-bar { 
+    background: rgba(0, 102, 255, 0.1); /* Subtle HUD blue */
+    z-index: 100; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border: 1px solid var(--border);
+}
+
+/* Changed middle color to HUD blue and removed the 3-dot shadow effect */
+.drag-bar::before { 
+    content: ""; 
+    width: 2px; 
+    height: 30%; 
+    background: var(--hud-blue); 
+    border-radius: 2px; 
+    box-shadow: 0 0 8px var(--hud-blue); /* Added a slight glow to match the theme */
+}
+
+/* Active state now matches the HUD red accent */
+.drag-bar.active::before {
+    background: var(--hud-red);
+    box-shadow: 0 0 12px var(--hud-red);
+}
 
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
