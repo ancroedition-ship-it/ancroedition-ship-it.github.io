@@ -72,12 +72,28 @@
 
         .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
 
-        .nav-tools { display: flex; align-items: center; gap: 15px; }
+        .nav-tools { display: flex; align-items: center; gap: 10px; }
+        
+        /* Removed increase/decrease arrows */
         .hud-input-small { 
             background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
             font-size: 9px; padding: 2px 5px; width: 60px; outline: none; transition: border 0.2s;
+            -moz-appearance: textfield;
         }
+        .hud-input-small::-webkit-outer-spin-button,
+        .hud-input-small::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
         .hud-input-small:focus { border-color: var(--hud-red); }
+        
+        #goto-btn {
+            background: var(--hud-blue); border: none; color: white; 
+            font-size: 9px; cursor: pointer; padding: 3px 10px; 
+            font-family: inherit; transition: background 0.2s;
+        }
+        #goto-btn:hover { background: var(--hud-red); }
 
         .viewport { display: flex; flex: 1; overflow: hidden; }
         .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
@@ -122,10 +138,10 @@
         }
 
         .ln-mark { 
-            color: var(--hud-red); 
+            color: var(--hud-red) !important; 
             text-shadow: 0 0 5px var(--hud-red);
             font-weight: bold;
-            background: rgba(255, 23, 68, 0.05);
+            background: rgba(255, 23, 68, 0.15);
         }
 
         .code-area { 
@@ -171,8 +187,9 @@
             <header class="studio-header">
                 <span>NEUROSENTIX STUDIO </span>
                 <div class="nav-tools">
-                    <span style="opacity: 0.5;">GOTO_LN:</span>
+                    <span style="opacity: 0.5;">Numbers:</span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
+                    <button id="goto-btn">GO</button>
                     <span id="status-indicator">● LIVE_SYNC</span>
                 </div>
             </header>
@@ -209,12 +226,14 @@
               matchDisplay = document.getElementById('match-count'),
               lineNumbers = document.getElementById('line-numbers'),
               gotoInput = document.getElementById('goto-input'),
+              gotoBtn = document.getElementById('goto-btn'),
               loadBar = document.getElementById('load-bar'),
               loader = document.getElementById('boot-loader');
 
         let isDragging = false;
         let currentMatchIndex = -1;
         let matchElements = [];
+        let syncTimer; // Timer for 500ms debounce
 
         window.onload = () => {
             loadBar.style.width = "100%";
@@ -252,13 +271,12 @@
         };
 
         function updateLineNumbers() {
-            const linesContent = codeInput.innerHTML.split(/\r\n|\r|\n|<br>/);
+            const linesContent = codeInput.innerText.split(/\r\n|\r|\n/);
             const totalLines = Math.max(linesContent.length, 1);
             let nums = "";
             for(let i = 1; i <= totalLines; i++) {
-                const hasMatch = linesContent[i-1] && linesContent[i-1].includes('<mark');
-                const className = hasMatch ? 'ln-mark' : '';
-                nums += `<div class="${className}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
+                const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
+                nums += `<div class="${existingMark}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
             lineNumbers.innerHTML = nums;
         }
@@ -269,28 +287,19 @@
             return div.innerHTML;
         }
 
-        /* NEXT MATCH LOGIC */
         function scrollToMatch(index) {
             if (matchElements.length === 0) return;
-            
-            // Remove previous current-match class
             matchElements.forEach(el => el.classList.remove('current-match'));
-            
-            // Loop index if out of bounds
             currentMatchIndex = (index + matchElements.length) % matchElements.length;
-            
             const target = matchElements[currentMatchIndex];
             target.classList.add('current-match');
             
-            // Centering Scroll
             const parentRect = codeInput.getBoundingClientRect();
             const matchRect = target.getBoundingClientRect();
             const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
-            const relativeLeft = (matchRect.left - parentRect.left) + codeInput.scrollLeft;
 
             codeInput.scrollTo({ 
                 top: relativeTop - (codeInput.offsetHeight / 2), 
-                left: relativeLeft - (codeInput.offsetWidth / 2),
                 behavior: 'smooth' 
             });
 
@@ -326,7 +335,7 @@
                 matchElements = Array.from(codeInput.querySelectorAll('mark'));
                 matchDisplay.classList.add('found');
                 updateLineNumbers();
-                scrollToMatch(0); // Auto-scroll to first
+                scrollToMatch(0);
             } else {
                 matchDisplay.classList.remove('found');
                 matchDisplay.innerText = "0 MATCHES";
@@ -336,15 +345,25 @@
             }
         };
 
-        gotoInput.onkeydown = (e) => {
-            if (e.key === 'Enter') {
-                const lineNum = parseInt(gotoInput.value);
-                const lineHeight = parseFloat(window.getComputedStyle(codeInput).lineHeight);
-                if (lineNum > 0) {
-                    codeInput.scrollTop = (lineNum - 1) * lineHeight;
-                    gotoInput.blur();
+        function executeGoto() {
+            const lineNum = parseInt(gotoInput.value);
+            const lineHeight = 1.5 * 13; 
+            
+            if (lineNum > 0) {
+                codeInput.scrollTop = (lineNum - 1) * lineHeight;
+                const allNumbers = lineNumbers.querySelectorAll('div');
+                allNumbers.forEach(el => el.classList.remove('ln-mark'));
+                
+                if (allNumbers[lineNum - 1]) {
+                    allNumbers[lineNum - 1].classList.add('ln-mark');
                 }
+                gotoInput.blur();
             }
+        }
+
+        gotoBtn.onclick = executeGoto;
+        gotoInput.onkeydown = (e) => {
+            if (e.key === 'Enter') executeGoto();
         };
 
         codeInput.onfocus = () => {
@@ -369,7 +388,16 @@
             preview.src = URL.createObjectURL(blob);
         }
 
-        codeInput.oninput = () => { updatePreview(); updateLineNumbers(); };
+        // Debounced Live Sync with 500ms delay
+        codeInput.oninput = () => { 
+            clearTimeout(syncTimer);
+            updateLineNumbers(); 
+            syncTimer = setTimeout(() => {
+                updatePreview();
+                console.log("LIVE_SYNC: Updated");
+            }, 500);
+        };
+        
         window.onresize = handleOrientation;
     </script>
 </body>
