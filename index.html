@@ -295,7 +295,7 @@
             const linesContent = codeInput.innerText.split(/\r\n|\r|\n/);
             const totalLines = Math.max(linesContent.length, 1);
             let nums = "";
-            for(let i = 1; i <= totalLines; i++) {
+            for(let i = 1; i <= 999; i++) {
                 const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
                 nums += `<div class="${existingMark}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
