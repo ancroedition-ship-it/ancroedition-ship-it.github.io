@@ -472,12 +472,11 @@
                             // X-Requested-With header removed as it is proxy-specific
                         },
                         body: JSON.stringify({ 
-                            model: GROQ_CONFIG.MODEL,
-                            max_tokens: 5000,
+                            model: GROQ_CONFIG.MODEL, 
                             messages: [
                                 { 
                                     role: "system", 
-                                    content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI. ENVIRONMENT: Live HTML/JS Editor. CONTEXT_BUFFER: \n---\n${currentCode}\n---\n PROTOCOL: 1. RISK_CHECK 2. ERROR_PREVENTION 3. TASK: Surgical Markdown corrections.` 
+                                    content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI that Only provide the specific functions or blocks I need to change, not the whole file. . ENVIRONMENT: Live HTML/JS Editor. CONTEXT_BUFFER: \n---\n${currentCode}\n---\n PROTOCOL: 1. RISK_CHECK 2. ERROR_PREVENTION 3. TASK: Surgical Markdown corrections.` 
                                 },
                                 { role: "user", content: userMsg }
                             ]
