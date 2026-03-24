@@ -493,8 +493,14 @@
 
             const data = await response.json();
             const targetDiv = document.getElementById(loadingId);
-            targetDiv.style.opacity = "1";
             
+            // --- SURGICAL SAFETY CHECK ---
+            if (!data.choices || data.choices.length === 0) {
+                const errorMsg = data.error?.message || "EMPTY_API_RESPONSE";
+                throw new Error(errorMsg);
+            }
+
+            targetDiv.style.opacity = "1";
             const aiContent = data.choices[0].message.content;
             targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
             
@@ -508,7 +514,10 @@
 
             Prism.highlightAllUnder(targetDiv);
         } catch (err) {
-            document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-red)">SYS: CRITICAL_ERROR: ${err.message}</span>`;
+            // This catch block will now catch both Network errors AND API errors
+            const targetDiv = document.getElementById(loadingId);
+            targetDiv.style.opacity = "1";
+            targetDiv.innerHTML = `<span style="color:var(--hud-red)">SYS: CRITICAL_ERROR: ${err.message}</span>`;
         }
         chatBody.scrollTop = chatBody.scrollHeight;
     }
