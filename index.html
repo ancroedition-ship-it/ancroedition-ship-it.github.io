@@ -416,19 +416,20 @@
             syncTimer = setTimeout(() => { updatePreview(); }, 500);
         };
 
-        // --- AI CHAT WITH AUTO-CONTEXT ---
+       // --- AI CHAT WITH AUTO-CONTEXT ---
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
         terminalInput.onkeydown = async (e) => {
             if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
                 const userMsg = terminalInput.value;
-                const currentCode = codeInput.innerText; // Captures current editor code
+                // CLEAN CONTEXT CAPTURE
+                const currentCode = codeInput.innerText.replace(/\u00a0/g, ' ').trim(); 
                 
                 chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
                 terminalInput.value = "";
                 const loadingId = "msg-" + Date.now();
-                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: ANALYZING_EDITOR...</div>`;
+                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: ANALYZING_BUFFER...</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
 
                 if (typeof GROQ_CONFIG === 'undefined') {
@@ -436,27 +437,26 @@
                     return;
                 }
 
+                // VISUAL FEEDBACK
+                statusInd.innerText = "● SYNCING_CONTEXT...";
+                statusInd.style.color = "var(--hud-blue)";
+
                 try {
                     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                         method: "POST",
                         headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
-                            // Replace the existing messages block with this:
-messages: [
-    { 
-        role: "system", 
-        content: `CORE_LOGIC: You are the Neurosentix Studio AI.
-        ENVIRONMENT: Live HTML/JS Editor.
-        CONTEXT_BUFFER: 
-        ---
-        ${codeInput.innerText}
-        ---
-        TASK: Provide surgical code corrections. Use Markdown blocks. 
-        If proposing a fix, explain WHY, then provide the code.` 
-    },
-    { role: "user", content: userMsg }
-]
+                            messages: [
+                                { 
+                                    role: "system", 
+                                    content: `CORE_LOGIC: You are the Neurosentix Studio AI.
+                                    ENVIRONMENT: Live HTML/JS Editor.
+                                    CONTEXT_BUFFER: \n---\n${currentCode}\n---\n
+                                    TASK: Provide surgical code corrections. Use Markdown blocks.` 
+                                },
+                                { role: "user", content: userMsg }
+                            ]
                         })
                     });
                     const data = await response.json();
@@ -466,23 +466,52 @@ messages: [
                     targetDiv.style.opacity = "1";
                     targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
                     
-                    // Add Copy Buttons to code blocks
+                    // ADD SYNC/INSERT BUTTONS
                     targetDiv.querySelectorAll('pre').forEach(block => {
-                        const btn = document.createElement('button');
-                        btn.className = 'copy-btn';
-                        btn.innerText = 'COPY';
-                        btn.onclick = () => {
-                            navigator.clipboard.writeText(block.innerText.replace('COPY', ''));
-                            btn.innerText = 'COPIED!';
-                            setTimeout(() => btn.innerText = 'COPY', 2000);
+                        const container = document.createElement('div');
+                        container.style.position = 'absolute';
+                        container.style.top = '5px';
+                        container.style.right = '5px';
+                        container.style.display = 'flex';
+                        container.style.gap = '5px';
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'copy-btn';
+                        copyBtn.style.position = 'static';
+                        copyBtn.innerText = 'COPY';
+                        copyBtn.onclick = () => {
+                            navigator.clipboard.writeText(block.innerText.replace('COPYINSERT', ''));
+                            copyBtn.innerText = 'OK';
+                            setTimeout(() => copyBtn.innerText = 'COPY', 2000);
                         };
-                        block.appendChild(btn);
+
+                        const insBtn = document.createElement('button');
+                        insBtn.className = 'copy-btn';
+                        insBtn.style.position = 'static';
+                        insBtn.style.background = 'var(--hud-red)';
+                        insBtn.innerText = 'INSERT';
+                        insBtn.onclick = () => {
+                            const cleanCode = block.innerText.replace('COPYINSERT', '');
+                            codeInput.focus();
+                            document.execCommand('insertText', false, cleanCode);
+                            updatePreview();
+                            updateLineNumbers();
+                            insBtn.innerText = 'SYNCED';
+                            setTimeout(() => insBtn.innerText = 'INSERT', 2000);
+                        };
+
+                        container.appendChild(insBtn);
+                        container.appendChild(copyBtn);
+                        block.appendChild(container);
                     });
                     
                     Prism.highlightAllUnder(targetDiv);
+                    statusInd.innerText = "● LIVE_SYNC";
+                    statusInd.style.color = "var(--hud-green)";
                     
                 } catch (err) {
                     document.getElementById(loadingId).innerText = "SYS: ERROR_CONNECTION_FAILED";
+                    statusInd.style.color = "var(--hud-red)";
                 }
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
