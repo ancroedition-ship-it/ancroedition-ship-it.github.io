@@ -437,55 +437,70 @@
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
         terminalInput.onkeydown = async (e) => {
-            if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
-                const userMsg = terminalInput.value;
-                const currentCode = codeInput.innerText.trim();
-                const latencyDisplay = document.getElementById('api-latency');
-                const startTime = performance.now();
-                
-                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
-                terminalInput.value = "";
-                const loadingId = "msg-" + Date.now();
-                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: ANALYZING_BUFFER...</div>`;
-                chatBody.scrollTop = chatBody.scrollHeight;
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        
+        const userMsg = terminalInput.value;
+        const currentCode = codeInput.innerText.trim();
+        
+        // --- SAFETY GUARD: Check total payload size ---
+        const totalCharCount = userMsg.length + currentCode.length;
+        if (totalCharCount > 30000) { // Approx limit for safe Lite-model requests
+            chatBody.innerHTML += `<div style="color:var(--hud-red)">SYS: ERR_BUFFER_OVERFLOW. Reduce code length before syncing.</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+            return;
+        }
 
-                try {
-                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
-                        body: JSON.stringify({ 
-                            model: GROQ_CONFIG.MODEL, 
-                            messages: [{ role: "system", content: `You are the Neurosentix Surgical-Refactor AI. CONTEXT:\n${currentCode}` }, { role: "user", content: userMsg }]
-                        })
-                    });
+        // Visual feedback
+        chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> [Pasted ${userMsg.split('\n').length} lines]</div>`;
+        terminalInput.value = "";
+        
+        const loadingId = "msg-" + Date.now();
+        chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: UPLOADING_BUFFER...</div>`;
+        chatBody.scrollTop = chatBody.scrollHeight;
 
-                    const duration = Math.round(performance.now() - startTime);
-                    if(latencyDisplay) latencyDisplay.innerText = `[ LATENCY: ${duration}ms ]`;
-                    if (!response.ok) throw new Error("API_ERROR");
-                    
-                    const data = await response.json();
-                    const targetDiv = document.getElementById(loadingId);
-                    targetDiv.style.opacity = "1";
-                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.choices[0].message.content)}`;
-                    
-                    targetDiv.querySelectorAll('pre').forEach(block => {
-                        const container = document.createElement('div');
-                        container.style.cssText = 'position:absolute; top:5px; right:5px; display:flex; gap:5px;';
-                        const insBtn = document.createElement('button');
-                        insBtn.className = 'copy-btn'; insBtn.innerText = 'INSERT'; insBtn.style.background = 'var(--hud-red)';
-                        insBtn.onclick = () => { 
-                            codeInput.focus(); document.execCommand('insertText', false, block.innerText.replace('INSERT', '')); 
-                            updatePreview(); updateLineNumbers(); 
-                        };
-                        container.appendChild(insBtn); block.appendChild(container);
-                    });
-                    Prism.highlightAllUnder(targetDiv);
-                } catch (err) {
-                    document.getElementById(loadingId).innerText = `SYS: ERROR_${err.message.toUpperCase()}`;
-                }
-                chatBody.scrollTop = chatBody.scrollHeight;
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({ 
+                    model: GROQ_CONFIG.MODEL, 
+                    messages: [
+                        { role: "system", content: "You are the Neurosentix Surgical-Refactor AI. Focus on specific changes." },
+                        { role: "user", content: userMsg }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "API_REJECTED");
             }
-        };
+            
+            const data = await response.json();
+            const targetDiv = document.getElementById(loadingId);
+            targetDiv.style.opacity = "1";
+            targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.choices[0].message.content)}`;
+            
+            // Re-run Prism and Button logic...
+            Prism.highlightAllUnder(targetDiv);
+
+        } catch (err) {
+            // This prevents the "Crash to Boot"
+            const errDiv = document.getElementById(loadingId);
+            if(errDiv) {
+                errDiv.style.opacity = "1";
+                errDiv.style.color = "var(--hud-red)";
+                errDiv.innerText = `SYS: CRITICAL_HALT: ${err.message}`;
+            }
+            console.error("Studio Crash Prevented:", err);
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+};
 
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
