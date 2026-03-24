@@ -183,6 +183,19 @@
             width: 30%; 
             height: 2px;
         }
+        #terminal-input { 
+            flex: 1; 
+            background: transparent; 
+            border: none; 
+            outline: none; 
+            color: var(--hud-red); 
+            font-family: inherit; 
+            resize: none;
+            min-height: 1.5em;
+            max-height: 150px; /* Prevents long pastes from hiding the chat */
+            overflow-y: auto;
+            line-height: 1.4;
+        }
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
 
@@ -213,19 +226,7 @@
             margin-top: 15px; display: flex; gap: 10px; 
             border: 1px solid var(--boundary-color); padding: 10px; 
         }
-        #terminal-input { 
-    flex: 1; 
-    background: transparent; 
-    border: none; 
-    outline: none; 
-    color: var(--hud-red); 
-    font-family: inherit; 
-    resize: none; 
-    min-height: 1.5em; 
-    max-height: 200px; /* Limits how tall the box gets */
-    overflow-y: auto;  /* Adds scrollbar if paste is massive */
-    line-height: 1.5;
-}
+        #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; }
 
         #api-latency {
             font-family: var(--font-main);
