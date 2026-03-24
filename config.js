@@ -1,9 +1,3 @@
-const GROQ_CONFIG = {
-    API_KEY: "", 
-    MODEL: "llama-3.1-8b-instant"
-};
-
-
 const AI_CONFIG = {
     CODER: {
         provider: "anthropic",
