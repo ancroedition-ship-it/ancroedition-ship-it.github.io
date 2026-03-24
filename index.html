@@ -257,9 +257,10 @@
 
     <div id="chat-trigger">◈</div>
     <div id="chat-dialog">
-        <div style="display:flex; justify-content:space-between; color:var(--hud-red); font-size:11px; letter-spacing:3px; border-bottom:1px solid var(--boundary-color); padding-bottom:10px;">
-            <span>TERMINAL_LINK</span> <span id="close-dialog" style="cursor:pointer;">[ ESC_X ]</span>
-        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+    <span>TERMINAL_LINK</span>
+    <span id="api-latency" style="color:var(--hud-blue); font-size:9px; opacity:0.6;"></span>
+</div>
         <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
         <div class="chat-input-wrapper">
             <span style="color:var(--hud-red)">USR:</span>
