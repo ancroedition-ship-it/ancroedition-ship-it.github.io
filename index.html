@@ -38,6 +38,10 @@
             border-radius: 10px; 
             box-shadow: 0 0 8px var(--hud-blue); 
         }
+        ::-webkit-scrollbar-thumb:hover { 
+            background: var(--hud-red); 
+            box-shadow: 0 0 12px var(--hud-red); 
+        }
 
         #boot-loader {
             position: absolute; inset: 0;
@@ -74,6 +78,8 @@
             font-size: 9px; padding: 2px 5px; width: 60px; outline: none; transition: border 0.2s;
             -moz-appearance: textfield;
         }
+        .hud-input-small::-webkit-outer-spin-button,
+        .hud-input-small::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
         #goto-btn {
             background: var(--hud-blue); border: none; color: white; 
@@ -107,6 +113,7 @@
         }
         #search-input { background: transparent; border: none; color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
         #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
+        #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
         .editor-layout { 
             display: flex; 
@@ -118,18 +125,17 @@
         }
         
         #line-numbers {
-            width: 35px; 
+            width: 30px; 
             padding: 20px 0; 
             background: rgba(0,0,0,0.4);
-            color: #444; 
+            color: #333; 
             font-size: 13px; 
             text-align: center; 
             border-right: 2px solid var(--boundary-color); 
             overflow: hidden; 
             line-height: 1.5; 
-            cursor: pointer;
+            pointer-events: none;
             font-family: var(--font-main);
-            will-change: transform;
         }
 
         .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 5px var(--hud-red); font-weight: bold; background: rgba(255, 23, 68, 0.15); }
@@ -148,11 +154,13 @@
             font-family: var(--font-main);
             border-left: 1px solid var(--border);
             background-color: #1f2933;
-            caret-color: var(--hud-red);
             -webkit-user-modify: read-write-plaintext-only; 
             tab-size: 4;
         }
         
+        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
+        mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
+
         .drag-bar { 
             background: rgba(0, 102, 255, 0.1); 
             z-index: 100; 
@@ -161,6 +169,39 @@
             justify-content: center; 
             border: 1px solid var(--border);
         }
+
+        .drag-bar::before { 
+            content: ""; 
+            width: 2px; 
+            height: 30%; 
+            background: var(--hud-blue); 
+            border-radius: 2px; 
+            box-shadow: 0 0 8px var(--hud-blue);
+            transition: all 0.3s ease;
+        }
+
+        #viewport[style*="flex-direction: column"] #drag-handle::before {
+            width: 30%; 
+            height: 2px;
+        }
+
+        /* --- SURGICAL FIX BUTTON STYLING --- */
+        .apply-fix-btn {
+            background: var(--hud-blue);
+            border: 1px solid var(--hud-blue);
+            color: #fff;
+            font-size: 9px;
+            padding: 4px 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+            box-shadow: 0 0 5px var(--hud-blue);
+        }
+        .apply-fix-btn:hover { background: var(--hud-red); border-color: var(--hud-red); box-shadow: 0 0 8px var(--hud-red); }
+
+        iframe { width: 100%; height: 100%; border: none; }
+        .shield { pointer-events: none !important; }
 
         #chat-trigger { 
             position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; 
@@ -177,18 +218,16 @@
             padding: 20px; color: #ccc; font-size: 13px; 
             overflow-y: auto; line-height: 1.6; background: #1f2933;
         }
-
+        
         .chat-input-wrapper { 
             margin-top: 15px; display: flex; gap: 10px; 
             border: 1px solid var(--boundary-color); padding: 10px; 
         }
-        #terminal-input { 
-            flex: 1; background: transparent; border: none; outline: none; 
-            color: var(--hud-red); font-family: inherit; resize: none; 
-            min-height: 1.5em; max-height: 150px; overflow-y: auto;
-        }
-        iframe { width: 100%; height: 100%; border: none; }
-        .shield { pointer-events: none !important; }
+        #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; resize: none; min-height: 1.5em; max-height: 150px; overflow-y: auto; line-height: 1.4; }
+
+        #api-latency { font-family: var(--font-main); transition: all 0.3s ease; }
+        #api-latency:not(:empty) { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -232,17 +271,20 @@
     <div id="chat-trigger">◈</div>
     <div id="chat-dialog">
         <div style="display:flex; justify-content:space-between; color:var(--hud-red); font-size:11px; letter-spacing:3px; border-bottom:1px solid var(--boundary-color); padding-bottom:10px;">
-            <span>TERMINAL_LINK</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span>TERMINAL_LINK</span>
+                <span id="api-latency" style="color:var(--hud-blue); font-size:9px; opacity:0.6;"></span>
+            </div>
             <span id="close-dialog" style="cursor:pointer;">[ ESC_X ]</span>
         </div>
-        <div id="chat-body">> [SYSTEM]: Dual-AI Kernel Active.</div>
+        <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
         <div class="chat-input-wrapper">
             <span style="color:var(--hud-red)">USR:</span>
-            <textarea id="terminal-input" placeholder="Type instructions..." rows="1" autocomplete="off"></textarea>
+            <textarea id="terminal-input" placeholder="Paste or type code here..." rows="1" autocomplete="off"></textarea>
         </div>
     </div>
 
-    <script src="./config.js"></script>
+   <script src="./config.js"></script>
 
     <script>
         const viewport = document.getElementById('viewport'),
@@ -250,123 +292,150 @@
               editor = document.getElementById('editorPane'),
               codeInput = document.getElementById('code-input'),
               preview = document.getElementById('preview-frame'),
+              searchInput = document.getElementById('search-input'),
+              matchDisplay = document.getElementById('match-count'),
               lineNumbers = document.getElementById('line-numbers'),
+              gotoInput = document.getElementById('goto-input'),
+              gotoBtn = document.getElementById('goto-btn'),
+              loadBar = document.getElementById('load-bar'),
+              loader = document.getElementById('boot-loader'),
+              statusInd = document.getElementById('status-indicator'),
               chatTrigger = document.getElementById('chat-trigger'),
               chatDialog = document.getElementById('chat-dialog'),
+              closeDialog = document.getElementById('close-dialog'),
               terminalInput = document.getElementById('terminal-input'),
               chatBody = document.getElementById('chat-body');
 
-        let isDragging = false, syncTimer, lineTimer; 
+        let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
-            document.getElementById('load-bar').style.width = "100%";
+            loadBar.style.width = "100%";
+            const forceClear = setTimeout(() => { if(loader) loader.remove(); }, 2000);
             setTimeout(() => {
                 handleOrientation();
                 updatePreview();
                 updateLineNumbers();
-                if (typeof AI_CONFIG !== 'undefined') {
-                    document.getElementById('status-indicator').innerText = "● LIVE_SYNC";
-                    document.getElementById('status-indicator').style.color = "var(--hud-green)";
+                if (typeof GROQ_CONFIG !== 'undefined') {
+                    statusInd.innerText = "● LIVE_SYNC";
+                    statusInd.style.color = "var(--hud-green)";
                 }
-                document.getElementById('boot-loader').style.opacity = "0";
-                setTimeout(() => document.getElementById('boot-loader').remove(), 500);
+                loader.style.opacity = "0";
+                setTimeout(() => { if(loader) loader.remove(); clearTimeout(forceClear); }, 500);
+                codeInput.focus();
             }, 800);
-        };
-
-        function updateLineNumbers() {
-            const lines = codeInput.innerText.split('\n');
-            lineNumbers.innerHTML = lines.map((_, i) => `<div>${i + 1}</div>`).join('');
-        }
-
-        // SURGICAL: Jump to Line on click
-        lineNumbers.onclick = (e) => {
-            if (e.target.tagName === 'DIV') {
-                const ln = parseInt(e.target.innerText);
-                const height = 1.5 * 13.5;
-                codeInput.scrollTop = (ln - 1) * height;
-                document.querySelectorAll('#line-numbers div').forEach(d => d.classList.remove('ln-mark'));
-                e.target.classList.add('ln-mark');
-            }
-        };
-
-        function updatePreview() {
-            const code = codeInput.innerText || "";
-            const blob = new Blob([`<!DOCTYPE html><html><head><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
-            preview.src = URL.createObjectURL(blob);
-        }
-
-        codeInput.oninput = () => { 
-            clearTimeout(lineTimer); clearTimeout(syncTimer); 
-            lineTimer = setTimeout(updateLineNumbers, 50);
-            syncTimer = setTimeout(updatePreview, 600); 
-        };
-
-        codeInput.onscroll = () => lineNumbers.scrollTop = codeInput.scrollTop;
-
-        // DUAL-AI TERMINAL LOGIC
-        terminalInput.onkeydown = async (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                const userMsg = terminalInput.value.trim();
-                if(!userMsg) return;
-
-                // Routing: Code tasks go to Claude, Writing tasks go to Groq
-                const isCodeTask = /code|fix|build|style|html|js/i.test(userMsg);
-                const cfg = isCodeTask ? AI_CONFIG.CODER : AI_CONFIG.WRITER;
-                const isClaude = cfg.provider === "anthropic";
-
-                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
-                terminalInput.value = "";
-                const loadId = "msg-" + Date.now();
-                chatBody.innerHTML += `<div id="${loadId}" style="opacity:0.5;">SYS: ROUTING_TO_${cfg.provider.toUpperCase()}...</div>`;
-                chatBody.scrollTop = chatBody.scrollHeight;
-
-                try {
-                    const headers = { "Content-Type": "application/json" };
-                    if (isClaude) {
-                        headers["x-api-key"] = cfg.apiKey;
-                        headers["anthropic-version"] = "2023-06-01";
-                        headers["dangerouslyAllowBrowser"] = "true";
-                    } else {
-                        headers["Authorization"] = `Bearer ${cfg.apiKey}`;
-                    }
-
-                    const response = await fetch(isClaude ? "https://api.anthropic.com/v1/messages" : "https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: headers,
-                        body: JSON.stringify({
-                            model: cfg.model,
-                            max_tokens: 1500,
-                            messages: isClaude 
-                                ? [{ role: "user", content: `SOURCE:\n${codeInput.innerText}\n\nTASK: ${userMsg}` }]
-                                : [{ role: "system", content: "You are the Neurosentix Technical Writer." }, { role: "user", content: userMsg }]
-                        })
-                    });
-
-                    const data = await response.json();
-                    const aiMsg = isClaude ? data.content[0].text : data.choices[0].message.content;
-                    
-                    document.getElementById(loadId).style.opacity = "1";
-                    document.getElementById(loadId).innerHTML = `<span style="color:var(--hud-blue)">SYS [${cfg.provider}]:</span><br>${marked.parse(aiMsg)}`;
-                    Prism.highlightAllUnder(document.getElementById(loadId));
-                } catch (err) {
-                    document.getElementById(loadId).innerHTML = `SYS: ERROR_${err.message}`;
-                }
-                chatBody.scrollTop = chatBody.scrollHeight;
-            }
         };
 
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             viewport.style.flexDirection = isPortrait ? 'column' : 'row';
-            handle.style.width = isPortrait ? '100%' : '10px';
+            handle.style.width = isPortrait ? '100%' : '20px';
             handle.style.height = isPortrait ? '20px' : '100%';
+            handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
+        // Surgical Logic: Apply code patch to specific line
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('apply-fix-btn')) {
+                const lineIndex = parseInt(e.target.dataset.line) - 1;
+                const newContent = e.target.dataset.code;
+                let lines = codeInput.innerText.split('\n');
+                if (lines[lineIndex] !== undefined) {
+                    lines[lineIndex] = newContent;
+                    codeInput.innerText = lines.join('\n');
+                    updateLineNumbers();
+                    updatePreview();
+                    e.target.innerText = "PATCHED";
+                    e.target.style.background = "var(--hud-green)";
+                }
+            }
+        });
+
+        handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
+        document.onmouseup = () => { isDragging = false; preview.classList.remove('shield'); };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            const rect = viewport.getBoundingClientRect();
+            const isPortrait = window.innerHeight > window.innerWidth;
+            if (isPortrait) {
+                let y = e.clientY - rect.top;
+                if (y > 50 && y < rect.height - 50) editor.style.flex = `0 0 ${y}px`;
+            } else {
+                let x = e.clientX - rect.left;
+                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+            }
+        };
+
+        function updateLineNumbers() {
+            const lines = codeInput.innerText.split('\n');
+            const lineCount = Math.max(lines.length, 1);
+            let nums = "";
+            for(let i = 1; i <= lineCount; i++) {
+                nums += `<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
+            }
+            lineNumbers.innerHTML = nums;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updatePreview() {
+            const code = codeInput.innerText || "";
+            const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;background:#fff;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
+            if (preview.src) URL.revokeObjectURL(preview.src);
+            preview.src = URL.createObjectURL(blob);
+        }
+
+        codeInput.oninput = () => { clearTimeout(syncTimer); updateLineNumbers(); syncTimer = setTimeout(updatePreview, 500); };
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
-        document.getElementById('close-dialog').onclick = () => chatDialog.style.display = 'none';
+        closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
+
+        terminalInput.onkeydown = async (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const userMsg = terminalInput.value.trim();
+                const rawCode = codeInput.innerText;
+                const mappedCode = rawCode.split('\n').map((line, i) => `L${i + 1}: ${line}`).join('\n');
+
+                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
+                terminalInput.value = "";
+                
+                const loadingId = "msg-" + Date.now();
+                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5;">SYS: ANALYZING_BUFFER...</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+
+                try {
+                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({ 
+                            model: GROQ_CONFIG.MODEL, 
+                            messages: [
+                                { role: "system", content: "You are the Neurosentix Surgical Engine. IMPORTANT: When suggesting a change for a line, always include this exact button format: <button class='apply-fix-btn' data-line='LINE_NUMBER' data-code='NEW_CODE_CONTENT'>Apply Fix</button>" },
+                                { role: "user", content: `CONTEXT:\n${mappedCode}\n\nREQUEST: ${userMsg}` }
+                            ]
+                        })
+                    });
+
+                    const data = await response.json();
+                    const targetDiv = document.getElementById(loadingId);
+                    targetDiv.style.opacity = "1";
+                    const aiContent = data.choices[0].message.content;
+                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
+                    
+                    Prism.highlightAllUnder(targetDiv);
+                } catch (err) {
+                    document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERR: ${err.message}</span>`;
+                }
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        };
+
         window.onresize = handleOrientation;
+        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
     </script>
 </body>
 </html>
