@@ -177,7 +177,6 @@
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
 
-        /* --- CHAT OVERLAY STYLES --- */
         #chat-trigger { 
             position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; 
             background: var(--bg-dark); border: 2px solid var(--hud-blue); border-radius: 50%; 
@@ -194,7 +193,6 @@
             overflow-y: auto; line-height: 1.6;
         }
         
-        /* Markdown & Code Blocks in Chat */
         #chat-body code { color: var(--hud-green); font-family: var(--font-main); }
         #chat-body pre { position: relative; background: #000 !important; border: 1px solid var(--border); padding: 15px; margin: 15px 0; overflow-x: auto; }
         
@@ -404,7 +402,6 @@
         gotoBtn.onclick = executeGoto;
         gotoInput.onkeydown = (e) => { if (e.key === 'Enter') executeGoto(); };
 
-        // --- ENHANCED PREVIEW WITH ERROR REPORTING ---
         function updatePreview() {
             const code = codeInput.innerText || "";
             const errorReporter = `
@@ -441,7 +438,6 @@
             syncTimer = setTimeout(() => { updatePreview(); }, 500);
         };
 
-       // --- AI CHAT WITH AUTO-CONTEXT & SAFETY PROTOCOL ---
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
@@ -465,26 +461,29 @@
                 statusInd.style.color = "var(--hud-blue)";
 
                 try {
-                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    // CORS PROXY INTEGRATION
+                    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+                    const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+
+                    const response = await fetch(proxyUrl + apiUrl, {
                         method: "POST",
-                        headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
+                        headers: { 
+                            "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
+                            "Content-Type": "application/json",
+                            "X-Requested-With": "XMLHttpRequest"
+                        },
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
                             messages: [
                                 { 
                                     role: "system", 
-                                    content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI.
-                                    ENVIRONMENT: Live HTML/JS Editor.
-                                    CONTEXT_BUFFER: \n---\n${currentCode}\n---\n
-                                    PROTOCOL: 
-                                    1. RISK_CHECK: Identify potential errors or collisions.
-                                    2. ERROR_PREVENTION: Wrap risky code in try/catch or logic guards.
-                                    3. TASK: Provide surgical corrections in Markdown.` 
+                                    content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI. ENVIRONMENT: Live HTML/JS Editor. CONTEXT_BUFFER: \n---\n${currentCode}\n---\n PROTOCOL: 1. RISK_CHECK 2. ERROR_PREVENTION 3. TASK: Surgical Markdown corrections.` 
                                 },
                                 { role: "user", content: userMsg }
                             ]
                         })
                     });
+                    
                     const data = await response.json();
                     const aiContent = data.choices[0].message.content;
                     
@@ -539,21 +538,17 @@
             }
         };
 
-        // --- GLOBAL RUNTIME MONITOR & CLEAR LOGIC ---
         window.addEventListener('message', (e) => {
             if (e.data.type === 'RUNTIME_ERR') {
-                // Set Error State
                 statusInd.innerHTML = `● ERR: ${e.data.msg} (LN: ${e.data.line}) <span id="clear-err" style="margin-left:8px; cursor:pointer; text-decoration:underline; font-weight:bold;">[FIXED]</span>`;
                 statusInd.style.color = "var(--hud-red)";
                 statusInd.style.animation = "pulse 0.5s infinite";
                 
-                // Gutter Highlight
                 const lineNum = e.data.line;
                 const allNumbers = lineNumbers.querySelectorAll('div');
                 allNumbers.forEach(el => el.classList.remove('ln-mark'));
                 if (allNumbers[lineNum - 1]) allNumbers[lineNum - 1].classList.add('ln-mark');
 
-                // Clear Button Functionality
                 document.getElementById('clear-err').onclick = (event) => {
                     event.stopPropagation();
                     statusInd.innerText = "● LIVE_SYNC";
