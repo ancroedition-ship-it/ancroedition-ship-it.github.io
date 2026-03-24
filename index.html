@@ -138,8 +138,6 @@
             font-family: var(--font-main);
         }
 
-        .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 5px var(--hud-red); font-weight: bold; background: rgba(255, 23, 68, 0.15); }
-
         .code-area { 
             flex: 1; 
             padding: 20px; 
@@ -158,9 +156,6 @@
             tab-size: 4;
         }
         
-        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
-        mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
-
         .drag-bar { 
             background: rgba(0, 102, 255, 0.1); 
             z-index: 100; 
@@ -180,12 +175,6 @@
             transition: all 0.3s ease;
         }
 
-        #viewport[style*="flex-direction: column"] #drag-handle::before {
-            width: 30%; 
-            height: 2px;
-        }
-
-        /* --- SURGICAL FIX BUTTON STYLING --- */
         .apply-fix-btn {
             background: var(--hud-blue);
             border: 1px solid var(--hud-blue);
@@ -225,9 +214,18 @@
         }
         #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; resize: none; min-height: 1.5em; max-height: 150px; overflow-y: auto; line-height: 1.4; }
 
-        #api-latency { font-family: var(--font-main); transition: all 0.3s ease; }
-        #api-latency:not(:empty) { animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        #claude-analyze-btn {
+            background: none;
+            border: 1px solid var(--hud-green);
+            color: var(--hud-green);
+            font-size: 8px;
+            cursor: pointer;
+            margin: 0 10px;
+            padding: 2px 8px;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+        #claude-analyze-btn:hover { background: var(--hud-green); color: #000; box-shadow: 0 0 10px var(--hud-green); }
     </style>
 </head>
 <body>
@@ -252,6 +250,7 @@
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
                         <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
+                        <button id="claude-analyze-btn">FORENSIC_SCAN</button>
                         <span id="match-count">0 MATCHES</span>
                     </div>
                     <div class="editor-layout">
@@ -280,7 +279,7 @@
         <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
         <div class="chat-input-wrapper">
             <span style="color:var(--hud-red)">USR:</span>
-            <textarea id="terminal-input" placeholder="Paste or type code here..." rows="1" autocomplete="off"></textarea>
+            <textarea id="terminal-input" placeholder="Ask Groq anything or run Claude analysis..." rows="1" autocomplete="off"></textarea>
         </div>
     </div>
 
@@ -304,13 +303,13 @@
               chatDialog = document.getElementById('chat-dialog'),
               closeDialog = document.getElementById('close-dialog'),
               terminalInput = document.getElementById('terminal-input'),
-              chatBody = document.getElementById('chat-body');
+              chatBody = document.getElementById('chat-body'),
+              claudeBtn = document.getElementById('claude-analyze-btn');
 
         let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
             loadBar.style.width = "100%";
-            const forceClear = setTimeout(() => { if(loader) loader.remove(); }, 2000);
             setTimeout(() => {
                 handleOrientation();
                 updatePreview();
@@ -320,7 +319,7 @@
                     statusInd.style.color = "var(--hud-green)";
                 }
                 loader.style.opacity = "0";
-                setTimeout(() => { if(loader) loader.remove(); clearTimeout(forceClear); }, 500);
+                setTimeout(() => { if(loader) loader.remove(); }, 500);
                 codeInput.focus();
             }, 800);
         };
@@ -351,48 +350,43 @@
             }
         });
 
-        handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
-        document.onmouseup = () => { isDragging = false; preview.classList.remove('shield'); };
-        document.onmousemove = (e) => {
-            if (!isDragging) return;
-            const rect = viewport.getBoundingClientRect();
-            const isPortrait = window.innerHeight > window.innerWidth;
-            if (isPortrait) {
-                let y = e.clientY - rect.top;
-                if (y > 50 && y < rect.height - 50) editor.style.flex = `0 0 ${y}px`;
-            } else {
-                let x = e.clientX - rect.left;
-                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+        // Claude Forensic Analysis
+        claudeBtn.onclick = async () => {
+            chatDialog.style.display = 'flex';
+            const rawCode = codeInput.innerText;
+            const logId = "claude-" + Date.now();
+            
+            chatBody.innerHTML += `<div id="${logId}" style="color:var(--hud-green); margin-bottom:15px;">> [SYSTEM]: Claude is performing forensic scan...</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            try {
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "x-api-key": CLAUDE_CONFIG.API_KEY,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                        "anthropic-dangerous-direct-browser-access": "true"
+                    },
+                    body: JSON.stringify({
+                        model: CLAUDE_CONFIG.MODEL,
+                        max_tokens: 1024,
+                        system: "You are the Neurosentix Forensic Engine. Scan the user's code for errors. For every error, explain it briefly and provide a surgical fix button in this format: <button class='apply-fix-btn' data-line='LINE_NUMBER' data-code='EXACT_FIX_CONTENT'>Apply Fix</button>. No full code blocks unless asked.",
+                        messages: [{ role: "user", content: `Scan this code for bugs:\n${rawCode}` }]
+                    })
+                });
+
+                const data = await response.json();
+                const targetDiv = document.getElementById(logId);
+                targetDiv.innerHTML = `<span style="color:var(--hud-green)">[CLAUDE_REPORT]:</span><br>${marked.parse(data.content[0].text)}`;
+                Prism.highlightAllUnder(targetDiv);
+            } catch (err) {
+                document.getElementById(logId).innerHTML = `<span style="color:var(--hud-red)">[CLAUDE_ERR]: ${err.message}</span>`;
             }
+            chatBody.scrollTop = chatBody.scrollHeight;
         };
 
-        function updateLineNumbers() {
-            const lines = codeInput.innerText.split('\n');
-            const lineCount = Math.max(lines.length, 1);
-            let nums = "";
-            for(let i = 1; i <= lineCount; i++) {
-                nums += `<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
-            }
-            lineNumbers.innerHTML = nums;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function updatePreview() {
-            const code = codeInput.innerText || "";
-            const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;background:#fff;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
-            if (preview.src) URL.revokeObjectURL(preview.src);
-            preview.src = URL.createObjectURL(blob);
-        }
-
-        codeInput.oninput = () => { clearTimeout(syncTimer); updateLineNumbers(); syncTimer = setTimeout(updatePreview, 500); };
-        chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
-        closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
-
+        // Groq Chat Logic
         terminalInput.onkeydown = async (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -414,7 +408,7 @@
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
                             messages: [
-                                { role: "system", content: "You are the Neurosentix Surgical Engine. IMPORTANT: When suggesting a change for a line, always include this exact button format: <button class='apply-fix-btn' data-line='LINE_NUMBER' data-code='NEW_CODE_CONTENT'>Apply Fix</button>" },
+                                { role: "system", content: "You are the Neurosentix Surgical Engine. Use surgical fix buttons for code changes." },
                                 { role: "user", content: `CONTEXT:\n${mappedCode}\n\nREQUEST: ${userMsg}` }
                             ]
                         })
@@ -423,9 +417,7 @@
                     const data = await response.json();
                     const targetDiv = document.getElementById(loadingId);
                     targetDiv.style.opacity = "1";
-                    const aiContent = data.choices[0].message.content;
-                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
-                    
+                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.choices[0].message.content)}`;
                     Prism.highlightAllUnder(targetDiv);
                 } catch (err) {
                     document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERR: ${err.message}</span>`;
@@ -434,6 +426,41 @@
             }
         };
 
+        function updateLineNumbers() {
+            const lines = codeInput.innerText.split('\n');
+            const lineCount = Math.max(lines.length, 1);
+            let nums = "";
+            for(let i = 1; i <= lineCount; i++) {
+                nums += `<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
+            }
+            lineNumbers.innerHTML = nums;
+        }
+
+        function updatePreview() {
+            const code = codeInput.innerText || "";
+            const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;background:#fff;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
+            if (preview.src) URL.revokeObjectURL(preview.src);
+            preview.src = URL.createObjectURL(blob);
+        }
+
+        handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
+        document.onmouseup = () => { isDragging = false; preview.classList.remove('shield'); };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            const rect = viewport.getBoundingClientRect();
+            const isPortrait = window.innerHeight > window.innerWidth;
+            if (isPortrait) {
+                let y = e.clientY - rect.top;
+                if (y > 50 && y < rect.height - 50) editor.style.flex = `0 0 ${y}px`;
+            } else {
+                let x = e.clientX - rect.left;
+                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+            }
+        };
+
+        codeInput.oninput = () => { clearTimeout(syncTimer); updateLineNumbers(); syncTimer = setTimeout(updatePreview, 500); };
+        chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
+        closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
     </script>
