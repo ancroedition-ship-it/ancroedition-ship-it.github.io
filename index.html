@@ -53,11 +53,11 @@
         #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.3s; }
 
         .hud-wrapper {
-            width: 1366px; height: 657px;
-            max-width: 95vw; max-height: 92vh;
+             width: 100vw; height: 100vh;
+            max-width: 100vw; max-height: 100vh;
             position: relative;
             background-color: var(--bg-dark);
-            border: 1px solid rgba(0, 102, 255, 0.1);
+            
             transition: border 0.2s;
         }
 
@@ -66,7 +66,7 @@
         .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
         .studio-container {
-            position: absolute; top: 35px; left: 35px; right: 35px; bottom: 35px;
+            position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
             display: flex; flex-direction: column; z-index: 10;
         }
 
@@ -199,10 +199,6 @@
     </div>
 
     <div class="hud-wrapper" id="main-frame">
-        <svg class="hud-overlay" viewBox="0 0 1366 657" preserveAspectRatio="none">
-            <path class="hud-bracket" d="M60,15 L15,15 L15,60 M1306,15 L1351,15 L1351,60 M1351,597 L1351,642 L1306,642 M15,597 L15,642 L60,642" />
-            <text x="10" y="12" class="hud-text">X</text><text x="1353" y="12" class="hud-text">X</text>
-        </svg>
 
         <div class="studio-container">
             <header class="studio-header">
