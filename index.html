@@ -539,17 +539,28 @@
             }
         };
 
-        // --- GLOBAL RUNTIME MONITOR ---
+        // --- GLOBAL RUNTIME MONITOR & CLEAR LOGIC ---
         window.addEventListener('message', (e) => {
             if (e.data.type === 'RUNTIME_ERR') {
-                statusInd.innerText = `● ERR: ${e.data.msg} (LN: ${e.data.line})`;
+                // Set Error State
+                statusInd.innerHTML = `● ERR: ${e.data.msg} (LN: ${e.data.line}) <span id="clear-err" style="margin-left:8px; cursor:pointer; text-decoration:underline; font-weight:bold;">[FIXED]</span>`;
                 statusInd.style.color = "var(--hud-red)";
                 statusInd.style.animation = "pulse 0.5s infinite";
                 
+                // Gutter Highlight
                 const lineNum = e.data.line;
                 const allNumbers = lineNumbers.querySelectorAll('div');
                 allNumbers.forEach(el => el.classList.remove('ln-mark'));
                 if (allNumbers[lineNum - 1]) allNumbers[lineNum - 1].classList.add('ln-mark');
+
+                // Clear Button Functionality
+                document.getElementById('clear-err').onclick = (event) => {
+                    event.stopPropagation();
+                    statusInd.innerText = "● LIVE_SYNC";
+                    statusInd.style.color = "var(--hud-green)";
+                    statusInd.style.animation = "none";
+                    allNumbers.forEach(el => el.classList.remove('ln-mark'));
+                };
             }
         });
 
