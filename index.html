@@ -446,15 +446,24 @@
         const userMsg = terminalInput.value.trim();
         const rawCode = codeInput.innerText;
         
+        // --- SURGICAL BUFFER CHECK ---
+        const encoder = new TextEncoder();
+        const totalByteSize = encoder.encode(userMsg).length + encoder.encode(rawCode).length;
+        const MAX_BYTES = 100 * 1024; // 100KB Safe Limit
+
+        if (totalByteSize > MAX_BYTES) {
+            chatBody.innerHTML += `<div style="color:var(--hud-red); border:1px solid var(--hud-red); padding:5px; margin:5px 0;">
+                SYS: ERR_BUFFER_OVERFLOW (${(totalByteSize / 1024).toFixed(1)}KB / 100KB)<br>
+                TIP: Highlight a specific function instead of sending the whole file.
+            </div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+            return;
+        }
+
         // Map lines so AI knows the numbers (L1, L2, etc)
         const mappedCode = rawCode.split('\n')
             .map((line, i) => `L${i + 1}: ${line}`)
             .join('\n');
-
-        if (userMsg.length + rawCode.length > 30000) {
-            chatBody.innerHTML += `<div style="color:var(--hud-red)">SYS: ERR_BUFFER_OVERFLOW.</div>`;
-            return;
-        }
 
         chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg || "[CODE_SYNC]"}</div>`;
         terminalInput.value = "";
@@ -466,16 +475,16 @@
         try {
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
+                headers: { 
+                    "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
+                    "Content-Type": "application/json" 
+                },
                 body: JSON.stringify({ 
                     model: GROQ_CONFIG.MODEL, 
                     messages: [
                         { 
                             role: "system", 
-                            content: "You are the Neurosentix Surgical-Refactor AI. \n" +
-                                     "1. Use L# to reference lines. \n" +
-                                     "2. If the user gives code without instructions, JUST acknowledge receipt. \n" +
-                                     "3. When fixing code, provide a small snippet and include a button labeled 'APPLY_FIX'." 
+                            content: "You are the Neurosentix Surgical-Refactor AI. Reference lines using L#. Provide small snippets with an 'APPLY_FIX' button." 
                         },
                         { role: "user", content: `EDITOR_CONTEXT:\n${mappedCode}\n\nUSER_REQUEST: ${userMsg}` }
                     ]
@@ -486,15 +495,13 @@
             const targetDiv = document.getElementById(loadingId);
             targetDiv.style.opacity = "1";
             
-            // Render AI response with Markdown
             const aiContent = data.choices[0].message.content;
             targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
             
-            // Check if AI mentioned a specific line to GOTO
+            // Auto-GOTO line logic
             const lineRef = aiContent.match(/L(\d+)/);
             if(lineRef) {
                 gotoInput.value = lineRef[1];
-                // Visual highlight on line number
                 const targetLn = lineNumbers.children[parseInt(lineRef[1])-1];
                 if(targetLn) targetLn.classList.add('ln-mark');
             }
