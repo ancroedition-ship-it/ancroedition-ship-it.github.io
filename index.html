@@ -125,7 +125,7 @@
         }
         
         #line-numbers {
-            width: 35px; 
+            width: 30px; 
             padding: 20px 0; 
             background: rgba(0,0,0,0.4);
             color: #333; 
@@ -137,7 +137,6 @@
             pointer-events: none;
             font-family: var(--font-main);
         }
-        #line-numbers div { height: 1.5em; display: flex; align-items: center; justify-content: center; }
 
         .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 5px var(--hud-red); font-weight: bold; background: rgba(255, 23, 68, 0.15); }
 
@@ -181,7 +180,28 @@
             transition: all 0.3s ease;
         }
 
-        #viewport[style*="flex-direction: column"] #drag-handle::before { width: 30%; height: 2px; }
+        #viewport[style*="flex-direction: column"] #drag-handle::before {
+            width: 30%; 
+            height: 2px;
+        }
+
+        /* --- SURGICAL FIX BUTTON STYLING --- */
+        .apply-fix-btn {
+            background: var(--hud-blue);
+            border: 1px solid var(--hud-blue);
+            color: #fff;
+            font-size: 9px;
+            padding: 4px 10px;
+            margin: 10px 0;
+            cursor: pointer;
+            font-family: var(--font-main);
+            text-transform: uppercase;
+            box-shadow: 0 0 5px var(--hud-blue);
+        }
+        .apply-fix-btn:hover { background: var(--hud-red); border-color: var(--hud-red); box-shadow: 0 0 8px var(--hud-red); }
+
+        iframe { width: 100%; height: 100%; border: none; }
+        .shield { pointer-events: none !important; }
 
         #chat-trigger { 
             position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; 
@@ -198,18 +218,16 @@
             padding: 20px; color: #ccc; font-size: 13px; 
             overflow-y: auto; line-height: 1.6; background: #1f2933;
         }
-
+        
         .chat-input-wrapper { 
             margin-top: 15px; display: flex; gap: 10px; 
             border: 1px solid var(--boundary-color); padding: 10px; 
         }
-        #terminal-input { 
-            flex: 1; background: transparent; border: none; outline: none; 
-            color: var(--hud-red); font-family: inherit; resize: none; 
-            min-height: 1.5em; max-height: 150px; overflow-y: auto;
-        }
-        iframe { width: 100%; height: 100%; border: none; }
-        .shield { pointer-events: none !important; }
+        #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; resize: none; min-height: 1.5em; max-height: 150px; overflow-y: auto; line-height: 1.4; }
+
+        #api-latency { font-family: var(--font-main); transition: all 0.3s ease; }
+        #api-latency:not(:empty) { animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -253,7 +271,10 @@
     <div id="chat-trigger">◈</div>
     <div id="chat-dialog">
         <div style="display:flex; justify-content:space-between; color:var(--hud-red); font-size:11px; letter-spacing:3px; border-bottom:1px solid var(--boundary-color); padding-bottom:10px;">
-            <span>TERMINAL_LINK</span>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span>TERMINAL_LINK</span>
+                <span id="api-latency" style="color:var(--hud-blue); font-size:9px; opacity:0.6;"></span>
+            </div>
             <span id="close-dialog" style="cursor:pointer;">[ ESC_X ]</span>
         </div>
         <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
@@ -263,7 +284,7 @@
         </div>
     </div>
 
-    <script src="./config.js"></script>
+   <script src="./config.js"></script>
 
     <script>
         const viewport = document.getElementById('viewport'),
@@ -285,12 +306,11 @@
               terminalInput = document.getElementById('terminal-input'),
               chatBody = document.getElementById('chat-body');
 
-        let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer, lineTimer; 
+        let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
             loadBar.style.width = "100%";
             const forceClear = setTimeout(() => { if(loader) loader.remove(); }, 2000);
-
             setTimeout(() => {
                 handleOrientation();
                 updatePreview();
@@ -308,21 +328,58 @@
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             viewport.style.flexDirection = isPortrait ? 'column' : 'row';
-            handle.style.width = isPortrait ? '100%' : '10px';
+            handle.style.width = isPortrait ? '100%' : '20px';
             handle.style.height = isPortrait ? '20px' : '100%';
             handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
-        // PERFORMANCE: Faster Line Number Logic
+        // Surgical Logic: Apply code patch to specific line
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('apply-fix-btn')) {
+                const lineIndex = parseInt(e.target.dataset.line) - 1;
+                const newContent = e.target.dataset.code;
+                let lines = codeInput.innerText.split('\n');
+                if (lines[lineIndex] !== undefined) {
+                    lines[lineIndex] = newContent;
+                    codeInput.innerText = lines.join('\n');
+                    updateLineNumbers();
+                    updatePreview();
+                    e.target.innerText = "PATCHED";
+                    e.target.style.background = "var(--hud-green)";
+                }
+            }
+        });
+
+        handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
+        document.onmouseup = () => { isDragging = false; preview.classList.remove('shield'); };
+        document.onmousemove = (e) => {
+            if (!isDragging) return;
+            const rect = viewport.getBoundingClientRect();
+            const isPortrait = window.innerHeight > window.innerWidth;
+            if (isPortrait) {
+                let y = e.clientY - rect.top;
+                if (y > 50 && y < rect.height - 50) editor.style.flex = `0 0 ${y}px`;
+            } else {
+                let x = e.clientX - rect.left;
+                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
+            }
+        };
+
         function updateLineNumbers() {
             const lines = codeInput.innerText.split('\n');
-            const lineCount = lines.length || 1;
-            const arr = [];
+            const lineCount = Math.max(lines.length, 1);
+            let nums = "";
             for(let i = 1; i <= lineCount; i++) {
-                arr.push(`<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`);
+                nums += `<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
-            lineNumbers.innerHTML = arr.join('');
+            lineNumbers.innerHTML = nums;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function updatePreview() {
@@ -332,63 +389,20 @@
             preview.src = URL.createObjectURL(blob);
         }
 
-        // DEBOUNCED INPUT
-        codeInput.oninput = () => { 
-            clearTimeout(lineTimer);
-            clearTimeout(syncTimer); 
-            lineTimer = setTimeout(updateLineNumbers, 50);
-            syncTimer = setTimeout(updatePreview, 600); 
-        };
+        codeInput.oninput = () => { clearTimeout(syncTimer); updateLineNumbers(); syncTimer = setTimeout(updatePreview, 500); };
+        chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
+        closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
-        // DRAG LOGIC
-        handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
-        document.onmouseup = () => { isDragging = false; preview.classList.remove('shield'); };
-        document.onmousemove = (e) => {
-            if (!isDragging) return;
-            const rect = viewport.getBoundingClientRect();
-            if (window.innerHeight > window.innerWidth) {
-                let y = e.clientY - rect.top;
-                if (y > 50 && y < rect.height - 50) editor.style.flex = `0 0 ${y}px`;
-            } else {
-                let x = e.clientX - rect.left;
-                if (x > 100 && x < rect.width - 100) editor.style.flex = `0 0 ${x}px`;
-            }
-        };
-
-        // GOTO LINE
-        gotoBtn.onclick = () => {
-            const ln = parseInt(gotoInput.value);
-            const lines = codeInput.innerText.split('\n');
-            if(ln > 0 && ln <= lines.length) {
-                const height = 1.5 * 13.5; 
-                codeInput.scrollTop = (ln - 1) * height;
-                const allNumbers = lineNumbers.querySelectorAll('div');
-                allNumbers.forEach(el => el.classList.remove('ln-mark'));
-                if (allNumbers[ln-1]) allNumbers[ln-1].classList.add('ln-mark');
-            }
-        };
-
-        // TERMINAL LOGIC
         terminalInput.onkeydown = async (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 const userMsg = terminalInput.value.trim();
-                if(!userMsg) return;
-                
                 const rawCode = codeInput.innerText;
-                const lines = rawCode.split('\n');
-
-                let mappedCode;
-                if (lines.length > 350) {
-                    mappedCode = lines.slice(0, 150).map((l, i) => `L${i+1}: ${l}`).join('\n') + 
-                                 "\n...[TRUNCATED]...\n" + 
-                                 lines.slice(-150).map((l, i) => `L${lines.length-150+i+1}: ${l}`).join('\n');
-                } else {
-                    mappedCode = lines.map((l, i) => `L${i+1}: ${l}`).join('\n');
-                }
+                const mappedCode = rawCode.split('\n').map((line, i) => `L${i + 1}: ${line}`).join('\n');
 
                 chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
                 terminalInput.value = "";
+                
                 const loadingId = "msg-" + Date.now();
                 chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5;">SYS: ANALYZING_BUFFER...</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
@@ -400,33 +414,28 @@
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
                             messages: [
-                                { role: "system", content: "You are the Neurosentix Surgical AI. Provide L# references." },
+                                { role: "system", content: "You are the Neurosentix Surgical Engine. IMPORTANT: When suggesting a change for a line, always include this exact button format: <button class='apply-fix-btn' data-line='LINE_NUMBER' data-code='NEW_CODE_CONTENT'>Apply Fix</button>" },
                                 { role: "user", content: `CONTEXT:\n${mappedCode}\n\nREQUEST: ${userMsg}` }
                             ]
                         })
                     });
+
                     const data = await response.json();
+                    const targetDiv = document.getElementById(loadingId);
+                    targetDiv.style.opacity = "1";
                     const aiContent = data.choices[0].message.content;
-                    document.getElementById(loadingId).style.opacity = "1";
-                    document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
-                    Prism.highlightAllUnder(document.getElementById(loadingId));
+                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
+                    
+                    Prism.highlightAllUnder(targetDiv);
                 } catch (err) {
-                    document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERROR_${err.message}</span>`;
+                    document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERR: ${err.message}</span>`;
                 }
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
         };
 
-        chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
-        closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
-        
-        // SMOOTH SCROLL SYNC
-        codeInput.onscroll = () => { 
-            requestAnimationFrame(() => {
-                lineNumbers.scrollTop = codeInput.scrollTop; 
-            });
-        };
         window.onresize = handleOrientation;
+        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
     </script>
 </body>
 </html>
