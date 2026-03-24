@@ -448,16 +448,28 @@
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
                             messages: [
-                                { 
-                                    role: "system", 
-                                    content: `CORE_LOGIC: You are the Neurosentix Studio AI.
-                                    ENVIRONMENT: Live HTML/JS Editor.
-                                    CONTEXT_BUFFER: \n---\n${currentCode}\n---\n
-                                    TASK: Provide surgical code corrections. Use Markdown blocks.` 
-                                },
-                                { role: "user", content: userMsg }
-                            ]
-                        })
+    { 
+        role: "system", 
+        content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI.
+        ENVIRONMENT: Live HTML/JS Editor (Neurosentix_Tiny Framework).
+        
+        CONTEXT_BUFFER: 
+        ---
+        ${currentCode}
+        ---
+        
+        MANDATORY_PROTOCOL:
+        1. RISK_CHECK: Identify potential errors (e.g., Variable collisions, DOM elements not existing, CSS overflows).
+        2. ERROR_PREVENTION: Suggest 'try/catch' blocks or existence checks for crucial operations.
+        3. SURGICAL_PRECISION: Provide only the necessary edits.
+        
+        OUTPUT_FORMAT:
+        [RISK_ASSESSMENT]: Briefly state what could go wrong.
+        [CODE_SOLUTION]: Provide the Markdown code block.
+        [VALIDATION]: How to test if the fix worked.` 
+    },
+    { role: "user", content: userMsg }
+]                        })
                     });
                     const data = await response.json();
                     const aiContent = data.choices[0].message.content;
