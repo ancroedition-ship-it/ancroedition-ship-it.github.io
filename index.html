@@ -57,13 +57,8 @@
             max-width: 100vw; max-height: 100vh;
             position: relative;
             background-color: var(--bg-dark);
-            
             transition: border 0.2s;
         }
-
-        .hud-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 100; }
-        .hud-bracket { fill: none; stroke: var(--hud-red); stroke-width: 3; }
-        .hud-text { fill: var(--hud-red); font-size: 10px; font-weight: bold; }
 
         .studio-container {
             position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px;
@@ -74,20 +69,14 @@
 
         .nav-tools { display: flex; align-items: center; gap: 10px; }
         
-        /* Removed increase/decrease arrows */
         .hud-input-small { 
             background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
             font-size: 9px; padding: 2px 5px; width: 60px; outline: none; transition: border 0.2s;
             -moz-appearance: textfield;
         }
         .hud-input-small::-webkit-outer-spin-button,
-        .hud-input-small::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
+        .hud-input-small::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
-        .hud-input-small:focus { border-color: var(--hud-red); }
-        
         #goto-btn {
             background: var(--hud-blue); border: none; color: white; 
             font-size: 9px; cursor: pointer; height: 10px; padding: 0px 5px; 
@@ -137,12 +126,7 @@
             font-family: var(--font-main);
         }
 
-        .ln-mark { 
-            color: var(--hud-red) !important; 
-            text-shadow: 0 0 5px var(--hud-red);
-            font-weight: bold;
-            background: rgba(255, 23, 68, 0.15);
-        }
+        .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 5px var(--hud-red); font-weight: bold; background: rgba(255, 23, 68, 0.15); }
 
         .code-area { 
             flex: 1; 
@@ -163,38 +147,56 @@
         mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
 
         .drag-bar { 
-    background: rgba(0, 102, 255, 0.1); 
-    z-index: 100; 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    border: 1px solid var(--border);
-}
+            background: rgba(0, 102, 255, 0.1); 
+            z-index: 100; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            border: 1px solid var(--border);
+        }
 
+        .drag-bar::before { 
+            content: ""; 
+            width: 2px; 
+            height: 30%; 
+            background: var(--hud-blue); 
+            border-radius: 2px; 
+            box-shadow: 0 0 8px var(--hud-blue);
+            transition: all 0.3s ease;
+        }
 
-.drag-bar::before { 
-    content: ""; 
-    width: 2px; 
-    height: 30%; 
-    background: var(--hud-blue); 
-    border-radius: 2px; 
-    box-shadow: 0 0 8px var(--hud-blue);
-    transition: all 0.3s ease;
-}
-
-#viewport[style*="flex-direction: column"] #drag-handle::before {
-    width: 30%;  /* Now it stretches horizontally */
-    height: 2px; /* Now it is thin vertically */
-}
+        #viewport[style*="flex-direction: column"] #drag-handle::before {
+            width: 30%; height: 2px; 
+        }
 
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
-         @media screen and (max-width: 768px) {
-            .hud-input-small {
-                width: 80px;
-                height: 30px;
-                font-size: 14px;
-            }
+
+        /* --- CHAT OVERLAY STYLES --- */
+        #chat-trigger { 
+            position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; 
+            background: var(--bg-dark); border: 2px solid var(--hud-blue); border-radius: 50%; 
+            color: var(--hud-blue); display: flex; align-items: center; justify-content: center; 
+            cursor: pointer; z-index: 600; font-size: 20px; box-shadow: 0 0 10px var(--hud-blue);
+        }
+        #chat-dialog { 
+            position: fixed; inset: 0; background: rgba(8, 9, 11, 0.98); 
+            z-index: 900; display: none; flex-direction: column; padding: 30px; 
+        }
+        #chat-body { 
+            flex: 1; margin-top: 20px; border: 1px solid var(--boundary-color); 
+            padding: 20px; color: var(--hud-blue); font-size: 12px; 
+            overflow-y: auto; line-height: 1.6;
+        }
+        .chat-input-wrapper { 
+            margin-top: 15px; display: flex; gap: 10px; 
+            border: 1px solid var(--boundary-color); padding: 10px; 
+        }
+        #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; }
+
+        @media screen and (max-width: 768px) {
+            .hud-input-small { width: 80px; height: 30px; font-size: 14px; }
+        }
     </style>
 </head>
 <body>
@@ -205,12 +207,10 @@
     </div>
 
     <div class="hud-wrapper" id="main-frame">
-
         <div class="studio-container">
             <header class="studio-header">
-                <span>NEUROSENTIX STUDIO </span>
+                <span>NEUROSENTIX STUDIO</span>
                 <div class="nav-tools">
-                    <span style="opacity: 0.5;"></span>
                     <input type="number" id="goto-input" class="hud-input-small" placeholder="000">
                     <button id="goto-btn">GO</button>
                     <span id="status-indicator">● LIVE_SYNC</span>
@@ -228,9 +228,7 @@
                         <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
                     </div>
                 </div>
-                
                 <div class="drag-bar" id="drag-handle"></div>
-                
                 <section class="pane preview-pane">
                     <div class="pane-label" style="background:#eee; color:#000;">RUNTIME</div>
                     <iframe id="preview-frame" sandbox="allow-scripts allow-modals allow-same-origin"></iframe>
@@ -238,6 +236,20 @@
             </main>
         </div>
     </div>
+
+    <div id="chat-trigger">◈</div>
+    <div id="chat-dialog">
+        <div style="display:flex; justify-content:space-between; color:var(--hud-red); font-size:11px; letter-spacing:3px; border-bottom:1px solid var(--boundary-color); padding-bottom:10px;">
+            <span>TERMINAL_LINK</span> <span id="close-dialog" style="cursor:pointer;">[ ESC_X ]</span>
+        </div>
+        <div id="chat-body">> [SYSTEM]: Online.</div>
+        <div class="chat-input-wrapper">
+            <span style="color:var(--hud-red)">USR:</span>
+            <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off">
+        </div>
+    </div>
+
+    <script src="config.js"></script>
 
     <script>
         const viewport = document.getElementById('viewport'),
@@ -251,12 +263,14 @@
               gotoInput = document.getElementById('goto-input'),
               gotoBtn = document.getElementById('goto-btn'),
               loadBar = document.getElementById('load-bar'),
-              loader = document.getElementById('boot-loader');
+              loader = document.getElementById('boot-loader'),
+              chatTrigger = document.getElementById('chat-trigger'),
+              chatDialog = document.getElementById('chat-dialog'),
+              closeDialog = document.getElementById('close-dialog'),
+              terminalInput = document.getElementById('terminal-input'),
+              chatBody = document.getElementById('chat-body');
 
-        let isDragging = false;
-        let currentMatchIndex = -1;
-        let matchElements = [];
-        let syncTimer; // Timer for 500ms debounce
+        let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
             loadBar.style.width = "100%";
@@ -279,8 +293,8 @@
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
-        handle.onmousedown = () => { isDragging = true; handle.classList.add('active'); preview.classList.add('shield'); };
-        document.onmouseup = () => { isDragging = false; handle.classList.remove('active'); preview.classList.remove('shield'); };
+        handle.onmousedown = () => { isDragging = true; preview.classList.add('shield'); };
+        document.onmouseup = () => { isDragging = false; preview.classList.remove('shield'); };
         document.onmousemove = (e) => {
             if (!isDragging) return;
             const rect = viewport.getBoundingClientRect();
@@ -294,8 +308,6 @@
         };
 
         function updateLineNumbers() {
-            const linesContent = codeInput.innerText.split(/\r\n|\r|\n/);
-            const totalLines = Math.max(linesContent.length, 1);
             let nums = "";
             for(let i = 1; i <= 999; i++) {
                 const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
@@ -316,115 +328,90 @@
             currentMatchIndex = (index + matchElements.length) % matchElements.length;
             const target = matchElements[currentMatchIndex];
             target.classList.add('current-match');
-            
             const parentRect = codeInput.getBoundingClientRect();
             const matchRect = target.getBoundingClientRect();
             const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
-
-            codeInput.scrollTo({ 
-                top: relativeTop - (codeInput.offsetHeight / 2), 
-                behavior: 'smooth' 
-            });
-
+            codeInput.scrollTo({ top: relativeTop - (codeInput.offsetHeight / 2), behavior: 'smooth' });
             matchDisplay.innerText = `${currentMatchIndex + 1}/${matchElements.length} MATCHES`;
         }
 
-        searchInput.onkeydown = (e) => {
-            if (e.key === 'Enter' && matchElements.length > 0) {
-                e.preventDefault();
-                scrollToMatch(currentMatchIndex + 1);
+        searchInput.oninput = () => {
+            const query = searchInput.value;
+            const text = codeInput.innerText;
+            if (!query.trim()) {
+                codeInput.textContent = text;
+                matchDisplay.innerText = "0 MATCHES";
+                matchElements = []; updateLineNumbers(); return;
+            }
+            const regex = new RegExp(`(${escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            const escapedText = escapeHtml(text);
+            if (escapedText.match(regex)) {
+                codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
+                matchElements = Array.from(codeInput.querySelectorAll('mark'));
+                matchDisplay.classList.add('found');
+                updateLineNumbers(); scrollToMatch(0);
+            } else {
+                matchDisplay.classList.remove('found');
+                codeInput.innerText = text; matchElements = []; updateLineNumbers();
             }
         };
 
-        searchInput.oninput = () => {
-    const query = searchInput.value;
-    const text = codeInput.innerText; 
-    currentMatchIndex = -1;
-
-    if (!query || query.trim() === "") {
-        codeInput.textContent = text;
-        matchDisplay.innerText = "0 MATCHES";
-        matchDisplay.classList.remove('found');
-        matchElements = [];
-        updateLineNumbers();
-        return;
-    }
-
-    const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const regex = new RegExp(`(${escapedQuery})`, 'gi');
-
-    const escapedFullText = escapeHtml(text);
-    
-    if (escapedFullText.match(regex)) {
-        codeInput.innerHTML = escapedFullText.replace(regex, '<mark>$1</mark>');
-        
-        matchElements = Array.from(codeInput.querySelectorAll('mark'));
-        matchDisplay.classList.add('found');
-        updateLineNumbers();
-        scrollToMatch(0);
-    } else {
-        matchDisplay.classList.remove('found');
-        matchDisplay.innerText = "0 MATCHES";
-        codeInput.innerText = text
-        matchElements = [];
-        updateLineNumbers();
-    }
-};
-
         function executeGoto() {
             const lineNum = parseInt(gotoInput.value);
-            const lineHeight = 1.5 * 13; 
-            
             if (lineNum > 0) {
-                codeInput.scrollTop = (lineNum - 1) * lineHeight;
+                codeInput.scrollTop = (lineNum - 1) * (1.5 * 13);
                 const allNumbers = lineNumbers.querySelectorAll('div');
                 allNumbers.forEach(el => el.classList.remove('ln-mark'));
-                
-                if (allNumbers[lineNum - 1]) {
-                    allNumbers[lineNum - 1].classList.add('ln-mark');
-                }
+                if (allNumbers[lineNum - 1]) allNumbers[lineNum - 1].classList.add('ln-mark');
                 gotoInput.blur();
             }
         }
 
         gotoBtn.onclick = executeGoto;
-        gotoInput.onkeydown = (e) => {
-            if (e.key === 'Enter') executeGoto();
-        };
-
-        codeInput.onfocus = () => {
-            if (searchInput.value !== "") {
-                const raw = codeInput.innerText;
-                codeInput.innerHTML = escapeHtml(raw);
-                searchInput.value = "";
-                matchDisplay.innerText = "0 MATCHES";
-                matchDisplay.classList.remove('found');
-                matchElements = [];
-                updateLineNumbers();
-            }
-        };
-
-        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+        gotoInput.onkeydown = (e) => { if (e.key === 'Enter') executeGoto(); };
 
         function updatePreview() {
             const code = codeInput.innerText;
-            const blobContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`;
+            const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
             if (preview.src) URL.revokeObjectURL(preview.src);
-            const blob = new Blob([blobContent], { type: 'text/html' });
             preview.src = URL.createObjectURL(blob);
         }
 
-        // Debounced Live Sync with 500ms delay
         codeInput.oninput = () => { 
-            clearTimeout(syncTimer);
-            updateLineNumbers(); 
-            syncTimer = setTimeout(() => {
-                updatePreview();
-                console.log("LIVE_SYNC: Updated");
-            }, 500);
+            clearTimeout(syncTimer); updateLineNumbers(); 
+            syncTimer = setTimeout(() => { updatePreview(); }, 500);
         };
-        
+
+        // --- GROQ CHAT LOGIC ---
+        chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
+        closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
+
+        terminalInput.onkeydown = async (e) => {
+            if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
+                const userMsg = terminalInput.value;
+                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
+                terminalInput.value = "";
+                const loadingId = "msg-" + Date.now();
+                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5">SYS: CONNECTING...</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+
+                try {
+                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
+                        body: JSON.stringify({ model: GROQ_CONFIG.MODEL, messages: [{ role: "user", content: userMsg }] })
+                    });
+                    const data = await response.json();
+                    document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-blue)">SYS:</span> ${data.choices[0].message.content}`;
+                } catch (err) {
+                    document.getElementById(loadingId).innerText = "SYS: ERROR_KEY_INVALID";
+                }
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        };
+
         window.onresize = handleOrientation;
+        codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
     </script>
 </body>
 </html>
