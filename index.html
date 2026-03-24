@@ -319,20 +319,29 @@
         let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
-            loadBar.style.width = "100%";
-            setTimeout(() => {
-                handleOrientation();
-                updatePreview();
-                updateLineNumbers();
-                if (typeof GROQ_CONFIG !== 'undefined') {
-                    statusInd.innerText = "● LIVE_SYNC";
-                    statusInd.style.color = "var(--hud-green)";
-                }
-                loader.style.opacity = "0";
-                setTimeout(() => { if(loader) loader.remove(); }, 500);
-                codeInput.focus();
-            }, 800);
-        };
+    loadBar.style.width = "100%";
+    
+    // EMERGENCY CLEAR: If the app doesn't boot in 2 seconds, force it.
+    const forceClear = setTimeout(() => {
+        if(loader) loader.remove();
+    }, 2000);
+
+    setTimeout(() => {
+        handleOrientation();
+        updatePreview();
+        updateLineNumbers();
+        if (typeof GROQ_CONFIG !== 'undefined') {
+            statusInd.innerText = "● LIVE_SYNC";
+            statusInd.style.color = "var(--hud-green)";
+        }
+        loader.style.opacity = "0";
+        setTimeout(() => { 
+            if(loader) loader.remove(); 
+            clearTimeout(forceClear); // Cancel the emergency clear if we made it
+        }, 500);
+        codeInput.focus();
+    }, 800);
+};
 
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
@@ -360,13 +369,15 @@
         };
 
         function updateLineNumbers() {
-            let nums = "";
-            for(let i = 1; i <= 999; i++) {
-                const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
-                nums += `<div class="${existingMark}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
-            }
-            lineNumbers.innerHTML = nums;
-        }
+    const lines = codeInput.innerText.split('\n');
+    const lineCount = Math.max(lines.length, 1);
+    let nums = "";
+    for(let i = 1; i <= lineCount; i++) {
+        // Only render the lines that actually exist
+        nums += `<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
+    }
+    lineNumbers.innerHTML = nums;
+}
 
         function escapeHtml(text) {
             const div = document.createElement('div');
