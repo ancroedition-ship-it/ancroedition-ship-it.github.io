@@ -472,7 +472,8 @@
                             // X-Requested-With header removed as it is proxy-specific
                         },
                         body: JSON.stringify({ 
-                            model: GROQ_CONFIG.MODEL, 
+                            model: GROQ_CONFIG.MODEL,
+                            max_tokens: 5000,
                             messages: [
                                 { 
                                     role: "system", 
