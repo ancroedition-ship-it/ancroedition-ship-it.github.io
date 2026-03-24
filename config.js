@@ -1,4 +1,4 @@
 const GROQ_CONFIG = {
-    API_KEY: "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", 
+    API_KEY: "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", 
     MODEL: "llama-3.3-70b-versatile"
 };
