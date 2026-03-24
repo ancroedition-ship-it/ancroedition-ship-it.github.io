@@ -213,7 +213,19 @@
             margin-top: 15px; display: flex; gap: 10px; 
             border: 1px solid var(--boundary-color); padding: 10px; 
         }
-        #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; }
+        #terminal-input { 
+    flex: 1; 
+    background: transparent; 
+    border: none; 
+    outline: none; 
+    color: var(--hud-red); 
+    font-family: inherit; 
+    resize: none; 
+    min-height: 1.5em; 
+    max-height: 200px; /* Limits how tall the box gets */
+    overflow-y: auto;  /* Adds scrollbar if paste is massive */
+    line-height: 1.5;
+}
 
         #api-latency {
             font-family: var(--font-main);
