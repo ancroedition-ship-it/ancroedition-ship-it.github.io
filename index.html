@@ -193,9 +193,17 @@
             padding: 20px; color: #ccc; font-size: 13px; 
             overflow-y: auto; line-height: 1.6;
         }
-        /* Markdown Styling inside Chat */
-        #chat-body code { background: rgba(0,0,0,0.3); padding: 2px 4px; color: var(--hud-green); font-family: var(--font-main); }
-        #chat-body pre { background: #000 !important; border: 1px solid var(--border); padding: 15px; margin: 10px 0; overflow-x: auto; }
+        
+        /* Markdown & Code Blocks in Chat */
+        #chat-body code { color: var(--hud-green); font-family: var(--font-main); }
+        #chat-body pre { position: relative; background: #000 !important; border: 1px solid var(--border); padding: 15px; margin: 15px 0; overflow-x: auto; }
+        
+        .copy-btn { 
+            position: absolute; top: 5px; right: 5px; background: var(--hud-blue); 
+            color: #fff; border: none; font-size: 9px; padding: 3px 6px; 
+            cursor: pointer; border-radius: 2px; opacity: 0.6; 
+        }
+        .copy-btn:hover { opacity: 1; background: var(--hud-red); }
 
         .chat-input-wrapper { 
             margin-top: 15px; display: flex; gap: 10px; 
@@ -253,10 +261,10 @@
         <div style="display:flex; justify-content:space-between; color:var(--hud-red); font-size:11px; letter-spacing:3px; border-bottom:1px solid var(--boundary-color); padding-bottom:10px;">
             <span>TERMINAL_LINK</span> <span id="close-dialog" style="cursor:pointer;">[ ESC_X ]</span>
         </div>
-        <div id="chat-body">> [SYSTEM]: Online.</div>
+        <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
         <div class="chat-input-wrapper">
             <span style="color:var(--hud-red)">USR:</span>
-            <input type="text" id="terminal-input" placeholder="Enter command..." autocomplete="off">
+            <input type="text" id="terminal-input" placeholder="Ask about your code..." autocomplete="off">
         </div>
     </div>
 
@@ -284,7 +292,6 @@
 
         let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
-        // --- BOOT SEQUENCE ---
         window.onload = () => {
             loadBar.style.width = "100%";
             const forceBoot = setTimeout(finishBoot, 2500);
@@ -409,17 +416,19 @@
             syncTimer = setTimeout(() => { updatePreview(); }, 500);
         };
 
-        // --- UPDATED: GROQ CHAT WITH MARKDOWN ---
+        // --- AI CHAT WITH AUTO-CONTEXT ---
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
         terminalInput.onkeydown = async (e) => {
             if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
                 const userMsg = terminalInput.value;
+                const currentCode = codeInput.innerText; // Captures current editor code
+                
                 chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
                 terminalInput.value = "";
                 const loadingId = "msg-" + Date.now();
-                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: CONNECTING...</div>`;
+                chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: ANALYZING_EDITOR...</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
 
                 if (typeof GROQ_CONFIG === 'undefined') {
@@ -434,7 +443,7 @@
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
                             messages: [
-                                { role: "system", content: "You are a helpful coding assistant. Use Markdown for formatting and code blocks." },
+                                { role: "system", content: "You are a coding assistant. Here is the user's current code for context:\n\n" + currentCode },
                                 { role: "user", content: userMsg }
                             ] 
                         })
@@ -442,10 +451,23 @@
                     const data = await response.json();
                     const aiContent = data.choices[0].message.content;
                     
-                    // Render Markdown and Apply Highlighting
                     const targetDiv = document.getElementById(loadingId);
                     targetDiv.style.opacity = "1";
                     targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
+                    
+                    // Add Copy Buttons to code blocks
+                    targetDiv.querySelectorAll('pre').forEach(block => {
+                        const btn = document.createElement('button');
+                        btn.className = 'copy-btn';
+                        btn.innerText = 'COPY';
+                        btn.onclick = () => {
+                            navigator.clipboard.writeText(block.innerText.replace('COPY', ''));
+                            btn.innerText = 'COPIED!';
+                            setTimeout(() => btn.innerText = 'COPY', 2000);
+                        };
+                        block.appendChild(btn);
+                    });
+                    
                     Prism.highlightAllUnder(targetDiv);
                     
                 } catch (err) {
