@@ -442,10 +442,21 @@
                         headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
-                            messages: [
-                                { role: "system", content: "You are a coding assistant. Here is the user's current code for context:\n\n" + currentCode },
-                                { role: "user", content: userMsg }
-                            ] 
+                            // Replace the existing messages block with this:
+messages: [
+    { 
+        role: "system", 
+        content: `CORE_LOGIC: You are the Neurosentix Studio AI.
+        ENVIRONMENT: Live HTML/JS Editor.
+        CONTEXT_BUFFER: 
+        ---
+        ${codeInput.innerText}
+        ---
+        TASK: Provide surgical code corrections. Use Markdown blocks. 
+        If proposing a fix, explain WHY, then provide the code.` 
+    },
+    { role: "user", content: userMsg }
+]
                         })
                     });
                     const data = await response.json();
