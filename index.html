@@ -461,16 +461,15 @@
                 statusInd.style.color = "var(--hud-blue)";
 
                 try {
-                    // CORS PROXY INTEGRATION
-                    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+                    // DIRECT CONNECTION TO GROQ (CORS PROXY REMOVED)
                     const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
 
-                    const response = await fetch(proxyUrl + apiUrl, {
+                    const response = await fetch(apiUrl, {
                         method: "POST",
                         headers: { 
                             "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
-                            "Content-Type": "application/json",
-                            "X-Requested-With": "XMLHttpRequest"
+                            "Content-Type": "application/json"
+                            // X-Requested-With header removed as it is proxy-specific
                         },
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
@@ -483,6 +482,11 @@
                             ]
                         })
                     });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.error.message || "API_RESPONSE_ERROR");
+                    }
                     
                     const data = await response.json();
                     const aiContent = data.choices[0].message.content;
@@ -531,8 +535,9 @@
                     statusInd.style.animation = "none";
                     
                 } catch (err) {
-                    document.getElementById(loadingId).innerText = "SYS: ERROR_CONNECTION_FAILED";
+                    document.getElementById(loadingId).innerText = `SYS: ERROR_${err.message.toUpperCase().replace(/\s+/g, '_')}`;
                     statusInd.style.color = "var(--hud-red)";
+                    statusInd.style.animation = "pulse 1.5s infinite";
                 }
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
