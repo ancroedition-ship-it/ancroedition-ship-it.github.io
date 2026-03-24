@@ -90,7 +90,7 @@
         #goto-btn:hover { background: var(--hud-red); }
 
         .viewport { display: flex; flex: 1; overflow: hidden; }
-        .pane { background: rgba(0,0,0,0.5); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .pane { background: rgba(0,0,0,0.8); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
         .editor-pane { flex: 0 0 50%; min-height: 50px; min-width: 50px; }
         .preview-pane { flex: 1; background: #fff; border: 2px solid #ccc; }
 
@@ -118,7 +118,7 @@
         }
         
         #line-numbers {
-            width: 50px; 
+            width: 30px; 
             padding: 20px 0; 
             background: rgba(0,0,0,0.4);
             color: #333; 
@@ -146,6 +146,7 @@
             position: relative;
             font-family: var(--font-main);
             border-left: 1px solid var(--border);
+            background-color: #1a1a1a;
         }
         
         mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
@@ -348,7 +349,7 @@
 
         function updateLineNumbers() {
             let nums = "";
-            for(let i = 1; i <= 200; i++) {
+            for(let i = 1; i <= 999; i++) {
                 const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
                 nums += `<div class="${existingMark}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
             }
