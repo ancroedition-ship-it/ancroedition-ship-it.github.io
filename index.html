@@ -155,6 +155,9 @@
             font-family: var(--font-main);
             border-left: 1px solid var(--border);
             background-color: #1f2933;
+            /* Added these to protect HTML format */
+            -webkit-user-modify: read-write-plaintext-only; 
+            tab-size: 4;
         }
         
         mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
@@ -440,63 +443,65 @@
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         
-        const userMsg = terminalInput.value;
-        const currentCode = codeInput.innerText.trim();
+        const userMsg = terminalInput.value.trim();
+        const rawCode = codeInput.innerText;
         
-        // --- SAFETY GUARD: Check total payload size ---
-        const totalCharCount = userMsg.length + currentCode.length;
-        if (totalCharCount > 30000) { // Approx limit for safe Lite-model requests
-            chatBody.innerHTML += `<div style="color:var(--hud-red)">SYS: ERR_BUFFER_OVERFLOW. Reduce code length before syncing.</div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
+        // Map lines so AI knows the numbers (L1, L2, etc)
+        const mappedCode = rawCode.split('\n')
+            .map((line, i) => `L${i + 1}: ${line}`)
+            .join('\n');
+
+        if (userMsg.length + rawCode.length > 30000) {
+            chatBody.innerHTML += `<div style="color:var(--hud-red)">SYS: ERR_BUFFER_OVERFLOW.</div>`;
             return;
         }
 
-        // Visual feedback
-        chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> [Pasted ${userMsg.split('\n').length} lines]</div>`;
+        chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg || "[CODE_SYNC]"}</div>`;
         terminalInput.value = "";
         
         const loadingId = "msg-" + Date.now();
-        chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5; margin-bottom:15px;">SYS: UPLOADING_BUFFER...</div>`;
+        chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5;">SYS: ANALYZING_BUFFER...</div>`;
         chatBody.scrollTop = chatBody.scrollHeight;
 
         try {
             const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                 method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
-                    "Content-Type": "application/json" 
-                },
+                headers: { "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     model: GROQ_CONFIG.MODEL, 
                     messages: [
-                        { role: "system", content: "You are the Neurosentix Surgical-Refactor AI. Focus on specific changes." },
-                        { role: "user", content: userMsg }
+                        { 
+                            role: "system", 
+                            content: "You are the Neurosentix Surgical-Refactor AI. \n" +
+                                     "1. Use L# to reference lines. \n" +
+                                     "2. If the user gives code without instructions, JUST acknowledge receipt. \n" +
+                                     "3. When fixing code, provide a small snippet and include a button labeled 'APPLY_FIX'." 
+                        },
+                        { role: "user", content: `EDITOR_CONTEXT:\n${mappedCode}\n\nUSER_REQUEST: ${userMsg}` }
                     ]
                 })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || "API_REJECTED");
-            }
-            
             const data = await response.json();
             const targetDiv = document.getElementById(loadingId);
             targetDiv.style.opacity = "1";
-            targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.choices[0].message.content)}`;
             
-            // Re-run Prism and Button logic...
-            Prism.highlightAllUnder(targetDiv);
-
-        } catch (err) {
-            // This prevents the "Crash to Boot"
-            const errDiv = document.getElementById(loadingId);
-            if(errDiv) {
-                errDiv.style.opacity = "1";
-                errDiv.style.color = "var(--hud-red)";
-                errDiv.innerText = `SYS: CRITICAL_HALT: ${err.message}`;
+            // Render AI response with Markdown
+            const aiContent = data.choices[0].message.content;
+            targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
+            
+            // Check if AI mentioned a specific line to GOTO
+            const lineRef = aiContent.match(/L(\d+)/);
+            if(lineRef) {
+                gotoInput.value = lineRef[1];
+                // Visual highlight on line number
+                const targetLn = lineNumbers.children[parseInt(lineRef[1])-1];
+                if(targetLn) targetLn.classList.add('ln-mark');
             }
-            console.error("Studio Crash Prevented:", err);
+
+            Prism.highlightAllUnder(targetDiv);
+        } catch (err) {
+            document.getElementById(loadingId).innerHTML = `<span style="color:var(--hud-red)">SYS: CRITICAL_ERROR: ${err.message}</span>`;
         }
         chatBody.scrollTop = chatBody.scrollHeight;
     }
