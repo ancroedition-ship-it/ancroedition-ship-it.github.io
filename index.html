@@ -404,9 +404,34 @@
         gotoBtn.onclick = executeGoto;
         gotoInput.onkeydown = (e) => { if (e.key === 'Enter') executeGoto(); };
 
+        // --- ENHANCED PREVIEW WITH ERROR REPORTING ---
         function updatePreview() {
             const code = codeInput.innerText || "";
-            const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
+            const errorReporter = `
+                <script>
+                    window.onerror = function(msg, url, line, col, error) {
+                        window.parent.postMessage({
+                            type: 'RUNTIME_ERR',
+                            msg: msg,
+                            line: line
+                        }, '*');
+                        return false;
+                    };
+                <\/script>
+            `;
+
+            const blob = new Blob([`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    ${errorReporter}
+                    <style>body{padding:2rem;font-family:sans-serif;background:#fff;}</style>
+                </head>
+                <body>${code}</body>
+                </html>
+            `], { type: 'text/html' });
+
             if (preview.src) URL.revokeObjectURL(preview.src);
             preview.src = URL.createObjectURL(blob);
         }
@@ -416,14 +441,13 @@
             syncTimer = setTimeout(() => { updatePreview(); }, 500);
         };
 
-       // --- AI CHAT WITH AUTO-CONTEXT ---
+       // --- AI CHAT WITH AUTO-CONTEXT & SAFETY PROTOCOL ---
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
         terminalInput.onkeydown = async (e) => {
             if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
                 const userMsg = terminalInput.value;
-                // CLEAN CONTEXT CAPTURE
                 const currentCode = codeInput.innerText.replace(/\u00a0/g, ' ').trim(); 
                 
                 chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
@@ -437,7 +461,6 @@
                     return;
                 }
 
-                // VISUAL FEEDBACK
                 statusInd.innerText = "● SYNCING_CONTEXT...";
                 statusInd.style.color = "var(--hud-blue)";
 
@@ -448,28 +471,19 @@
                         body: JSON.stringify({ 
                             model: GROQ_CONFIG.MODEL, 
                             messages: [
-    { 
-        role: "system", 
-        content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI.
-        ENVIRONMENT: Live HTML/JS Editor (Neurosentix_Tiny Framework).
-        
-        CONTEXT_BUFFER: 
-        ---
-        ${currentCode}
-        ---
-        
-        MANDATORY_PROTOCOL:
-        1. RISK_CHECK: Identify potential errors (e.g., Variable collisions, DOM elements not existing, CSS overflows).
-        2. ERROR_PREVENTION: Suggest 'try/catch' blocks or existence checks for crucial operations.
-        3. SURGICAL_PRECISION: Provide only the necessary edits.
-        
-        OUTPUT_FORMAT:
-        [RISK_ASSESSMENT]: Briefly state what could go wrong.
-        [CODE_SOLUTION]: Provide the Markdown code block.
-        [VALIDATION]: How to test if the fix worked.` 
-    },
-    { role: "user", content: userMsg }
-]                        })
+                                { 
+                                    role: "system", 
+                                    content: `CORE_LOGIC: You are the Neurosentix Studio Safety-First AI.
+                                    ENVIRONMENT: Live HTML/JS Editor.
+                                    CONTEXT_BUFFER: \n---\n${currentCode}\n---\n
+                                    PROTOCOL: 
+                                    1. RISK_CHECK: Identify potential errors or collisions.
+                                    2. ERROR_PREVENTION: Wrap risky code in try/catch or logic guards.
+                                    3. TASK: Provide surgical corrections in Markdown.` 
+                                },
+                                { role: "user", content: userMsg }
+                            ]
+                        })
                     });
                     const data = await response.json();
                     const aiContent = data.choices[0].message.content;
@@ -478,7 +492,6 @@
                     targetDiv.style.opacity = "1";
                     targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
                     
-                    // ADD SYNC/INSERT BUTTONS
                     targetDiv.querySelectorAll('pre').forEach(block => {
                         const container = document.createElement('div');
                         container.style.position = 'absolute';
@@ -493,8 +506,6 @@
                         copyBtn.innerText = 'COPY';
                         copyBtn.onclick = () => {
                             navigator.clipboard.writeText(block.innerText.replace('COPYINSERT', ''));
-                            copyBtn.innerText = 'OK';
-                            setTimeout(() => copyBtn.innerText = 'COPY', 2000);
                         };
 
                         const insBtn = document.createElement('button');
@@ -508,8 +519,6 @@
                             document.execCommand('insertText', false, cleanCode);
                             updatePreview();
                             updateLineNumbers();
-                            insBtn.innerText = 'SYNCED';
-                            setTimeout(() => insBtn.innerText = 'INSERT', 2000);
                         };
 
                         container.appendChild(insBtn);
@@ -520,6 +529,7 @@
                     Prism.highlightAllUnder(targetDiv);
                     statusInd.innerText = "● LIVE_SYNC";
                     statusInd.style.color = "var(--hud-green)";
+                    statusInd.style.animation = "none";
                     
                 } catch (err) {
                     document.getElementById(loadingId).innerText = "SYS: ERROR_CONNECTION_FAILED";
@@ -528,6 +538,20 @@
                 chatBody.scrollTop = chatBody.scrollHeight;
             }
         };
+
+        // --- GLOBAL RUNTIME MONITOR ---
+        window.addEventListener('message', (e) => {
+            if (e.data.type === 'RUNTIME_ERR') {
+                statusInd.innerText = `● ERR: ${e.data.msg} (LN: ${e.data.line})`;
+                statusInd.style.color = "var(--hud-red)";
+                statusInd.style.animation = "pulse 0.5s infinite";
+                
+                const lineNum = e.data.line;
+                const allNumbers = lineNumbers.querySelectorAll('div');
+                allNumbers.forEach(el => el.classList.remove('ln-mark'));
+                if (allNumbers[lineNum - 1]) allNumbers[lineNum - 1].classList.add('ln-mark');
+            }
+        });
 
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
