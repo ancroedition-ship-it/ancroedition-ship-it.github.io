@@ -178,7 +178,11 @@
             box-shadow: 0 0 8px var(--hud-blue);
             transition: all 0.3s ease;
         }
-
+        /* --- PASTE THE NEW RULE HERE --- */
+        #viewport[style*="flex-direction: column"] #drag-handle::before {
+            width: 30%; 
+            height: 2px;
+        }
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
 
@@ -321,6 +325,7 @@
             handle.style.height = isPortrait ? '20px' : '100%';
             handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
+           
         }
 
         handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
