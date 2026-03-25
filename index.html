@@ -162,7 +162,13 @@
             font-family: var(--font-main);
         }
 
-        .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 5px var(--hud-red); font-weight: bold; background: rgba(255, 23, 68, 0.15); }
+        .ln-mark { 
+            color: var(--hud-red) !important; 
+            text-shadow: 0 0 8px var(--hud-red); 
+            font-weight: bold; 
+            background: rgba(255, 23, 68, 0.2);
+            transition: all 0.2s;
+        }
 
         .code-area { 
             flex: 1; 
@@ -405,14 +411,39 @@
 
         function scrollToMatch(index) {
             if (matchElements.length === 0) return;
+            
+            // 1. Clear previous highlights
             matchElements.forEach(el => el.classList.remove('current-match'));
+            Array.from(lineNumbers.children).forEach(el => el.classList.remove('ln-mark'));
+
             currentMatchIndex = (index + matchElements.length) % matchElements.length;
             const target = matchElements[currentMatchIndex];
             target.classList.add('current-match');
+
+            // 2. Calculate the Line Number to highlight
+            // We find how many newlines exist before the current match element
+            const range = document.createRange();
+            range.setStart(codeInput, 0);
+            range.setEndBefore(target);
+            const contentBefore = range.toString();
+            const lineIndex = contentBefore.split('\n').length;
+
+            // 3. Highlight the specific line number in the gutter
+            const targetLineNum = lineNumbers.children[lineIndex - 1];
+            if (targetLineNum) {
+                targetLineNum.classList.add('ln-mark');
+            }
+
+            // 4. Scroll into view
             const parentRect = codeInput.getBoundingClientRect();
             const matchRect = target.getBoundingClientRect();
             const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
-            codeInput.scrollTo({ top: relativeTop - (codeInput.offsetHeight / 2), behavior: 'smooth' });
+            
+            codeInput.scrollTo({ 
+                top: relativeTop - (codeInput.offsetHeight / 2), 
+                behavior: 'smooth' 
+            });
+
             matchDisplay.innerText = `${currentMatchIndex + 1}/${matchElements.length} MATCHES`;
         }
 
