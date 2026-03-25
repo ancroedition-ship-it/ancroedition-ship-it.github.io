@@ -5,17 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neurosentix AI</title>
     <style>
-        body { margin: 0; background: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; height: 100vh; }
-        #chat-container { width: 100%; max-width: 600px; display: flex; flex-direction: column; background: #1e293b; }
+        body { margin: 0; background: #0f172a; color: #f8fafc; font-family: sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        #chat-container { flex: 1; display: flex; flex-direction: column; background: #1e293b; max-width: 600px; margin: auto; width: 100%; }
         header { padding: 15px; background: #334155; text-align: center; font-weight: bold; border-bottom: 1px solid #475569; }
         #chat-display { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 12px; border-radius: 8px; max-width: 80%; line-height: 1.4; font-size: 16px; }
+        .msg { padding: 12px; border-radius: 8px; max-width: 85%; font-size: 16px; word-wrap: break-word; }
         .user { align-self: flex-end; background: #3b82f6; }
         .bot { align-self: flex-start; background: #475569; }
-        #input-area { display: flex; padding: 15px; gap: 10px; border-top: 1px solid #475569; }
+        #input-area { display: flex; padding: 15px; gap: 10px; border-top: 1px solid #475569; background: #1e293b; }
         input { flex: 1; padding: 12px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: white; font-size: 16px; outline: none; }
-        button { padding: 0 20px; background: #3b82f6; border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        button:active { opacity: 0.7; }
+        button { padding: 0 20px; background: #3b82f6; border: none; color: white; border-radius: 6px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -23,59 +22,76 @@
         <header>NEUROSENTIX AI</header>
         <div id="chat-display"></div>
         <div id="input-area">
-            <input type="text" id="user-input" placeholder="Type a message..." autocomplete="off">
-            <button id="send-btn">SEND</button>
+            <input type="text" id="user-input" placeholder="Type message..." autocomplete="off">
+            <button id="send-btn" type="button">SEND</button>
         </div>
     </div>
 
-    <script type="module">
-        import CONFIG from './config.js';
+    <script src="config.js"></script>
 
+    <script>
+        // Check if config loaded
         const display = document.getElementById('chat-display');
         const input = document.getElementById('user-input');
         const btn = document.getElementById('send-btn');
 
-        async function handleSend() {
-            const text = input.value.trim();
-            if (!text) return;
-
-            addMsg('user', text);
-            input.value = '';
-
-            const apiTarget = "https://api.groq.com/openai/v1/chat/completions";
-            
-            try {
-                const response = await fetch(CONFIG.PROXY_URL + encodeURIComponent(apiTarget), {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${CONFIG.API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        messages: [{ role: "user", content: text }],
-                        model: CONFIG.MODEL
-                    })
-                });
-
-                if (!response.ok) throw new Error(response.status);
-
-                const data = await response.json();
-                addMsg('bot', data.choices[0].message.content);
-            } catch (err) {
-                addMsg('bot', "Error: Check API Key or Proxy. (" + err.message + ")");
-            }
-        }
-
         function addMsg(role, text) {
             const div = document.createElement('div');
-            div.className = `msg ${role}`;
+            div.className = 'msg ' + role;
             div.textContent = text;
             display.appendChild(div);
             display.scrollTop = display.scrollHeight;
         }
 
-        btn.onclick = handleSend;
-        input.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
+        async function handleSend() {
+            const text = input.value.trim();
+            if (!text) return;
+
+            // Immediately show user text to confirm button works
+            addMsg('user', text);
+            input.value = '';
+
+            // Verify if NEURO_CONFIG exists
+            if (typeof NEURO_CONFIG === 'undefined') {
+                addMsg('bot', "Error: config.js not found or failed to load.");
+                return;
+            }
+
+            const target = "https://api.groq.com/openai/v1/chat/completions";
+            
+            try {
+                const response = await fetch(NEURO_CONFIG.PROXY + encodeURIComponent(target), {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + NEURO_CONFIG.API_KEY,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        messages: [{ role: "user", content: text }],
+                        model: NEURO_CONFIG.MODEL
+                    })
+                });
+
+                const data = await response.json();
+                if (data.choices) {
+                    addMsg('bot', data.choices[0].message.content);
+                } else {
+                    addMsg('bot', "API Error: " + JSON.stringify(data.error));
+                }
+            } catch (err) {
+                addMsg('bot', "Network Error: " + err.message);
+            }
+        }
+
+        // Use onclick for maximum mobile compatibility
+        btn.onclick = function(e) {
+            e.preventDefault();
+            handleSend();
+        };
+
+        input.onkeydown = function(e) {
+            if (e.key === 'Enter') handleSend();
+        };
     </script>
 </body>
 </html>
