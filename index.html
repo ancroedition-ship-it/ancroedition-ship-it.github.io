@@ -427,111 +427,108 @@
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
-        /* --- REPLACED FORENSIC_SCAN LOGIC --- */
-forensicBtn.onclick = async () => {
-    const currentCode = codeInput.innerText.trim();
-    const statusDot = document.getElementById('api-status-dot');
-    if (!currentCode) return;
-    
-    chatDialog.style.display = 'flex';
-    const scanId = "scan-" + Date.now();
-    chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_CLAUDE_FORENSICS...</div>`;
-    chatBody.scrollTop = chatBody.scrollHeight;
+        /* --- RESTORED GROQ FORENSIC_SCAN LOGIC --- */
+        forensicBtn.onclick = async () => {
+            const currentCode = codeInput.innerText.trim();
+            const statusDot = document.getElementById('api-status-dot');
+            if (!currentCode) return;
+            
+            chatDialog.style.display = 'flex';
+            const scanId = "scan-" + Date.now();
+            chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_GROQ_FORENSICS...</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
 
-    try {
-        const response = await fetch("https://api.anthropic.com/v1/messages", { 
-            method: "POST",
-            headers: { 
-                "x-api-key": CLAUDE_CONFIG.API_KEY.trim(), 
-                "anthropic-version": "2023-06-01", 
-                "Content-Type": "application/json", 
-                "anthropic-dangerous-direct-browser-access": "true" 
-            },
-            body: JSON.stringify({ 
-                model: CLAUDE_CONFIG.MODEL, 
-                max_tokens: 1500,
-                system: "You are the Neurosentix Forensic Engine. Perform a deep code analysis. Output a technical report.",
-                messages: [{ role: "user", content: `SCAN_TARGET:\n${currentCode}` }]
-            })
-        });
+            try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { 
+                        "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
+                        "Content-Type": "application/json" 
+                    },
+                    body: JSON.stringify({ 
+                        model: GROQ_CONFIG.MODEL, 
+                        messages: [
+                            { role: "system", content: "You are the Neurosentix Forensic Engine. Perform a deep code analysis. Output a technical report." }, 
+                            { role: "user", content: `SCAN_TARGET:\n${currentCode}` }
+                        ]
+                    })
+                });
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
 
-        // Success: Turn dot Green
-        statusDot.style.background = "var(--hud-green)";
-        statusDot.style.boxShadow = "0 0 10px var(--hud-green)";
+                statusDot.style.background = "var(--hud-green)";
+                statusDot.style.boxShadow = "0 0 10px var(--hud-green)";
 
-        const targetDiv = document.getElementById(scanId);
-        targetDiv.innerHTML = `<span style="color: var(--hud-green)">[ SCAN_COMPLETE ]</span>:<br>${marked.parse(data.content[0].text)}`;
-        
-        targetDiv.querySelectorAll('pre').forEach(block => {
-            const insBtn = document.createElement('button');
-            insBtn.className = 'copy-btn'; insBtn.innerText = 'APPLY_FIX'; insBtn.style.background = 'var(--hud-red)';
-            insBtn.onclick = () => { 
-                codeInput.focus(); 
-                document.execCommand('insertText', false, block.innerText.replace('APPLY_FIX', '')); 
-                updatePreview();
-            };
-            block.appendChild(insBtn);
-        });
-        Prism.highlightAllUnder(targetDiv);
-    } catch (err) { 
-        // Failure: Turn dot Red
-        statusDot.style.background = "var(--hud-red)";
-        statusDot.style.boxShadow = "0 0 10px var(--hud-red)";
-        document.getElementById(scanId).innerHTML = `<span style="color:var(--hud-red)">[ SCAN_FAILED ]</span>: ${err.message.toUpperCase()}`; 
-    }
-    chatBody.scrollTop = chatBody.scrollHeight;
-};
+                const targetDiv = document.getElementById(scanId);
+                targetDiv.innerHTML = `<span style="color: var(--hud-green)">[ SCAN_COMPLETE ]</span>:<br>${marked.parse(data.choices[0].message.content)}`;
+                
+                setupCodeBlocks(targetDiv);
+                Prism.highlightAllUnder(targetDiv);
+            } catch (err) {
+                statusDot.style.background = "var(--hud-red)";
+                statusDot.style.boxShadow = "0 0 10px var(--hud-red)";
+                document.getElementById(scanId).innerHTML = `<span style="color:var(--hud-red)">[ SCAN_FAILED ]</span>: ${err.message.toUpperCase()}`;
+            }
+            chatBody.scrollTop = chatBody.scrollHeight;
+        };
 
-        // --- TERMINAL ROUTER (GROQ & CLAUDE) ---
+        /* --- RESTORED GROQ TERMINAL ROUTER --- */
         terminalInput.onkeydown = async (e) => {
-    if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
-        const userMsg = terminalInput.value;
-        const currentCode = codeInput.innerText.trim();
-        const latencyDisplay = document.getElementById('api-latency');
-        const startTime = performance.now();
-        
-        chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
-        terminalInput.value = "";
-        
-        const msgId = "msg-" + Date.now();
-        chatBody.innerHTML += `<div id="${msgId}" style="opacity:0.5; margin-bottom:15px;">SYS: COMMUNICATING_WITH_CLAUDE...</div>`;
-        chatBody.scrollTop = chatBody.scrollHeight;
+            if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
+                const userMsg = terminalInput.value;
+                const currentCode = codeInput.innerText.trim();
+                const latencyDisplay = document.getElementById('api-latency');
+                const startTime = performance.now();
+                
+                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
+                terminalInput.value = "";
+                
+                const msgId = "msg-" + Date.now();
+                chatBody.innerHTML += `<div id="${msgId}" style="opacity:0.5; margin-bottom:15px;">SYS: COMMUNICATING_WITH_GROQ...</div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
 
-        try {
-            const response = await fetch("https://api.anthropic.com/v1/messages", {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "x-api-key": CLAUDE_CONFIG.API_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "anthropic-dangerous-direct-browser-access": "true" 
-                },
-                body: JSON.stringify({ 
-                    model: CLAUDE_CONFIG.MODEL,
-                    max_tokens: 1024,
-                    system: `You are the Neurosentix Surgical-Refactor AI. CONTEXT:\n${currentCode}`,
-                    messages: [{ role: "user", content: userMsg }]
-                })
-            });
+                try {
+                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                        method: "POST",
+                        headers: { 
+                            "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
+                            "Content-Type": "application/json" 
+                        },
+                        body: JSON.stringify({ 
+                            model: GROQ_CONFIG.MODEL, 
+                            messages: [
+                                { role: "system", content: `You are the Neurosentix Surgical-Refactor AI. CONTEXT:\n${currentCode}` }, 
+                                { role: "user", content: userMsg }
+                            ]
+                        })
+                    });
 
-            const duration = Math.round(performance.now() - startTime);
-            if(latencyDisplay) latencyDisplay.innerText = `[ LATENCY: ${duration}ms ]`;
-            
-            const data = await response.json();
-            
-            if (data.error) throw new Error(data.error.message);
+                    const duration = Math.round(performance.now() - startTime);
+                    if(latencyDisplay) latencyDisplay.innerText = `[ LATENCY: ${duration}ms ]`;
+                    
+                    const data = await response.json();
+                    if (data.error) throw new Error(data.error.message);
 
-            const targetDiv = document.getElementById(msgId);
-            targetDiv.style.opacity = "1";
-            // Claude returns content in an array
-            targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.content[0].text)}`;
-            
-            targetDiv.querySelectorAll('pre').forEach(block => {
+                    const targetDiv = document.getElementById(msgId);
+                    targetDiv.style.opacity = "1";
+                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.choices[0].message.content)}`;
+                    
+                    setupCodeBlocks(targetDiv);
+                    Prism.highlightAllUnder(targetDiv);
+                } catch (err) {
+                    document.getElementById(msgId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERROR_</span>${err.message.toUpperCase()}`;
+                }
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        };
+
+        function setupCodeBlocks(container) {
+            container.querySelectorAll('pre').forEach(block => {
                 const insBtn = document.createElement('button');
-                insBtn.className = 'copy-btn'; insBtn.innerText = 'APPLY_FIX'; insBtn.style.background = 'var(--hud-red)';
+                insBtn.className = 'copy-btn'; 
+                insBtn.innerText = 'APPLY_FIX'; 
+                insBtn.style.background = 'var(--hud-red)';
                 insBtn.onclick = () => { 
                     codeInput.focus(); 
                     document.execCommand('insertText', false, block.innerText.replace('APPLY_FIX', '')); 
@@ -539,13 +536,7 @@ forensicBtn.onclick = async () => {
                 };
                 block.appendChild(insBtn);
             });
-            Prism.highlightAllUnder(targetDiv);
-        } catch (err) {
-            document.getElementById(msgId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERROR_</span>${err.message.toUpperCase()}`;
         }
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }
-};
 
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
