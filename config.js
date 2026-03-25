@@ -5,7 +5,7 @@
 //};
 
 const CLAUDE_CONFIG = {
-    API_KEY: "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",
+    API_KEY: "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",
     // Used for the FORENSIC_SCAN and complex refactors
     MODEL: "claude-3-5-sonnet-20240620" 
 };
