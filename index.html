@@ -93,6 +93,7 @@
         .editor-pane { flex: 0 0 50%; min-height: 50px; min-width: 50px; }
         .preview-pane { flex: 1; background: #fff; border: 2px solid #ccc; }
 
+        /* Styled Header */
         .editor-pane .pane-label { 
             font-size: 9px; padding: 10px;
             background: rgba(0, 102, 255, 0.15); 
@@ -110,18 +111,9 @@
             margin: 5px;
             display: flex; 
             align-items: center; 
-            justify-content: space-between;
         }
         #search-input { background: transparent; border: none; color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
-        
-        #forensic-btn {
-            background: transparent; border: 1px solid var(--hud-green); color: var(--hud-green); 
-            font-family: inherit; font-size: 9px; padding: 2px 8px; cursor: pointer; 
-            letter-spacing: 1px; transition: all 0.2s; white-space: nowrap; margin: 0 10px;
-        }
-        #forensic-btn:hover { background: rgba(0, 255, 136, 0.1); box-shadow: 0 0 8px var(--hud-green); }
-
-        #match-count { color: var(--hud-blue); font-size: 9px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
+        #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
         #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
 
         .editor-layout { 
@@ -135,8 +127,7 @@
         
         #line-numbers {
             width: 30px; 
-            padding: 20px 0;
-            padding-top: 20px;
+            padding: 20px 0; 
             background: rgba(0,0,0,0.4);
             color: #333; 
             font-size: 13px; 
@@ -164,6 +155,9 @@
             font-family: var(--font-main);
             border-left: 1px solid var(--border);
             background-color: #1f2933;
+            /* Added these to protect HTML format */
+            -webkit-user-modify: read-write-plaintext-only; 
+            tab-size: 4;
         }
         
         mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
@@ -187,9 +181,23 @@
             box-shadow: 0 0 8px var(--hud-blue);
             transition: all 0.3s ease;
         }
+        /* --- PASTE THE NEW RULE HERE --- */
         #viewport[style*="flex-direction: column"] #drag-handle::before {
             width: 30%; 
             height: 2px;
+        }
+        #terminal-input { 
+            flex: 1; 
+            background: transparent; 
+            border: none; 
+            outline: none; 
+            color: var(--hud-red); 
+            font-family: inherit; 
+            resize: none;
+            min-height: 1.5em;
+            max-height: 150px; /* Prevents long pastes from hiding the chat */
+            overflow-y: auto;
+            line-height: 1.4;
         }
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
@@ -253,13 +261,9 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-    <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
-    <div style="display: flex; align-items: center; gap: 10px;">
-        <button id="forensic-btn">FORENSIC_SCAN</button>
-        <div id="api-status-dot" style="width: 8px; height: 8px; background: var(--hud-blue); border-radius: 50%; box-shadow: 0 0 5px var(--hud-blue); transition: all 0.3s;"></div>
-        <span id="match-count">0 MATCHES</span>
-    </div>
-</div>
+                        <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
+                        <span id="match-count">0 MATCHES</span>
+                    </div>
                     <div class="editor-layout">
                         <div id="line-numbers"></div>
                         <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
@@ -285,9 +289,9 @@
         </div>
         <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
         <div class="chat-input-wrapper">
-            <span style="color:var(--hud-red)">USR:</span>
-            <input type="text" id="terminal-input" placeholder="Ask about your code..." autocomplete="off">
-        </div>
+    <span style="color:var(--hud-red)">USR:</span>
+    <textarea id="terminal-input" placeholder="Paste or type code here..." rows="1" autocomplete="off"></textarea>
+</div>
     </div>
 
    <script src="./config.js"></script>
@@ -310,26 +314,34 @@
               chatDialog = document.getElementById('chat-dialog'),
               closeDialog = document.getElementById('close-dialog'),
               terminalInput = document.getElementById('terminal-input'),
-              chatBody = document.getElementById('chat-body'),
-              forensicBtn = document.getElementById('forensic-btn');
+              chatBody = document.getElementById('chat-body');
 
         let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
-            loadBar.style.width = "100%";
-            setTimeout(() => {
-                handleOrientation();
-                updatePreview();
-                updateLineNumbers();
-                if (typeof GROQ_CONFIG !== 'undefined') {
-                    statusInd.innerText = "● LIVE_SYNC";
-                    statusInd.style.color = "var(--hud-green)";
-                }
-                loader.style.opacity = "0";
-                setTimeout(() => { if(loader) loader.remove(); }, 500);
-                codeInput.focus();
-            }, 800);
-        };
+    loadBar.style.width = "100%";
+    
+    // EMERGENCY CLEAR: If the app doesn't boot in 2 seconds, force it.
+    const forceClear = setTimeout(() => {
+        if(loader) loader.remove();
+    }, 2000);
+
+    setTimeout(() => {
+        handleOrientation();
+        updatePreview();
+        updateLineNumbers();
+        if (typeof GROQ_CONFIG !== 'undefined') {
+            statusInd.innerText = "● LIVE_SYNC";
+            statusInd.style.color = "var(--hud-green)";
+        }
+        loader.style.opacity = "0";
+        setTimeout(() => { 
+            if(loader) loader.remove(); 
+            clearTimeout(forceClear); // Cancel the emergency clear if we made it
+        }, 500);
+        codeInput.focus();
+    }, 800);
+};
 
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
@@ -338,6 +350,7 @@
             handle.style.height = isPortrait ? '20px' : '100%';
             handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
+           
         }
 
         handle.onmousedown = (e) => { isDragging = true; preview.classList.add('shield'); e.preventDefault(); };
@@ -355,58 +368,74 @@
             }
         };
 
-       /* --- ALIGNED LINE NUMBERS --- */
-function updateLineNumbers() {
-    // Get the actual height of a line in the code area to match exactly
-    const computedStyle = window.getComputedStyle(codeInput);
-    const lineHeight = computedStyle.lineHeight;
-    const paddingTop = computedStyle.paddingTop;
-
+        function updateLineNumbers() {
+    const lines = codeInput.innerText.split('\n');
+    const lineCount = Math.max(lines.length, 1);
     let nums = "";
-    // Match the padding-top of the code area
-    lineNumbers.style.paddingTop = paddingTop;
-
-    for(let i = 1; i <= 999; i++) {
-        // We use a div with the exact line-height of the editor
-        nums += `<div style="height:${lineHeight}; display:flex; align-items:center; justify-content:center; width:100%;">${i}</div>`;
+    for(let i = 1; i <= lineCount; i++) {
+        // Only render the lines that actually exist
+        nums += `<div style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
     }
     lineNumbers.innerHTML = nums;
 }
 
-/* --- SYNCED SEARCH LOGIC --- */
-searchInput.oninput = () => {
-    const query = searchInput.value;
-    const text = codeInput.innerText;
-    
-    if (!query.trim()) {
-        codeInput.textContent = text;
-        matchDisplay.innerText = "0 MATCHES";
-        matchElements = [];
-        currentMatchIndex = -1;
-        updateLineNumbers(); // Reset alignment
-        return;
-    }
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
-    const regex = new RegExp(`(${escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    const escapedText = escapeHtml(text);
-    
-    if (escapedText.match(regex)) {
-        // Highlighting can mess up height; we use textContent first to clean
-        codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
-        matchElements = Array.from(codeInput.querySelectorAll('mark'));
-        matchDisplay.classList.add('found');
-        scrollToMatch(0);
-        
-        // CRITICAL: Force a re-sync of line numbers after HTML injection
-        setTimeout(updateLineNumbers, 10); 
-    } else {
-        matchDisplay.classList.remove('found');
-        codeInput.innerText = text;
-        matchElements = [];
-        currentMatchIndex = -1;
-        updateLineNumbers();
-    }
-};
+        function scrollToMatch(index) {
+            if (matchElements.length === 0) return;
+            matchElements.forEach(el => el.classList.remove('current-match'));
+            currentMatchIndex = (index + matchElements.length) % matchElements.length;
+            const target = matchElements[currentMatchIndex];
+            target.classList.add('current-match');
+
+            const parentRect = codeInput.getBoundingClientRect();
+            const matchRect = target.getBoundingClientRect();
+            const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
+            const relativeLeft = (matchRect.left - parentRect.left) + codeInput.scrollLeft;
+            
+            codeInput.scrollTo({ 
+                top: relativeTop - (codeInput.offsetHeight / 2), 
+                left: relativeLeft - (codeInput.offsetWidth / 4), 
+                behavior: 'smooth' 
+            });
+
+            const targetLine = Math.floor(relativeTop / (1.5 * 13)) + 1;
+            const allNumbers = lineNumbers.querySelectorAll('div');
+            allNumbers.forEach(el => el.classList.remove('ln-mark'));
+            if (allNumbers[targetLine - 1]) allNumbers[targetLine - 1].classList.add('ln-mark');
+            matchDisplay.innerText = `${currentMatchIndex + 1}/${matchElements.length} MATCHES`;
+        }
+
+        searchInput.oninput = () => {
+            const query = searchInput.value;
+            const text = codeInput.innerText;
+            if (!query.trim()) {
+                codeInput.textContent = text;
+                matchDisplay.innerText = "0 MATCHES";
+                matchElements = [];
+                currentMatchIndex = -1;
+                updateLineNumbers();
+                return;
+            }
+            const regex = new RegExp(`(${escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            const escapedText = escapeHtml(text);
+            if (escapedText.match(regex)) {
+                codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
+                matchElements = Array.from(codeInput.querySelectorAll('mark'));
+                matchDisplay.classList.add('found');
+                scrollToMatch(0);
+            } else {
+                matchDisplay.classList.remove('found');
+                codeInput.innerText = text;
+                matchElements = [];
+                currentMatchIndex = -1;
+                updateLineNumbers();
+            }
+        };
 
         searchInput.onkeydown = (e) => { if (e.key === 'Enter' && matchElements.length > 0) scrollToMatch(currentMatchIndex + 1); };
 
@@ -421,151 +450,89 @@ searchInput.oninput = () => {
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
-        /* --- RESTORED GROQ FORENSIC_SCAN LOGIC --- */
-        forensicBtn.onclick = async () => {
-            const currentCode = codeInput.innerText.trim();
-            const statusDot = document.getElementById('api-status-dot');
-            if (!currentCode) return;
-            
-            chatDialog.style.display = 'flex';
-            const scanId = "scan-" + Date.now();
-            chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_GROQ_FORENSICS...</div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
-
-            try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { 
-                        "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
-                        "Content-Type": "application/json" 
-                    },
-                    body: JSON.stringify({ 
-                        model: GROQ_CONFIG.MODEL, 
-                        messages: [
-                            { role: "system", content: "You are the Neurosentix Forensic Engine. Perform a deep code analysis. Output a technical report." }, 
-                            { role: "user", content: `SCAN_TARGET:\n${currentCode}` }
-                        ]
-                    })
-                });
-
-                const data = await response.json();
-                if (data.error) throw new Error(data.error.message);
-
-                statusDot.style.background = "var(--hud-green)";
-                statusDot.style.boxShadow = "0 0 10px var(--hud-green)";
-
-                const targetDiv = document.getElementById(scanId);
-                targetDiv.innerHTML = `<span style="color: var(--hud-green)">[ SCAN_COMPLETE ]</span>:<br>${marked.parse(data.choices[0].message.content)}`;
-                
-                setupCodeBlocks(targetDiv);
-                Prism.highlightAllUnder(targetDiv);
-            } catch (err) {
-                statusDot.style.background = "var(--hud-red)";
-                statusDot.style.boxShadow = "0 0 10px var(--hud-red)";
-                document.getElementById(scanId).innerHTML = `<span style="color:var(--hud-red)">[ SCAN_FAILED ]</span>: ${err.message.toUpperCase()}`;
-            }
-            chatBody.scrollTop = chatBody.scrollHeight;
-        };
-
-        /* --- RESTORED GROQ TERMINAL ROUTER --- */
         terminalInput.onkeydown = async (e) => {
-            if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
-                const userMsg = terminalInput.value;
-                const currentCode = codeInput.innerText.trim();
-                const latencyDisplay = document.getElementById('api-latency');
-                const startTime = performance.now();
-                
-                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
-                terminalInput.value = "";
-                
-                const msgId = "msg-" + Date.now();
-                chatBody.innerHTML += `<div id="${msgId}" style="opacity:0.5; margin-bottom:15px;">SYS: COMMUNICATING_WITH_GROQ...</div>`;
-                chatBody.scrollTop = chatBody.scrollHeight;
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        
+        const userMsg = terminalInput.value.trim();
+        const rawCode = codeInput.innerText;
+        
+        // --- SURGICAL BUFFER CHECK ---
+        const encoder = new TextEncoder();
+        const totalByteSize = encoder.encode(userMsg).length + encoder.encode(rawCode).length;
+        const MAX_BYTES = 100 * 1024; // 100KB Safe Limit
 
-                try {
-                    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                        method: "POST",
-                        headers: { 
-                            "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
-                            "Content-Type": "application/json" 
+        if (totalByteSize > MAX_BYTES) {
+            chatBody.innerHTML += `<div style="color:var(--hud-red); border:1px solid var(--hud-red); padding:5px; margin:5px 0;">
+                SYS: ERR_BUFFER_OVERFLOW (${(totalByteSize / 1024).toFixed(1)}KB / 100KB)<br>
+                TIP: Highlight a specific function instead of sending the whole file.
+            </div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+            return;
+        }
+
+        // Map lines so AI knows the numbers (L1, L2, etc)
+        const mappedCode = rawCode.split('\n')
+            .map((line, i) => `L${i + 1}: ${line}`)
+            .join('\n');
+
+        chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg || "[CODE_SYNC]"}</div>`;
+        terminalInput.value = "";
+        
+        const loadingId = "msg-" + Date.now();
+        chatBody.innerHTML += `<div id="${loadingId}" style="opacity:0.5;">SYS: ANALYZING_BUFFER...</div>`;
+        chatBody.scrollTop = chatBody.scrollHeight;
+
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${GROQ_CONFIG.API_KEY}`, 
+                    "Content-Type": "application/json" 
+                },
+                body: JSON.stringify({ 
+                    model: GROQ_CONFIG.MODEL, 
+                    messages: [
+                        { 
+                            role: "system", 
+                            content: "You are the Neurosentix Surgical-Refactor AI. Reference lines using L#. Provide small snippets with an 'APPLY_FIX' button." 
                         },
-                        body: JSON.stringify({ 
-                            model: GROQ_CONFIG.MODEL, 
-                            messages: [
-                                { role: "system", content: `You are the Neurosentix Surgical-Refactor AI. CONTEXT:\n${currentCode}` }, 
-                                { role: "user", content: userMsg }
-                            ]
-                        })
-                    });
+                        { role: "user", content: `EDITOR_CONTEXT:\n${mappedCode}\n\nUSER_REQUEST: ${userMsg}` }
+                    ]
+                })
+            });
 
-                    const duration = Math.round(performance.now() - startTime);
-                    if(latencyDisplay) latencyDisplay.innerText = `[ LATENCY: ${duration}ms ]`;
-                    
-                    const data = await response.json();
-                    if (data.error) throw new Error(data.error.message);
-
-                    const targetDiv = document.getElementById(msgId);
-                    targetDiv.style.opacity = "1";
-                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.choices[0].message.content)}`;
-                    
-                    setupCodeBlocks(targetDiv);
-                    Prism.highlightAllUnder(targetDiv);
-                } catch (err) {
-                    document.getElementById(msgId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERROR_</span>${err.message.toUpperCase()}`;
-                }
-                chatBody.scrollTop = chatBody.scrollHeight;
-            }
-        };
-
-        function setupCodeBlocks(container) {
-    // 1. Run Prism Highlighting first so it doesn't overwrite our buttons
-    Prism.highlightAllUnder(container);
-
-    // 2. Now find every <pre> block and inject the button
-    container.querySelectorAll('pre').forEach(block => {
-        // Prevent double buttons if function is called twice
-        if (block.querySelector('.copy-btn')) return;
-
-        block.style.position = 'relative'; // Ensure button can be positioned absolute
-
-        const insBtn = document.createElement('button');
-        insBtn.className = 'copy-btn'; 
-        insBtn.innerText = 'APPLY_FIX'; 
-        insBtn.style.cssText = `
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background: var(--hud-red);
-            color: white;
-            border: none;
-            font-size: 9px;
-            padding: 4px 8px;
-            cursor: pointer;
-            border-radius: 2px;
-            z-index: 10;
-            font-family: var(--font-main);
-            box-shadow: 0 0 5px rgba(255, 23, 68, 0.5);
-        `;
-
-        insBtn.onclick = () => { 
-            // Extract text but remove the button's own text if it got caught
-            const cleanCode = block.innerText.replace('APPLY_FIX', '').trim();
-            codeInput.focus(); 
-            document.execCommand('insertText', false, cleanCode); 
-            updatePreview();
+            const data = await response.json();
+            const targetDiv = document.getElementById(loadingId);
             
-            // Visual feedback
-            insBtn.innerText = 'APPLIED';
-            insBtn.style.background = 'var(--hud-green)';
-            setTimeout(() => {
-                insBtn.innerText = 'APPLY_FIX';
-                insBtn.style.background = 'var(--hud-red)';
-            }, 2000);
-        };
+            // --- SURGICAL SAFETY CHECK ---
+            if (!data.choices || data.choices.length === 0) {
+                const errorMsg = data.error?.message || "EMPTY_API_RESPONSE";
+                throw new Error(errorMsg);
+            }
 
-        block.appendChild(insBtn);
-    });
-}
+            targetDiv.style.opacity = "1";
+            const aiContent = data.choices[0].message.content;
+            targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(aiContent)}`;
+            
+            // Auto-GOTO line logic
+            const lineRef = aiContent.match(/L(\d+)/);
+            if(lineRef) {
+                gotoInput.value = lineRef[1];
+                const targetLn = lineNumbers.children[parseInt(lineRef[1])-1];
+                if(targetLn) targetLn.classList.add('ln-mark');
+            }
+
+            Prism.highlightAllUnder(targetDiv);
+        } catch (err) {
+            // This catch block will now catch both Network errors AND API errors
+            const targetDiv = document.getElementById(loadingId);
+            targetDiv.style.opacity = "1";
+            targetDiv.innerHTML = `<span style="color:var(--hud-red)">SYS: CRITICAL_ERROR: ${err.message}</span>`;
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+};
 
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
