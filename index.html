@@ -73,7 +73,6 @@
 
         .nav-tools { display: flex; align-items: center; gap: 10px; }
         
-        /* NEW: Forensic Button Style */
         #forensic-btn {
             background: transparent;
             border: 1px solid var(--hud-red);
@@ -249,8 +248,6 @@
             overflow-y: auto;
             line-height: 1.4;
         }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -265,7 +262,8 @@
             <header class="studio-header">
                 <span>NEUROSENTIX STUDIO</span>
                 <div class="nav-tools">
-                    <button id="forensic-btn">FORENSIC_SCAN</button> <input type="number" id="goto-input" class="hud-input-small" placeholder="L#">
+                    <button id="forensic-btn">FORENSIC_SCAN</button> 
+                    <input type="number" id="goto-input" class="hud-input-small" placeholder="L#">
                     <button id="goto-btn">GO</button>
                     <span id="status-indicator">● OFFLINE</span>
                 </div>
@@ -307,8 +305,6 @@
         </div>
     </div>
 
-    <script src="./config.js"></script>
-
     <script>
         const viewport = document.getElementById('viewport'),
               handle = document.getElementById('drag-handle'),
@@ -320,7 +316,7 @@
               lineNumbers = document.getElementById('line-numbers'),
               gotoInput = document.getElementById('goto-input'),
               gotoBtn = document.getElementById('goto-btn'),
-              forensicBtn = document.getElementById('forensic-btn'), // NEW VAR
+              forensicBtn = document.getElementById('forensic-btn'),
               loadBar = document.getElementById('load-bar'),
               loader = document.getElementById('boot-loader'),
               statusInd = document.getElementById('status-indicator'),
@@ -340,10 +336,8 @@
                 handleOrientation();
                 updatePreview();
                 updateLineNumbers();
-                if (typeof GROQ_CONFIG !== 'undefined') {
-                    statusInd.innerText = "● LIVE_SYNC";
-                    statusInd.style.color = "var(--hud-green)";
-                }
+                statusInd.innerText = "● LIVE_SYNC";
+                statusInd.style.color = "var(--hud-green)";
                 loader.style.opacity = "0";
                 setTimeout(() => { 
                     if(loader) loader.remove(); 
@@ -353,25 +347,47 @@
             }, 800);
         };
 
-        // NEW: Forensic Action Logic
+        // REFINED FORENSIC SCAN LOGIC
         forensicBtn.onclick = () => {
             const originalStatus = statusInd.innerText;
             const originalColor = statusInd.style.color;
+            const code = codeInput.innerText;
             
             statusInd.innerText = "● SCANNING_VULNS";
             statusInd.style.color = "var(--hud-red)";
             
-            // Auto-trigger terminal for user feedback
             chatDialog.style.display = 'flex';
-            chatBody.innerHTML += `<div style="color:var(--hud-red); margin-top:10px;">> [SYSTEM]: Initiating Forensic Scan on ${codeInput.innerText.split('\n').length} lines...</div>`;
+            chatBody.innerHTML += `<div style="color:var(--hud-red); margin-top:10px;">> [SYSTEM]: Initiating Forensic Scan on ${code.split('\n').length} lines...</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
 
             setTimeout(() => {
+                const issues = [];
+                
+                // Static Analysis
+                if (code.includes('<script') && !code.includes('sandbox')) {
+                    issues.push("POTENTIAL_XSS: Unsanitized script tags detected.");
+                }
+                if ((code.match(/style=/g) || []).length > 10) {
+                    issues.push("PERF_WARNING: Heavy inline style usage detected.");
+                }
+                const openDivs = (code.match(/<div/g) || []).length;
+                const closeDivs = (code.match(/<\/div>/g) || []).length;
+                if (openDivs !== closeDivs) {
+                    issues.push(`SYNTAX_LEAK: Unbalanced DIV elements (${openDivs} open, ${closeDivs} closed).`);
+                }
+
+                if (issues.length > 0) {
+                    issues.forEach(msg => {
+                        chatBody.innerHTML += `<div style="color:#ffb300">> [WARNING]: ${msg}</div>`;
+                    });
+                } else {
+                    chatBody.innerHTML += `<div>> [SYSTEM]: Scan Complete. No critical syntax leaks detected.</div>`;
+                }
+
                 statusInd.innerText = originalStatus;
                 statusInd.style.color = originalColor;
-                chatBody.innerHTML += `<div>> [SYSTEM]: Scan Complete. No critical syntax leaks detected.</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
-            }, 2000);
+            }, 1200);
         };
 
         function handleOrientation() {
@@ -399,11 +415,9 @@
         };
 
         function updateLineNumbers() {
-            const text = codeInput.innerText;
-            const lines = text.split(/\n/);
-            const lineCount = lines.length;
+            const lines = codeInput.innerText.split(/\n/);
             let nums = "";
-            for(let i = 1; i <= lineCount; i++) {
+            for(let i = 1; i <= lines.length; i++) {
                 nums += `<div style="height:1.5em; line-height:1.5em;">${i}</div>`;
             }
             lineNumbers.innerHTML = nums;
@@ -411,8 +425,6 @@
 
         function scrollToMatch(index) {
             if (matchElements.length === 0) return;
-            
-            // 1. Clear previous highlights
             matchElements.forEach(el => el.classList.remove('current-match'));
             Array.from(lineNumbers.children).forEach(el => el.classList.remove('ln-mark'));
 
@@ -420,21 +432,14 @@
             const target = matchElements[currentMatchIndex];
             target.classList.add('current-match');
 
-            // 2. Calculate the Line Number to highlight
-            // We find how many newlines exist before the current match element
             const range = document.createRange();
             range.setStart(codeInput, 0);
             range.setEndBefore(target);
-            const contentBefore = range.toString();
-            const lineIndex = contentBefore.split('\n').length;
+            const lineIndex = range.toString().split('\n').length;
 
-            // 3. Highlight the specific line number in the gutter
             const targetLineNum = lineNumbers.children[lineIndex - 1];
-            if (targetLineNum) {
-                targetLineNum.classList.add('ln-mark');
-            }
+            if (targetLineNum) targetLineNum.classList.add('ln-mark');
 
-            // 4. Scroll into view
             const parentRect = codeInput.getBoundingClientRect();
             const matchRect = target.getBoundingClientRect();
             const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
@@ -458,10 +463,8 @@
                 updateLineNumbers();
                 return;
             }
-            const div = document.createElement('div'); div.textContent = query;
-            const escapedQuery = div.innerHTML;
-            const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            const escapedText = codeInput.innerText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             if (escapedText.match(regex)) {
                 codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
                 matchElements = Array.from(codeInput.querySelectorAll('mark'));
@@ -471,7 +474,6 @@
                 matchDisplay.classList.remove('found');
                 codeInput.innerText = text;
                 matchElements = [];
-                currentMatchIndex = -1;
                 updateLineNumbers();
             }
         };
@@ -486,9 +488,19 @@
         codeInput.oninput = () => { clearTimeout(syncTimer); updateLineNumbers(); syncTimer = setTimeout(updatePreview, 500); };
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
-
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
+
+        // GOTO Functionality
+        gotoBtn.onclick = () => {
+            const line = parseInt(gotoInput.value);
+            if(line > 0 && line <= lineNumbers.children.length) {
+                const targetPos = (line - 1) * (1.5 * 13); // Line height calculation
+                codeInput.scrollTo({ top: targetPos, behavior: 'smooth' });
+                Array.from(lineNumbers.children).forEach(el => el.classList.remove('ln-mark'));
+                lineNumbers.children[line - 1].classList.add('ln-mark');
+            }
+        };
     </script>
 </body>
 </html>
