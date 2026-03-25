@@ -524,19 +524,54 @@
         };
 
         function setupCodeBlocks(container) {
-            container.querySelectorAll('pre').forEach(block => {
-                const insBtn = document.createElement('button');
-                insBtn.className = 'copy-btn'; 
-                insBtn.innerText = 'APPLY_FIX'; 
+    // 1. Run Prism Highlighting first so it doesn't overwrite our buttons
+    Prism.highlightAllUnder(container);
+
+    // 2. Now find every <pre> block and inject the button
+    container.querySelectorAll('pre').forEach(block => {
+        // Prevent double buttons if function is called twice
+        if (block.querySelector('.copy-btn')) return;
+
+        block.style.position = 'relative'; // Ensure button can be positioned absolute
+
+        const insBtn = document.createElement('button');
+        insBtn.className = 'copy-btn'; 
+        insBtn.innerText = 'APPLY_FIX'; 
+        insBtn.style.cssText = `
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: var(--hud-red);
+            color: white;
+            border: none;
+            font-size: 9px;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 2px;
+            z-index: 10;
+            font-family: var(--font-main);
+            box-shadow: 0 0 5px rgba(255, 23, 68, 0.5);
+        `;
+
+        insBtn.onclick = () => { 
+            // Extract text but remove the button's own text if it got caught
+            const cleanCode = block.innerText.replace('APPLY_FIX', '').trim();
+            codeInput.focus(); 
+            document.execCommand('insertText', false, cleanCode); 
+            updatePreview();
+            
+            // Visual feedback
+            insBtn.innerText = 'APPLIED';
+            insBtn.style.background = 'var(--hud-green)';
+            setTimeout(() => {
+                insBtn.innerText = 'APPLY_FIX';
                 insBtn.style.background = 'var(--hud-red)';
-                insBtn.onclick = () => { 
-                    codeInput.focus(); 
-                    document.execCommand('insertText', false, block.innerText.replace('APPLY_FIX', '')); 
-                    updatePreview();
-                };
-                block.appendChild(insBtn);
-            });
-        }
+            }, 2000);
+        };
+
+        block.appendChild(insBtn);
+    });
+}
 
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
