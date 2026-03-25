@@ -435,7 +435,7 @@
             chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_CLAUDE_FORENSICS...</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
             try {
-                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                const response = await fetch("https://corsproxy.io/?https://api.anthropic.com/v1/messages", { 
                     method: "POST",
                     headers: { "x-api-key": CLAUDE_CONFIG.API_KEY, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "dangerouslyAllowBrowser": "true" },
                     body: JSON.stringify({ 
