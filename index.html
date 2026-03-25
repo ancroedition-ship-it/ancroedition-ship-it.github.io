@@ -435,21 +435,15 @@
             chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_CLAUDE_FORENSICS...</div>`;
             chatBody.scrollTop = chatBody.scrollHeight;
             try {
-                const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "x-api-key": CLAUDE_CONFIG.API_KEY,
-        "anthropic-version": "2023-06-01",
-        // THIS IS THE KEY TO FIXING THE FORBIDDEN ERROR:
-        "anthropic-dangerous-direct-browser-access": "true" 
-    },
-    body: JSON.stringify({
-        model: "claude-3-5-sonnet-20240620",
-        max_tokens: 1024,
-        messages: [{ role: "user", content: userMsg }]
-    })
-});
+                const response = await fetch("https://corsproxy.io/?https://api.anthropic.com/v1/messages", { 
+                    method: "POST",
+                    headers: { "x-api-key": CLAUDE_CONFIG.API_KEY, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "dangerouslyAllowBrowser": "true" },
+                    body: JSON.stringify({ 
+                        model: "claude-3-5-sonnet-20240620", max_tokens: 1500,
+                        system: "You are the Neurosentix Forensic Engine. Perform a deep code analysis. Output a technical report.",
+                        messages: [{ role: "user", content: `SCAN_TARGET:\n${currentCode}` }]
+                    })
+                });
                 const data = await response.json();
                 const targetDiv = document.getElementById(scanId);
                 targetDiv.innerHTML = `<span style="color: var(--hud-green)">[ SCAN_COMPLETE ]</span>:<br>${marked.parse(data.content[0].text)}`;
@@ -466,60 +460,65 @@
 
         // --- TERMINAL ROUTER (GROQ & CLAUDE) ---
         terminalInput.onkeydown = async (e) => {
-            if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
-                const val = terminalInput.value;
-                const isCoder = val.startsWith('/') || val.toLowerCase().includes('fix') || val.toLowerCase().includes('code');
-                const userMsg = isCoder ? val.replace(/^\//, '') : val;
-                const currentCode = codeInput.innerText.trim();
-                const latencyDisplay = document.getElementById('api-latency');
-                const startTime = performance.now();
-                
-                chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${val}</div>`;
-                terminalInput.value = "";
-                const msgId = "msg-" + Date.now();
-                chatBody.innerHTML += `<div id="${msgId}" style="opacity:0.5; margin-bottom:15px;">SYS: ROUTING_TO_${isCoder ? 'CLAUDE_CODER' : 'GROQ_WRITER'}...</div>`;
-                chatBody.scrollTop = chatBody.scrollHeight;
+    if (e.key === 'Enter' && terminalInput.value.trim() !== "") {
+        const userMsg = terminalInput.value;
+        const currentCode = codeInput.innerText.trim();
+        const latencyDisplay = document.getElementById('api-latency');
+        const startTime = performance.now();
+        
+        chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR:</span> ${userMsg}</div>`;
+        terminalInput.value = "";
+        
+        const msgId = "msg-" + Date.now();
+        chatBody.innerHTML += `<div id="${msgId}" style="opacity:0.5; margin-bottom:15px;">SYS: COMMUNICATING_WITH_CLAUDE...</div>`;
+        chatBody.scrollTop = chatBody.scrollHeight;
 
-                try {
-                    const config = isCoder ? 
-                        { url: "https://api.anthropic.com/v1/messages", key: CLAUDE_CONFIG.API_KEY, isClaude: true } :
-                        { url: "https://api.groq.com/openai/v1/chat/completions", key: GROQ_CONFIG.API_KEY, isClaude: false };
+        try {
+            const response = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "x-api-key": CLAUDE_CONFIG.API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-dangerous-direct-browser-access": "true" 
+                },
+                body: JSON.stringify({ 
+                    model: CLAUDE_CONFIG.MODEL,
+                    max_tokens: 1024,
+                    system: `You are the Neurosentix Surgical-Refactor AI. CONTEXT:\n${currentCode}`,
+                    messages: [{ role: "user", content: userMsg }]
+                })
+            });
 
-                    const response = await fetch(config.url, {
-                        method: "POST",
-                        headers: { 
-                            "Content-Type": "application/json",
-                            [config.isClaude ? "x-api-key" : "Authorization"]: config.isClaude ? config.key : `Bearer ${config.key}`,
-                            ...(config.isClaude && { "anthropic-version": "2023-06-01", "dangerouslyAllowBrowser": "true" })
-                        },
-                        body: JSON.stringify(config.isClaude ? {
-                            model: "claude-3-5-sonnet-20240620", max_tokens: 1024,
-                            messages: [{ role: "user", content: `CONTEXT:\n${currentCode}\n\nTASK: ${userMsg}` }]
-                        } : {
-                            model: GROQ_CONFIG.MODEL,
-                            messages: [{ role: "system", content: "You are the Neurosentix Creative Writer." }, { role: "user", content: userMsg }]
-                        })
-                    });
+            const duration = Math.round(performance.now() - startTime);
+            if(latencyDisplay) latencyDisplay.innerText = `[ LATENCY: ${duration}ms ]`;
+            
+            const data = await response.json();
+            
+            if (data.error) throw new Error(data.error.message);
 
-                    const duration = Math.round(performance.now() - startTime);
-                    if(latencyDisplay) latencyDisplay.innerText = `[ LATENCY: ${duration}ms ]`;
-                    const data = await response.json();
-                    const text = config.isClaude ? data.content[0].text : data.choices[0].message.content;
-                    const targetDiv = document.getElementById(msgId);
-                    targetDiv.style.opacity = "1";
-                    targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(text)}`;
-                    
-                    targetDiv.querySelectorAll('pre').forEach(block => {
-                        const insBtn = document.createElement('button');
-                        insBtn.className = 'copy-btn'; insBtn.innerText = 'INSERT'; insBtn.style.background = 'var(--hud-red)';
-                        insBtn.onclick = () => { codeInput.focus(); document.execCommand('insertText', false, block.innerText.replace('INSERT', '')); updatePreview(); updateLineNumbers(); };
-                        block.appendChild(insBtn);
-                    });
-                    Prism.highlightAllUnder(targetDiv);
-                } catch (err) { document.getElementById(msgId).innerText = `SYS: ERROR_ROUTING_FAILED`; }
-                chatBody.scrollTop = chatBody.scrollHeight;
-            }
-        };
+            const targetDiv = document.getElementById(msgId);
+            targetDiv.style.opacity = "1";
+            // Claude returns content in an array
+            targetDiv.innerHTML = `<span style="color:var(--hud-blue)">SYS:</span><br>${marked.parse(data.content[0].text)}`;
+            
+            targetDiv.querySelectorAll('pre').forEach(block => {
+                const insBtn = document.createElement('button');
+                insBtn.className = 'copy-btn'; insBtn.innerText = 'APPLY_FIX'; insBtn.style.background = 'var(--hud-red)';
+                insBtn.onclick = () => { 
+                    codeInput.focus(); 
+                    document.execCommand('insertText', false, block.innerText.replace('APPLY_FIX', '')); 
+                    updatePreview();
+                };
+                block.appendChild(insBtn);
+            });
+            Prism.highlightAllUnder(targetDiv);
+        } catch (err) {
+            document.getElementById(msgId).innerHTML = `<span style="color:var(--hud-red)">SYS: ERROR_</span>${err.message.toUpperCase()}`;
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    }
+};
 
         window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
