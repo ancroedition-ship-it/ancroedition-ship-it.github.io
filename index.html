@@ -135,7 +135,8 @@
         
         #line-numbers {
             width: 30px; 
-            padding: 20px 0; 
+            padding: 20px 0;
+            padding-top: 20px;
             background: rgba(0,0,0,0.4);
             color: #333; 
             font-size: 13px; 
@@ -354,65 +355,58 @@
             }
         };
 
-        function updateLineNumbers() {
-            let nums = "";
-            for(let i = 1; i <= 999; i++) {
-                const existingMark = lineNumbers.children[i-1]?.classList.contains('ln-mark') ? 'ln-mark' : '';
-                nums += `<div class="${existingMark}" style="height:1.5em; display:flex; align-items:center; justify-content:center;">${i}</div>`;
-            }
-            lineNumbers.innerHTML = nums;
-        }
+       /* --- ALIGNED LINE NUMBERS --- */
+function updateLineNumbers() {
+    // Get the actual height of a line in the code area to match exactly
+    const computedStyle = window.getComputedStyle(codeInput);
+    const lineHeight = computedStyle.lineHeight;
+    const paddingTop = computedStyle.paddingTop;
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+    let nums = "";
+    // Match the padding-top of the code area
+    lineNumbers.style.paddingTop = paddingTop;
 
-        function scrollToMatch(index) {
-            if (matchElements.length === 0) return;
-            matchElements.forEach(el => el.classList.remove('current-match'));
-            currentMatchIndex = (index + matchElements.length) % matchElements.length;
-            const target = matchElements[currentMatchIndex];
-            target.classList.add('current-match');
-            const parentRect = codeInput.getBoundingClientRect();
-            const matchRect = target.getBoundingClientRect();
-            const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
-            const relativeLeft = (matchRect.left - parentRect.left) + codeInput.scrollLeft;
-            codeInput.scrollTo({ top: relativeTop - (codeInput.offsetHeight / 2), left: relativeLeft - (codeInput.offsetWidth / 4), behavior: 'smooth' });
-            const targetLine = Math.floor(relativeTop / (1.5 * 13)) + 1;
-            const allNumbers = lineNumbers.querySelectorAll('div');
-            allNumbers.forEach(el => el.classList.remove('ln-mark'));
-            if (allNumbers[targetLine - 1]) allNumbers[targetLine - 1].classList.add('ln-mark');
-            matchDisplay.innerText = `${currentMatchIndex + 1}/${matchElements.length} MATCHES`;
-        }
+    for(let i = 1; i <= 999; i++) {
+        // We use a div with the exact line-height of the editor
+        nums += `<div style="height:${lineHeight}; display:flex; align-items:center; justify-content:center; width:100%;">${i}</div>`;
+    }
+    lineNumbers.innerHTML = nums;
+}
 
-        searchInput.oninput = () => {
-            const query = searchInput.value;
-            const text = codeInput.innerText;
-            if (!query.trim()) {
-                codeInput.textContent = text;
-                matchDisplay.innerText = "0 MATCHES";
-                matchElements = [];
-                currentMatchIndex = -1;
-                updateLineNumbers();
-                return;
-            }
-            const regex = new RegExp(`(${escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            const escapedText = escapeHtml(text);
-            if (escapedText.match(regex)) {
-                codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
-                matchElements = Array.from(codeInput.querySelectorAll('mark'));
-                matchDisplay.classList.add('found');
-                scrollToMatch(0);
-            } else {
-                matchDisplay.classList.remove('found');
-                codeInput.innerText = text;
-                matchElements = [];
-                currentMatchIndex = -1;
-                updateLineNumbers();
-            }
-        };
+/* --- SYNCED SEARCH LOGIC --- */
+searchInput.oninput = () => {
+    const query = searchInput.value;
+    const text = codeInput.innerText;
+    
+    if (!query.trim()) {
+        codeInput.textContent = text;
+        matchDisplay.innerText = "0 MATCHES";
+        matchElements = [];
+        currentMatchIndex = -1;
+        updateLineNumbers(); // Reset alignment
+        return;
+    }
+
+    const regex = new RegExp(`(${escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const escapedText = escapeHtml(text);
+    
+    if (escapedText.match(regex)) {
+        // Highlighting can mess up height; we use textContent first to clean
+        codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
+        matchElements = Array.from(codeInput.querySelectorAll('mark'));
+        matchDisplay.classList.add('found');
+        scrollToMatch(0);
+        
+        // CRITICAL: Force a re-sync of line numbers after HTML injection
+        setTimeout(updateLineNumbers, 10); 
+    } else {
+        matchDisplay.classList.remove('found');
+        codeInput.innerText = text;
+        matchElements = [];
+        currentMatchIndex = -1;
+        updateLineNumbers();
+    }
+};
 
         searchInput.onkeydown = (e) => { if (e.key === 'Enter' && matchElements.length > 0) scrollToMatch(currentMatchIndex + 1); };
 
