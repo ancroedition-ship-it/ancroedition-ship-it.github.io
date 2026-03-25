@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Neurosentix Studio</title>
     <style>
         :root {
@@ -10,75 +10,96 @@
             --hud-blue: #0066ff;
             --hud-green: #00ff88;
             --bg-dark: #08090b;
-            --boundary-color: rgba(0, 102, 255, 0.2);
+            --border: rgba(0, 102, 255, 0.2);
             --font-main: 'SF Mono', 'Fira Code', monospace;
         }
 
-        /* --- NEUROSENTIX MANUAL ANIMATIONS --- */
-        @keyframes horizontal-rotate-flow {
-            0% { transform: rotate(90deg) translateX(0px); opacity: 0.8; }
-            50% { transform: rotate(90deg) translateX(15px); opacity: 1; }
-            100% { transform: rotate(90deg) translateX(0px); opacity: 0.8; }
-        }
-        /* These classes are applied via Forensic Scan */
-        .horizontal-svg { transform: rotate(90deg) !important; transform-origin: center; }
-        .animate-scan { animation: horizontal-rotate-flow 3s ease-in-out infinite !important; }
-
         * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; background: #000; height: 100vh; width: 100vw; overflow: hidden; font-family: var(--font-main); }
+        body, html { 
+            margin: 0; padding: 0; background: #000; height: 100vh; width: 100vw; 
+            overflow: hidden; font-family: var(--font-main); color: var(--hud-blue);
+        }
 
-        /* BOOT LOADER */
-        #boot-loader { position: absolute; inset: 0; background: var(--bg-dark); z-index: 500; display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--hud-blue); letter-spacing: 4px; transition: opacity 0.5s; }
-        .load-track { width: 220px; height: 2px; background: rgba(0,102,255,0.1); margin-top: 15px; position: relative; overflow: hidden; }
-        #load-bar { position: absolute; height: 100%; width: 0%; background: var(--hud-red); box-shadow: 0 0 10px var(--hud-red); transition: width 0.3s; }
+        /* HEADER */
+        .studio-header {
+            height: 40px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; font-size: 10px; letter-spacing: 2px;
+        }
 
-        .studio-container { position: absolute; inset: 10px; display: flex; flex-direction: column; z-index: 10; }
-        .studio-header { height: 30px; display: flex; align-items: center; justify-content: space-between; color: var(--hud-blue); font-size: 10px; letter-spacing: 2px; }
+        .forensic-status { display: flex; align-items: center; gap: 15px; }
+        #forensic-btn { 
+            background: transparent; border: 1px solid var(--hud-red); color: var(--hud-red);
+            font-size: 8px; cursor: pointer; padding: 2px 8px; font-family: inherit;
+        }
 
-        /* SEARCH BOX & LINE NUMBER HIGHLIGHT */
-        .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--boundary-color); margin: 5px; display: flex; align-items: center; }
-        #search-input { background: transparent; border: none; color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px; outline: none; width: 100%; }
-        #search-input::placeholder { color: rgba(0, 102, 255, 0.4); }
-        #match-count { color: var(--hud-red); font-size: 9px; margin-left: 10px; white-space: nowrap; font-weight: bold; }
+        /* MAIN VIEWPORT */
+        .viewport {
+            display: flex; height: calc(100vh - 40px); width: 100vw;
+            border-top: 1px solid var(--border);
+        }
 
-        .viewport { display: flex; flex: 1; overflow: hidden; }
-        .pane { background: rgba(0,0,0,0.8); border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; overflow: hidden; }
-        .editor-pane { flex: 0 0 50%; min-width: 100px; }
-        .preview-pane { flex: 1; background: #fff; border: 2px solid #ccc; position: relative; }
-
-        .editor-layout { display: flex; flex: 1; overflow: hidden; border: 2px solid var(--boundary-color); margin: 5px; background: #1f2933; }
+        .pane { display: flex; flex-direction: column; overflow: hidden; }
         
-        #line-numbers { width: 45px; padding: 20px 0; background: rgba(0,0,0,0.4); color: rgba(255,255,255,0.15); font-size: 13px; text-align: center; border-right: 2px solid var(--boundary-color); overflow: hidden; line-height: 1.5; pointer-events: none; }
-        .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 8px var(--hud-red); background: rgba(255, 23, 68, 0.1); }
-
-        .code-area { flex: 1; padding: 20px; color: #a1a1aa; outline: none; font-size: 13px; white-space: pre; overflow: auto; line-height: 1.5; -webkit-user-modify: read-write-plaintext-only; }
-
-        .drag-bar { background: rgba(0, 102, 255, 0.1); cursor: col-resize; width: 12px; display: flex; align-items: center; justify-content: center; }
-        .drag-bar::before { content: ""; width: 2px; height: 30px; background: var(--hud-blue); }
+        /* EDITOR PANE */
+        .editor-pane { flex: 0 0 50%; border-right: 1px solid var(--border); background: var(--bg-dark); }
         
-        iframe { width: 100%; height: 100%; border: none; background: #fff; }
+        .search-container {
+            padding: 10px 15px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid var(--border);
+        }
+        #search-input {
+            background: transparent; border: none; color: var(--hud-blue);
+            font-family: inherit; font-size: 11px; outline: none; width: 80%;
+        }
+        #match-count { color: var(--hud-red); font-size: 9px; font-weight: bold; }
 
-        #forensic-btn { background: transparent; border: 1px solid var(--hud-red); color: var(--hud-red); font-size: 8px; cursor: pointer; padding: 2px 8px; font-family: inherit; }
+        .editor-layout { display: flex; flex: 1; overflow: hidden; }
+        
+        /* Gutter & Search Highlight */
+        #line-numbers {
+            width: 45px; padding: 20px 0; background: rgba(0,0,0,0.3);
+            color: rgba(0, 102, 255, 0.3); font-size: 13px; text-align: center;
+            border-right: 1px solid var(--border); line-height: 1.5; pointer-events: none;
+        }
+        .ln-mark { 
+            color: var(--hud-red) !important; background: rgba(255, 23, 68, 0.15);
+            text-shadow: 0 0 5px var(--hud-red);
+        }
+
+        .code-area {
+            flex: 1; padding: 20px; color: #a1a1aa; outline: none;
+            font-size: 13px; white-space: pre; overflow: auto; line-height: 1.5;
+            -webkit-user-modify: read-write-plaintext-only;
+        }
+
+        /* DRAG BAR */
+        .drag-bar {
+            width: 4px; background: var(--bg-dark); cursor: col-resize;
+            border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .drag-bar::after { content: ""; width: 2px; height: 20px; background: var(--hud-blue); }
+
+        /* PREVIEW */
+        .preview-pane { flex: 1; background: #fff; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; }
+
+        /* SVG ROTATION LOGIC */
+        .horizontal-svg { transform: rotate(90deg); transform-origin: center; }
     </style>
 </head>
 <body>
 
-<div id="boot-loader">
-    <div>NEUROSENTIX_SYS</div>
-    <div class="load-track"><div id="load-bar"></div></div>
-</div>
-
-<div class="studio-container">
     <header class="studio-header">
         <span>CORE_V3 // TERMINAL</span>
-        <div style="display:flex; gap:15px; align-items:center;">
+        <div class="forensic-status">
             <button id="forensic-btn" onclick="toggleForensic()">FORENSIC_SCAN: OFF</button>
-            <span id="status" style="color:var(--hud-green)">● ONLINE</span>
+            <span style="color:var(--hud-green)">● ONLINE</span>
         </div>
     </header>
 
-    <main class="viewport">
-        <div class="pane editor-pane" id="editorPane">
+    <main class="viewport" id="viewport">
+        <div class="pane editor-pane" id="editor-pane">
             <div class="search-container">
                 <input type="text" id="search-input" placeholder="SEARCH_CODE..." autocomplete="off" spellcheck="false">
                 <span id="match-count">0_MATCHES</span>
@@ -88,12 +109,13 @@
                 <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
             </div>
         </div>
+
         <div class="drag-bar" id="drag-handle"></div>
+
         <section class="pane preview-pane">
             <iframe id="preview-frame"></iframe>
         </section>
     </main>
-</div>
 
 <script>
     const codeInput = document.getElementById('code-input');
@@ -101,86 +123,66 @@
     const searchInput = document.getElementById('search-input');
     const matchCount = document.getElementById('match-count');
     const preview = document.getElementById('preview-frame');
-    const forensicBtn = document.getElementById('forensic-btn');
+    const dragHandle = document.getElementById('drag-handle');
+    const editorPane = document.getElementById('editor-pane');
 
     let forensicActive = false;
     let syncTimer;
 
-    // --- SEARCH & LINE HIGHLIGHT LOGIC ---
-    function updateSearchAndLines() {
+    // --- LINE SYNC & SEARCH GLOW ---
+    function updateUI() {
         const query = searchInput.value.toLowerCase();
         const lines = codeInput.innerText.split('\n');
         let matches = 0;
-        let lineHTML = "";
+        let html = "";
 
         lines.forEach((line, i) => {
-            const isMatch = query && line.toLowerCase().includes(query);
-            if(isMatch) matches++;
-            lineHTML += `<div class="${isMatch ? 'ln-mark' : ''}" style="height:1.5em;">${i + 1}</div>`;
+            const hasMatch = query && line.toLowerCase().includes(query);
+            if(hasMatch) matches++;
+            html += `<div class="${hasMatch ? 'ln-mark' : ''}" style="height:1.5em;">${i+1}</div>`;
         });
 
-        lineNumbers.innerHTML = lineHTML;
+        lineNumbers.innerHTML = html;
         matchCount.innerText = `${matches}_MATCHES`;
         lineNumbers.scrollTop = codeInput.scrollTop;
     }
 
-    // --- PREVIEW RENDER ---
+    // --- RENDER ENGINE ---
     function render() {
         const code = codeInput.innerText;
-        const forensicClasses = forensicActive ? 'class="horizontal-svg animate-scan"' : '';
-        
-        // Inject styles directly so the preview honors Neurosentix classes
-        const doc = `
-            <html>
-            <head>
-                <style>
-                    body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; background: #fff; }
-                    svg { transition: 0.5s; max-width: 90%; max-height: 90%; }
-                    .horizontal-svg { transform: rotate(90deg); transform-origin: center; }
-                    @keyframes horizontal-rotate-flow {
-                        0%, 100% { transform: rotate(90deg) translateX(0); opacity: 0.8; }
-                        50% { transform: rotate(90deg) translateX(20px); opacity: 1; }
-                    }
-                    .animate-scan { animation: horizontal-rotate-flow 3s ease-in-out infinite; }
-                </style>
-            </head>
-            <body>${code.replace('<svg', '<svg ' + forensicClasses)}</body>
-            </html>`;
-        
+        const rotateClass = forensicActive ? 'class="horizontal-svg"' : '';
+        const doc = `<html><body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#fff;">${code.replace('<svg', '<svg ' + rotateClass)}</body></html>`;
         preview.srcdoc = doc;
-        updateSearchAndLines();
+        updateUI();
     }
 
     function toggleForensic() {
         forensicActive = !forensicActive;
-        forensicBtn.innerText = `FORENSIC_SCAN: ${forensicActive ? 'ON' : 'OFF'}`;
+        document.getElementById('forensic-btn').innerText = `FORENSIC_SCAN: ${forensicActive ? 'ON' : 'OFF'}`;
         render();
     }
 
-    // --- DRAG LOGIC ---
-    let isDragging = false;
-    document.getElementById('drag-handle').onmousedown = () => isDragging = true;
-    document.onmouseup = () => isDragging = false;
+    // --- DRAG BAR LOGIC ---
+    let dragging = false;
+    dragHandle.onmousedown = () => dragging = true;
+    document.onmouseup = () => dragging = false;
     document.onmousemove = (e) => {
-        if (!isDragging) return;
-        const percent = (e.clientX / window.innerWidth) * 100;
-        if (percent > 10 && percent < 90) {
-            document.getElementById('editorPane').style.flex = `0 0 ${percent}%`;
+        if (!dragging) return;
+        let x = e.clientX;
+        if (x > 100 && x < window.innerWidth - 100) {
+            editorPane.style.flex = `0 0 ${x}px`;
+            // Trigger UI update to keep lines synced during drag
+            updateUI();
         }
     };
 
-    // --- EVENTS ---
-    codeInput.oninput = () => {
-        clearTimeout(syncTimer);
-        syncTimer = setTimeout(render, 300);
-    };
-    searchInput.oninput = updateSearchAndLines;
+    // EVENTS
+    codeInput.oninput = () => { clearTimeout(syncTimer); syncTimer = setTimeout(render, 300); };
+    searchInput.oninput = updateUI;
     codeInput.onscroll = () => lineNumbers.scrollTop = codeInput.scrollTop;
 
-    // --- BOOT ---
+    // INIT
     window.onload = () => {
-        document.getElementById('load-bar').style.width = "100%";
-        setTimeout(() => document.getElementById('boot-loader').style.opacity = "0", 800);
         codeInput.innerText = '<svg viewBox="0 0 100 100">\n  <rect x="10" y="10" width="80" height="80" fill="#0066ff"/>\n</svg>';
         render();
     };
