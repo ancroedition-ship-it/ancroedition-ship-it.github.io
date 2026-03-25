@@ -91,18 +91,11 @@
             background: rgba(255, 23, 68, 0.1);
             box-shadow: 0 0 8px var(--hud-red);
         }
-        #forensic-btn:active {
-            background: var(--hud-red);
-            color: white;
-        }
 
         .hud-input-small { 
             background: rgba(0,0,0,0.5); border: 1px solid var(--border); color: var(--hud-blue); 
             font-size: 9px; padding: 2px 5px; width: 45px; outline: none; transition: border 0.2s;
-            -moz-appearance: textfield;
         }
-        .hud-input-small::-webkit-outer-spin-button,
-        .hud-input-small::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 
         #goto-btn {
             background: var(--hud-blue); border: none; color: white; 
@@ -118,100 +111,40 @@
 
         .editor-pane .pane-label { 
             font-size: 9px; padding: 10px;
-            background: rgba(0, 102, 255, 0.15); 
-            color: var(--hud-blue); 
+            background: rgba(0, 102, 255, 0.15); color: var(--hud-blue); 
             border-bottom: 1px solid var(--boundary-color);
-            font-weight: bold;
-            letter-spacing: 1px;
+            font-weight: bold; letter-spacing: 1px;
             text-shadow: 0 0 5px var(--hud-blue);
         }
 
-        .search-container { 
-            padding: 5px 10px; 
-            background: rgba(0, 0, 0, 0.2); 
-            border: 1px solid var(--boundary-color); 
-            margin: 5px;
-            display: flex; 
-            align-items: center; 
-        }
+        .search-container { padding: 5px 10px; background: rgba(0, 0, 0, 0.2); border: 1px solid var(--boundary-color); margin: 5px; display: flex; align-items: center; }
         #search-input { background: transparent; border: none; color: var(--hud-blue); font-family: inherit; font-size: 10px; padding: 4px 8px; outline: none; width: 100%; }
-        #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; transition: all 0.2s; }
-        #match-count.found { color: var(--hud-red); text-shadow: 0 0 5px var(--hud-red); opacity: 1; }
+        #match-count { color: var(--hud-blue); font-size: 9px; margin-left: 10px; white-space: nowrap; opacity: 0.6; }
 
-        .editor-layout { 
-            display: flex; 
-            flex: 1; 
-            overflow: hidden; 
-            position: relative; 
-            border: 2px solid var(--boundary-color); 
-            margin: 5px;
-        }
+        .editor-layout { display: flex; flex: 1; overflow: hidden; position: relative; border: 2px solid var(--boundary-color); margin: 5px; }
         
         #line-numbers {
-            width: 40px; 
-            padding: 20px 0; 
-            background: rgba(0,0,0,0.4);
-            color: rgba(255,255,255,0.2); 
-            font-size: 13px; 
-            text-align: center; 
-            border-right: 2px solid var(--boundary-color); 
-            overflow: hidden; 
-            line-height: 1.5; 
-            pointer-events: none;
-            font-family: var(--font-main);
+            width: 40px; padding: 20px 0; background: rgba(0,0,0,0.4);
+            color: rgba(255,255,255,0.2); font-size: 13px; text-align: center; 
+            border-right: 2px solid var(--boundary-color); overflow: hidden; 
+            line-height: 1.5; pointer-events: none; font-family: var(--font-main);
         }
 
-        .ln-mark { 
-            color: var(--hud-red) !important; 
-            text-shadow: 0 0 8px var(--hud-red); 
-            font-weight: bold; 
-            background: rgba(255, 23, 68, 0.2);
-            transition: all 0.2s;
-        }
+        .ln-mark { color: var(--hud-red) !important; text-shadow: 0 0 8px var(--hud-red); font-weight: bold; background: rgba(255, 23, 68, 0.2); }
 
         .code-area { 
-            flex: 1; 
-            padding: 20px; 
-            color: #a1a1aa; 
-            outline: none; 
-            font-size: 13px; 
-            white-space: pre; 
-            overflow: auto; 
-            user-select: text; 
-            line-height: 1.5; 
-            position: relative;
-            font-family: var(--font-main);
-            border-left: 1px solid var(--border);
-            background-color: #1f2933;
-            -webkit-user-modify: read-write-plaintext-only; 
-            tab-size: 4;
+            flex: 1; padding: 20px; color: #a1a1aa; outline: none; font-size: 13px; white-space: pre; 
+            overflow: auto; user-select: text; line-height: 1.5; position: relative;
+            font-family: var(--font-main); border-left: 1px solid var(--border); background-color: #1f2933;
+            -webkit-user-modify: read-write-plaintext-only; tab-size: 4;
         }
         
-        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; transition: background 0.2s; }
+        mark { background: rgba(255, 23, 68, 0.3); color: #fff; border-radius: 1px; }
         mark.current-match { background: rgba(255, 23, 68, 0.8); box-shadow: 0 0 12px var(--hud-red); }
 
-        .drag-bar { 
-            background: rgba(0, 102, 255, 0.1); 
-            z-index: 100; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            border: 1px solid var(--border);
-        }
-
-        .drag-bar::before { 
-            content: ""; 
-            width: 2px; 
-            height: 30%; 
-            background: var(--hud-blue); 
-            border-radius: 2px; 
-            box-shadow: 0 0 8px var(--hud-blue);
-            transition: all 0.3s ease;
-        }
-        #viewport[style*="flex-direction: column"] #drag-handle::before {
-            width: 30%; 
-            height: 2px;
-        }
+        .drag-bar { background: rgba(0, 102, 255, 0.1); z-index: 100; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+        .drag-bar::before { content: ""; width: 2px; height: 30%; background: var(--hud-blue); border-radius: 2px; box-shadow: 0 0 8px var(--hud-blue); }
+        
         iframe { width: 100%; height: 100%; border: none; }
         .shield { pointer-events: none !important; }
 
@@ -221,33 +154,18 @@
             color: var(--hud-blue); display: flex; align-items: center; justify-content: center; 
             cursor: pointer; z-index: 600; font-size: 20px; box-shadow: 0 0 10px var(--hud-blue);
         }
-        #chat-dialog { 
-            position: fixed; inset: 0; background: rgba(10, 10, 15, 0.98); 
-            z-index: 900; display: none; flex-direction: column; padding: 30px; 
-        }
-        #chat-body { 
-            flex: 1; margin-top: 20px; border: 1px solid var(--boundary-color); 
-            padding: 20px; color: #ccc; font-size: 13px; 
-            overflow-y: auto; line-height: 1.6; background: #1f2933;
-        }
+        #chat-dialog { position: fixed; inset: 0; background: rgba(10, 10, 15, 0.98); z-index: 900; display: none; flex-direction: column; padding: 30px; }
+        #chat-body { flex: 1; margin-top: 20px; border: 1px solid var(--boundary-color); padding: 20px; color: #ccc; font-size: 13px; overflow-y: auto; background: #1f2933; }
         
-        .chat-input-wrapper { 
-            margin-top: 15px; display: flex; gap: 10px; 
-            border: 1px solid var(--boundary-color); padding: 10px; 
+        .chat-input-wrapper { margin-top: 15px; display: flex; gap: 10px; border: 1px solid var(--boundary-color); padding: 10px; align-items: flex-end; }
+        #terminal-input { flex: 1; background: transparent; border: none; outline: none; color: var(--hud-red); font-family: inherit; resize: none; max-height: 150px; overflow-y: auto; line-height: 1.4; }
+
+        #send-btn {
+            background: transparent; border: 1px solid var(--hud-red); color: var(--hud-red);
+            font-family: var(--font-main); font-size: 10px; cursor: pointer; padding: 4px 12px;
+            transition: 0.2s; text-transform: uppercase; letter-spacing: 1px;
         }
-        #terminal-input { 
-            flex: 1; 
-            background: transparent; 
-            border: none; 
-            outline: none; 
-            color: var(--hud-red); 
-            font-family: inherit; 
-            resize: none;
-            min-height: 1.5em;
-            max-height: 150px;
-            overflow-y: auto;
-            line-height: 1.4;
-        }
+        #send-btn:hover { background: rgba(255, 23, 68, 0.1); box-shadow: 0 0 8px var(--hud-red); }
     </style>
 </head>
 <body>
@@ -301,7 +219,8 @@
         <div id="chat-body">> [SYSTEM]: Live Context Ready.</div>
         <div class="chat-input-wrapper">
             <span style="color:var(--hud-red)">USR:</span>
-            <textarea id="terminal-input" placeholder="Paste or type code here..." rows="1" autocomplete="off"></textarea>
+            <textarea id="terminal-input" placeholder="Type command..." rows="1"></textarea>
+            <button id="send-btn">SEND</button>
         </div>
     </div>
 
@@ -324,14 +243,13 @@
               chatDialog = document.getElementById('chat-dialog'),
               closeDialog = document.getElementById('close-dialog'),
               terminalInput = document.getElementById('terminal-input'),
-              chatBody = document.getElementById('chat-body');
+              chatBody = document.getElementById('chat-body'),
+              sendBtn = document.getElementById('send-btn');
 
         let isDragging = false, currentMatchIndex = -1, matchElements = [], syncTimer; 
 
         window.onload = () => {
             loadBar.style.width = "100%";
-            const forceClear = setTimeout(() => { if(loader) loader.remove(); }, 2000);
-
             setTimeout(() => {
                 handleOrientation();
                 updatePreview();
@@ -339,63 +257,61 @@
                 statusInd.innerText = "● LIVE_SYNC";
                 statusInd.style.color = "var(--hud-green)";
                 loader.style.opacity = "0";
-                setTimeout(() => { 
-                    if(loader) loader.remove(); 
-                    clearTimeout(forceClear);
-                }, 500);
+                setTimeout(() => { if(loader) loader.remove(); }, 500);
                 codeInput.focus();
             }, 800);
         };
 
-        // REFINED FORENSIC SCAN LOGIC
+        // FORENSIC SCAN REFINED
         forensicBtn.onclick = () => {
-            const originalStatus = statusInd.innerText;
-            const originalColor = statusInd.style.color;
             const code = codeInput.innerText;
-            
-            statusInd.innerText = "● SCANNING_VULNS";
-            statusInd.style.color = "var(--hud-red)";
-            
             chatDialog.style.display = 'flex';
-            chatBody.innerHTML += `<div style="color:var(--hud-red); margin-top:10px;">> [SYSTEM]: Initiating Forensic Scan on ${code.split('\n').length} lines...</div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
-
+            chatBody.innerHTML += `<div style="color:var(--hud-red); margin-top:10px;">> [SYSTEM]: Scanning ${code.split('\n').length} lines...</div>`;
+            
             setTimeout(() => {
                 const issues = [];
+                if (code.includes('<script') && !code.includes('sandbox')) issues.push("XSS_RISK: Unsanitized script detected.");
+                if ((code.match(/<div/g) || []).length !== (code.match(/<\/div>/g) || []).length) issues.push("SYNTAX_LEAK: Unbalanced DIV elements.");
                 
-                // Static Analysis
-                if (code.includes('<script') && !code.includes('sandbox')) {
-                    issues.push("POTENTIAL_XSS: Unsanitized script tags detected.");
-                }
-                if ((code.match(/style=/g) || []).length > 10) {
-                    issues.push("PERF_WARNING: Heavy inline style usage detected.");
-                }
-                const openDivs = (code.match(/<div/g) || []).length;
-                const closeDivs = (code.match(/<\/div>/g) || []).length;
-                if (openDivs !== closeDivs) {
-                    issues.push(`SYNTAX_LEAK: Unbalanced DIV elements (${openDivs} open, ${closeDivs} closed).`);
-                }
-
-                if (issues.length > 0) {
-                    issues.forEach(msg => {
-                        chatBody.innerHTML += `<div style="color:#ffb300">> [WARNING]: ${msg}</div>`;
-                    });
-                } else {
-                    chatBody.innerHTML += `<div>> [SYSTEM]: Scan Complete. No critical syntax leaks detected.</div>`;
-                }
-
-                statusInd.innerText = originalStatus;
-                statusInd.style.color = originalColor;
+                if (issues.length) issues.forEach(m => chatBody.innerHTML += `<div style="color:#ffb300">> [WARNING]: ${m}</div>`);
+                else chatBody.innerHTML += `<div>> [SYSTEM]: Scan Complete. No leaks detected.</div>`;
                 chatBody.scrollTop = chatBody.scrollHeight;
-            }, 1200);
+            }, 1000);
         };
+
+        // SEND LOGIC
+        function sendMessage() {
+            const msg = terminalInput.value.trim();
+            if(!msg) return;
+            chatBody.innerHTML += `<div><span style="color:var(--hud-red)">USR></span> ${msg}</div>`;
+            terminalInput.value = '';
+            terminalInput.style.height = 'auto';
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        sendBtn.onclick = sendMessage;
+        terminalInput.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
+        terminalInput.oninput = () => { terminalInput.style.height = 'auto'; terminalInput.style.height = terminalInput.scrollHeight + 'px'; };
+
+        function updateLineNumbers() {
+            const count = codeInput.innerText.split(/\n/).length;
+            let nums = "";
+            for(let i = 1; i <= count; i++) nums += `<div style="height:1.5em;">${i}</div>`;
+            lineNumbers.innerHTML = nums;
+        }
+
+        function updatePreview() {
+            const code = codeInput.innerText || "";
+            const blob = new Blob([`<!DOCTYPE html><html><body style="padding:2rem;font-family:sans-serif;">${code}</body></html>`], { type: 'text/html' });
+            if (preview.src) URL.revokeObjectURL(preview.src);
+            preview.src = URL.createObjectURL(blob);
+        }
 
         function handleOrientation() {
             const isPortrait = window.innerHeight > window.innerWidth;
             viewport.style.flexDirection = isPortrait ? 'column' : 'row';
             handle.style.width = isPortrait ? '100%' : '20px';
             handle.style.height = isPortrait ? '20px' : '100%';
-            handle.style.cursor = isPortrait ? 'row-resize' : 'col-resize';
             editor.style.flex = isPortrait ? '0 0 40%' : '0 0 50%';
         }
 
@@ -404,8 +320,7 @@
         document.onmousemove = (e) => {
             if (!isDragging) return;
             const rect = viewport.getBoundingClientRect();
-            const isPortrait = window.innerHeight > window.innerWidth;
-            if (isPortrait) {
+            if (window.innerHeight > window.innerWidth) {
                 let y = e.clientY - rect.top;
                 if (y > 50 && y < rect.height - 50) editor.style.flex = `0 0 ${y}px`;
             } else {
@@ -414,93 +329,11 @@
             }
         };
 
-        function updateLineNumbers() {
-            const lines = codeInput.innerText.split(/\n/);
-            let nums = "";
-            for(let i = 1; i <= lines.length; i++) {
-                nums += `<div style="height:1.5em; line-height:1.5em;">${i}</div>`;
-            }
-            lineNumbers.innerHTML = nums;
-        }
-
-        function scrollToMatch(index) {
-            if (matchElements.length === 0) return;
-            matchElements.forEach(el => el.classList.remove('current-match'));
-            Array.from(lineNumbers.children).forEach(el => el.classList.remove('ln-mark'));
-
-            currentMatchIndex = (index + matchElements.length) % matchElements.length;
-            const target = matchElements[currentMatchIndex];
-            target.classList.add('current-match');
-
-            const range = document.createRange();
-            range.setStart(codeInput, 0);
-            range.setEndBefore(target);
-            const lineIndex = range.toString().split('\n').length;
-
-            const targetLineNum = lineNumbers.children[lineIndex - 1];
-            if (targetLineNum) targetLineNum.classList.add('ln-mark');
-
-            const parentRect = codeInput.getBoundingClientRect();
-            const matchRect = target.getBoundingClientRect();
-            const relativeTop = (matchRect.top - parentRect.top) + codeInput.scrollTop;
-            
-            codeInput.scrollTo({ 
-                top: relativeTop - (codeInput.offsetHeight / 2), 
-                behavior: 'smooth' 
-            });
-
-            matchDisplay.innerText = `${currentMatchIndex + 1}/${matchElements.length} MATCHES`;
-        }
-
-        searchInput.oninput = () => {
-            const query = searchInput.value;
-            const text = codeInput.innerText;
-            if (!query.trim()) {
-                codeInput.textContent = text;
-                matchDisplay.innerText = "0 MATCHES";
-                matchElements = [];
-                currentMatchIndex = -1;
-                updateLineNumbers();
-                return;
-            }
-            const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-            const escapedText = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            if (escapedText.match(regex)) {
-                codeInput.innerHTML = escapedText.replace(regex, '<mark>$1</mark>');
-                matchElements = Array.from(codeInput.querySelectorAll('mark'));
-                matchDisplay.classList.add('found');
-                scrollToMatch(0);
-            } else {
-                matchDisplay.classList.remove('found');
-                codeInput.innerText = text;
-                matchElements = [];
-                updateLineNumbers();
-            }
-        };
-
-        function updatePreview() {
-            const code = codeInput.innerText || "";
-            const blob = new Blob([`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{padding:2rem;font-family:sans-serif;background:#fff;}</style></head><body>${code}</body></html>`], { type: 'text/html' });
-            if (preview.src) URL.revokeObjectURL(preview.src);
-            preview.src = URL.createObjectURL(blob);
-        }
-
         codeInput.oninput = () => { clearTimeout(syncTimer); updateLineNumbers(); syncTimer = setTimeout(updatePreview, 500); };
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
-        window.onresize = handleOrientation;
         codeInput.onscroll = () => { lineNumbers.scrollTop = codeInput.scrollTop; };
-
-        // GOTO Functionality
-        gotoBtn.onclick = () => {
-            const line = parseInt(gotoInput.value);
-            if(line > 0 && line <= lineNumbers.children.length) {
-                const targetPos = (line - 1) * (1.5 * 13); // Line height calculation
-                codeInput.scrollTo({ top: targetPos, behavior: 'smooth' });
-                Array.from(lineNumbers.children).forEach(el => el.classList.remove('ln-mark'));
-                lineNumbers.children[line - 1].classList.add('ln-mark');
-            }
-        };
+        window.onresize = handleOrientation;
     </script>
 </body>
 </html>
