@@ -252,12 +252,14 @@
                 <div class="pane editor-pane" id="editorPane">
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
-                        <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
-                        <div style="display: flex; align-items: center;">
-                            <button id="forensic-btn">FORENSIC_SCAN</button>
-                            <span id="match-count">0 MATCHES</span>
-                        </div>
-                    </div>
+    <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
+    
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="forensic-btn">FORENSIC_SCAN</button>
+        <div id="api-status-dot" style="width: 8px; height: 8px; background: var(--hud-blue); border-radius: 50%; box-shadow: 0 0 5px var(--hud-blue); transition: all 0.3s;"></div>
+        <span id="match-count">0 MATCHES</span>
+    </div>
+</div>
                     <div class="editor-layout">
                         <div id="line-numbers"></div>
                         <div id="code-input" class="code-area" contenteditable="true" spellcheck="false"></div>
