@@ -253,8 +253,7 @@
                     <div class="pane-label">SOURCE_EDITOR</div>
                     <div class="search-container">
     <input type="text" id="search-input" placeholder="search" spellcheck="false" autocomplete="off">
-    
-    <div style="display: flex; align-items: center; gap: 12px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
         <button id="forensic-btn">FORENSIC_SCAN</button>
         <div id="api-status-dot" style="width: 8px; height: 8px; background: var(--hud-blue); border-radius: 50%; box-shadow: 0 0 5px var(--hud-blue); transition: all 0.3s;"></div>
         <span id="match-count">0 MATCHES</span>
@@ -428,37 +427,63 @@
         chatTrigger.onclick = () => { chatDialog.style.display = 'flex'; terminalInput.focus(); };
         closeDialog.onclick = () => { chatDialog.style.display = 'none'; };
 
-        // --- FORENSIC SCAN (CLAUDE) ---
-        forensicBtn.onclick = async () => {
-            const currentCode = codeInput.innerText.trim();
-            if (!currentCode) return;
-            chatDialog.style.display = 'flex';
-            const scanId = "scan-" + Date.now();
-            chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_CLAUDE_FORENSICS...</div>`;
-            chatBody.scrollTop = chatBody.scrollHeight;
-            try {
-                const response = await fetch("https://corsproxy.io/?https://api.anthropic.com/v1/messages", { 
-                    method: "POST",
-                    headers: { "x-api-key": CLAUDE_CONFIG.API_KEY, "anthropic-version": "2023-06-01", "Content-Type": "application/json", "dangerouslyAllowBrowser": "true" },
-                    body: JSON.stringify({ 
-                        model: "claude-3-5-sonnet-20240620", max_tokens: 1500,
-                        system: "You are the Neurosentix Forensic Engine. Perform a deep code analysis. Output a technical report.",
-                        messages: [{ role: "user", content: `SCAN_TARGET:\n${currentCode}` }]
-                    })
-                });
-                const data = await response.json();
-                const targetDiv = document.getElementById(scanId);
-                targetDiv.innerHTML = `<span style="color: var(--hud-green)">[ SCAN_COMPLETE ]</span>:<br>${marked.parse(data.content[0].text)}`;
-                targetDiv.querySelectorAll('pre').forEach(block => {
-                    const insBtn = document.createElement('button');
-                    insBtn.className = 'copy-btn'; insBtn.innerText = 'APPLY_FIX'; insBtn.style.background = 'var(--hud-red)';
-                    insBtn.onclick = () => { codeInput.focus(); document.execCommand('insertText', false, block.innerText.replace('APPLY_FIX', '')); };
-                    block.appendChild(insBtn);
-                });
-                Prism.highlightAllUnder(targetDiv);
-            } catch (err) { document.getElementById(scanId).innerText = `[ SCAN_FAILED ]: ENGINE_OFFLINE`; }
-            chatBody.scrollTop = chatBody.scrollHeight;
-        };
+        /* --- REPLACED FORENSIC_SCAN LOGIC --- */
+forensicBtn.onclick = async () => {
+    const currentCode = codeInput.innerText.trim();
+    const statusDot = document.getElementById('api-status-dot');
+    if (!currentCode) return;
+    
+    chatDialog.style.display = 'flex';
+    const scanId = "scan-" + Date.now();
+    chatBody.innerHTML += `<div id="${scanId}" style="border-left: 2px solid var(--hud-green); padding: 10px; margin: 10px 0; background: rgba(0, 255, 136, 0.05); color: var(--hud-green);">[ SYSTEM_SCAN ]: INITIATING_CLAUDE_FORENSICS...</div>`;
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    try {
+        const response = await fetch("https://api.anthropic.com/v1/messages", { 
+            method: "POST",
+            headers: { 
+                "x-api-key": CLAUDE_CONFIG.API_KEY.trim(), 
+                "anthropic-version": "2023-06-01", 
+                "Content-Type": "application/json", 
+                "anthropic-dangerous-direct-browser-access": "true" 
+            },
+            body: JSON.stringify({ 
+                model: CLAUDE_CONFIG.MODEL, 
+                max_tokens: 1500,
+                system: "You are the Neurosentix Forensic Engine. Perform a deep code analysis. Output a technical report.",
+                messages: [{ role: "user", content: `SCAN_TARGET:\n${currentCode}` }]
+            })
+        });
+
+        const data = await response.json();
+        if (data.error) throw new Error(data.error.message);
+
+        // Success: Turn dot Green
+        statusDot.style.background = "var(--hud-green)";
+        statusDot.style.boxShadow = "0 0 10px var(--hud-green)";
+
+        const targetDiv = document.getElementById(scanId);
+        targetDiv.innerHTML = `<span style="color: var(--hud-green)">[ SCAN_COMPLETE ]</span>:<br>${marked.parse(data.content[0].text)}`;
+        
+        targetDiv.querySelectorAll('pre').forEach(block => {
+            const insBtn = document.createElement('button');
+            insBtn.className = 'copy-btn'; insBtn.innerText = 'APPLY_FIX'; insBtn.style.background = 'var(--hud-red)';
+            insBtn.onclick = () => { 
+                codeInput.focus(); 
+                document.execCommand('insertText', false, block.innerText.replace('APPLY_FIX', '')); 
+                updatePreview();
+            };
+            block.appendChild(insBtn);
+        });
+        Prism.highlightAllUnder(targetDiv);
+    } catch (err) { 
+        // Failure: Turn dot Red
+        statusDot.style.background = "var(--hud-red)";
+        statusDot.style.boxShadow = "0 0 10px var(--hud-red)";
+        document.getElementById(scanId).innerHTML = `<span style="color:var(--hud-red)">[ SCAN_FAILED ]</span>: ${err.message.toUpperCase()}`; 
+    }
+    chatBody.scrollTop = chatBody.scrollHeight;
+};
 
         // --- TERMINAL ROUTER (GROQ & CLAUDE) ---
         terminalInput.onkeydown = async (e) => {
